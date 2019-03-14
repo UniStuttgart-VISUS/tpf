@@ -78,5 +78,8 @@ set_target_properties(tpf PROPERTIES
   INTERFACE_COMPILE_OPTIONS "${optional_compile_options}"
   INTERFACE_COMPILE_DEFINITIONS "${optional_compile_definitions}"
   INTERFACE_LINK_LIBRARIES "Eigen3::Eigen;CGAL::CGAL;${optional_link_libraries}"
-  VERSION "@tpf_version@"
 )
+
+set(tpf_version "@tpf_version@")
+set(tpf_version_major "@tpf_version_major@")
+set(tpf_version_minor "@tpf_version_minor@")
