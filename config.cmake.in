@@ -1,0 +1,82 @@
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+
+# Let user select options
+option(tpf_option_debug "Write debug output, fascilitating the debugging of code" OFF)
+option(tpf_option_detailed "Write detailed output to console, file or within other tools" OFF)
+option(tpf_option_performance "Measure and log performance where supported" OFF)
+option(tpf_option_range_checks "Perform range checks to increase security (increases execution time)" OFF)
+option(tpf_option_sanity_checks "Perform sanity checks to increase security (recommended)" ON)
+
+option(tpf_option_use_openmp "Use OpenMP for parallelization" ON)
+option(tpf_option_use_mpi "Use MPI for parallelization" OFF)
+option(tpf_option_use_mpi_io "Use MPI-IO for parallelized read-in" OFF)
+
+if(tpf_option_debug)
+  add_definitions(-D__tpf_debug)
+endif()
+if(tpf_option_detailed)
+  add_definitions(-D__tpf_detailed)
+endif()
+if(tpf_option_performance)
+  add_definitions(-D__tpf_performance)
+endif()
+if(tpf_option_range_checks)
+  add_definitions(-D__tpf_range_checks)
+endif()
+if(tpf_option_sanity_checks)
+  add_definitions(-D__tpf_sanity_checks)
+endif()
+
+# Check for being on a supercomputer
+if(ENV{PLATFORM})
+  string(COMPARE EQUAL $ENV{PLATFORM} "CRAY" tpf_option_supercomputer)
+endif()
+
+if(NOT tpf_option_supercomputer)
+  option(tpf_option_supercomputer "Is this compiled on a supercomputer?" OFF)
+endif()
+
+# Find dependencies
+set(optional_includes)
+set(optional_compile_options)
+set(optional_compile_definitions)
+set(optional_link_libraries)
+
+find_package(Eigen3 REQUIRED)
+find_package(CGAL REQUIRED)
+
+if(tpf_option_use_openmp OR tpf_option_supercomputer)
+  find_package(OpenMP REQUIRED)
+
+  set(optional_compile_options ${optional_compile_options} ${OpenMP_CXX_FLAGS})
+  set(optional_compile_definitions ${optional_compile_definitions} __tpf_use_openmp)
+endif()
+
+if(tpf_option_use_mpi AND NOT tpf_option_supercomputer)
+  find_package(MPI REQUIRED)
+
+  set(optional_link_libraries ${optional_link_libraries} ${MPI_LIBRARIES})
+  set(optional_includes ${optional_includes} ${MPI_CXX_INCLUDE_PATH})
+endif()
+if(tpf_option_use_mpi)
+  set(optional_compile_definitions ${optional_compile_definitions} __tpf_use_mpi)
+endif()
+if(tpf_option_use_mpi AND tpf_option_use_mpi_io)
+  set(optional_compile_definitions ${optional_compile_definitions} __tpf_use_mpiio)
+endif()
+
+# Create imported target
+get_filename_component(tpf_config_dir "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+include(${tpf_config_dir}/tpf-export.cmake)
+
+# Add properties of imported target based on dependencies
+get_target_property(tpf_includes tpf INTERFACE_INCLUDE_DIRECTORIES)
+
+set_target_properties(tpf PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${tpf_includes};${CGAL_INCLUDE_DIRS};${CGAL_3RD_PARTY_INCLUDE_DIRS};${optional_includes}"
+  INTERFACE_COMPILE_OPTIONS "${optional_compile_options}"
+  INTERFACE_COMPILE_DEFINITIONS "${optional_compile_definitions}"
+  INTERFACE_LINK_LIBRARIES "Eigen3::Eigen;CGAL::CGAL;${optional_link_libraries}"
+  VERSION "@tpf_version@"
+)
