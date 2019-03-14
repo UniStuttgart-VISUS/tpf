@@ -83,7 +83,7 @@ if(MSVC)
       file(GLOB filter_h_files LIST_DIRECTORIES FALSE "${CMAKE_CURRENT_SOURCE_DIR}/${file_or_directory}/*.h")
 
       if(tpf_project_inl_files)
-        file(GLOB_RECURSE filter_inl_files LIST_DIRECTORIES FALSE "${CMAKE_CURRENT_SOURCE_DIR}/${file_or_directory}/*.inl")
+        file(GLOB filter_inl_files LIST_DIRECTORIES FALSE "${CMAKE_CURRENT_SOURCE_DIR}/${file_or_directory}/*.inl")
       else()
         set(filter_inl_files)
       endif()
