@@ -28,6 +28,8 @@ namespace tpf
         {
             this->value = nullptr;
             this->valid = false;
+
+            return *this;
         }
 
         template <typename t>
@@ -36,6 +38,8 @@ namespace tpf
         {
             this->value = std::make_shared<t>(value);
             this->valid = true;
+
+            return *this;
         }
 
         template <typename t>

@@ -33,5 +33,29 @@ namespace tpf
             /// <returns>Interpolated value</returns>
             virtual value_t interpolate(const point_t& point) const = 0;
         };
+
+        /// <summary>
+        /// Policy for data structures supporting interpolation using Eigen::Matrix
+        /// </summary>
+        /// <template name="value_t">Value type of the Eigen::Matrix</template>
+        /// <template name="rows">Number of rows of the Eigen::Matrix</template>
+        /// <template name="columns">Number of columns of the Eigen::Matrix</template>
+        /// <template name="point_t">Point type for interpolation position</template>
+        template <typename value_t, int rows, int columns, typename point_t>
+        class interpolatable<Eigen::Matrix<value_t, rows, columns>, point_t>
+        {
+        public:
+            using interpolation_value_type = Eigen::Matrix<value_t, rows, columns>;
+            using interpolation_point_type = point_t;
+
+            static constexpr bool value_type_interpolatable = true;
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="point">Point at which to interpolate</param>
+            /// <returns>Interpolated value</returns>
+            virtual Eigen::Matrix<value_t, rows, columns> interpolate(const point_t& point) const = 0;
+        };
     }
 }
