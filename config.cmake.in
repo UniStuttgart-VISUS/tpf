@@ -80,6 +80,7 @@ if(tpf_option_use_openmp OR tpf_option_supercomputer)
 
   set(optional_compile_options ${optional_compile_options} ${OpenMP_CXX_FLAGS})
   set(optional_compile_definitions ${optional_compile_definitions} __tpf_use_openmp)
+  set(optional_link_libraries ${optional_link_libraries} ${OpenMP_EXE_LINKER_FLAGS})
 endif()
 
 # Find MPI
