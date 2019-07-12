@@ -46,7 +46,8 @@ namespace tpf
             /// Return inexact floating point value
             /// </summary>
             /// <returns>Inexact floating point value</returns>
-            operator floatp_t() const;
+            template<typename F = floatp_t, typename E = exact_t>
+            operator typename std::enable_if<!std::is_same<F, E>::value, F>::type () const;
             floatp_t get_float_value() const;
 
             operator std::complex<floatp_t>() const;

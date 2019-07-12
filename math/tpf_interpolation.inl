@@ -1,5 +1,7 @@
 #include "tpf_interpolation.h"
 
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+
 #include "Eigen/Dense"
 
 #include <type_traits>
@@ -15,20 +17,42 @@ namespace tpf
         }
 
         template <typename float_t, int dimension, typename value_t>
-        inline value_t interpolate_linear(const Eigen::Matrix<float_t, dimension, 1>& position, const Eigen::Matrix<float_t, dimension, 1>& left,
-            const Eigen::Matrix<float_t, dimension, 1>& right, const value_t& first, const value_t& second)
+        inline typename std::enable_if<!std::is_same<float_t, typename CGAL::Epeck::FT>::value, value_t>::type
+            interpolate_linear(const Eigen::Matrix<float_t, dimension, 1>& position, const Eigen::Matrix<float_t, dimension, 1>& left,
+                const Eigen::Matrix<float_t, dimension, 1>& right, const value_t& first, const value_t& second)
         {
             static_assert(dimension > 0, "Dimension for linear interpolation must be at least 1");
 
             const auto vector_left_right = right - left;
 
-            if (!(right - left).isZero())
+            if (!vector_left_right.isZero())
             {
                 const auto vector_left_position = position - left;
 
                 const auto projected_position = left + (vector_left_position.dot(vector_left_right) / vector_left_right.dot(vector_left_right)) * vector_left_right;
 
                 return interpolate_linear((projected_position - right).norm() / (left - right).norm(), first, second);
+            }
+
+            return first;
+        }
+
+        template <typename float_t, int dimension, typename value_t>
+        inline typename std::enable_if<std::is_same<float_t, typename CGAL::Epeck::FT>::value, value_t>::type
+            interpolate_linear(const Eigen::Matrix<float_t, dimension, 1>& position, const Eigen::Matrix<float_t, dimension, 1>& left,
+                const Eigen::Matrix<float_t, dimension, 1>& right, const value_t& first, const value_t& second)
+        {
+            static_assert(dimension > 0, "Dimension for linear interpolation must be at least 1");
+
+            const auto vector_left_right = right - left;
+
+            if (!vector_left_right.isZero())
+            {
+                const auto vector_left_position = position - left;
+
+                const auto projected_position = left + (vector_left_position.dot(vector_left_right) / vector_left_right.dot(vector_left_right)) * vector_left_right;
+
+                return interpolate_linear(std::sqrt(CGAL::to_double((projected_position - right).squaredNorm() / (left - right).squaredNorm())), first, second);
             }
 
             return first;

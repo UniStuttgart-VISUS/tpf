@@ -134,6 +134,29 @@ namespace tpf
             utility::optional<coords_t> find_cell(const Eigen::Matrix<point_t, dimensions, 1>& vertex) const;
 
             /// <summary>
+            /// Check if the vertex is in the given cell
+            /// </summary>
+            /// <param name="coords">Coordinates</param>
+            /// <param name="vertex">Vertex</param>
+            /// <return>True if vertex is in the given cell, false otherwise</return>
+            bool is_in_cell(const coords_t& coords, const Eigen::Matrix<point_t, dimensions, 1>& vertex) const;
+
+            /// <summary>
+            /// Find staggered cell for a given vertex
+            /// </summary>
+            /// <param name="vertex">Vertex</param>
+            /// <return>[valid, cell coordinates]</return>
+            utility::optional<coords_t> find_staggered_cell(const Eigen::Matrix<point_t, dimensions, 1>& vertex) const;
+
+            /// <summary>
+            /// Check if the vertex is in the given staggered cell
+            /// </summary>
+            /// <param name="coords">Coordinates</param>
+            /// <param name="vertex">Vertex</param>
+            /// <return>True if vertex is in the given cell, false otherwise</return>
+            bool is_in_staggered_cell(const coords_t& coords, const Eigen::Matrix<point_t, dimensions, 1>& vertex) const;
+
+            /// <summary>
             /// Find cell for a given polygon, evaluating the position at its barycenter
             /// </summary>
             /// <param name="vertices">Vertices of the polygon</param>

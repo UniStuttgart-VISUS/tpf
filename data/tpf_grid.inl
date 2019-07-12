@@ -170,6 +170,90 @@ namespace tpf
         }
 
         template <typename value_t, typename point_t, int dimensions, int rows, int columns>
+        inline bool grid<value_t, point_t, dimensions, rows, columns>::is_in_cell(const coords_t& coords, const Eigen::Matrix<point_t, dimensions, 1>& vertex) const
+        {
+            if (!this->grid_information_avail)
+            {
+                throw std::runtime_error(__tpf_error_message("Grid information has not been set."));
+            }
+
+            // Check cell
+            for (std::size_t c = 0; c < dimensions; ++c)
+            {
+                if (this->node_coordinates[c][coords[c] - this->extent[c].first] > vertex[c] || this->node_coordinates[c][coords[c] + 1 - this->extent[c].first] < vertex[c])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        template <typename value_t, typename point_t, int dimensions, int rows, int columns>
+        inline utility::optional<typename grid<value_t, point_t, dimensions, rows, columns>::coords_t> grid<value_t, point_t, dimensions, rows, columns>::find_staggered_cell(
+            const Eigen::Matrix<point_t, dimensions, 1>& vertex) const
+        {
+            if (!this->grid_information_avail)
+            {
+                throw std::runtime_error(__tpf_error_message("Grid information has not been set."));
+            }
+
+            // Find cell
+            coords_t coords;
+            std::vector<bool> valid(dimensions);
+
+            for (std::size_t c = 0; c < dimensions; ++c)
+            {
+                valid[c] = false;
+
+                for (std::size_t i = 0; i < this->cell_coordinates[c].size() - 1; ++i)
+                {
+                    if (this->cell_coordinates[c][i] <= vertex[c] && this->cell_coordinates[c][i + 1] >= vertex[c])
+                    {
+                        coords[c] = i + this->extent[c].first;
+                        valid[c] = true;
+                    }
+                }
+            }
+
+            bool all_valid = true;
+
+            for (std::size_t c = 0; c < dimensions; ++c)
+            {
+                all_valid &= valid[c];
+            }
+
+            if (all_valid)
+            {
+                return coords;
+            }
+            else
+            {
+                return utility::nullopt;
+            }
+        }
+
+        template <typename value_t, typename point_t, int dimensions, int rows, int columns>
+        inline bool grid<value_t, point_t, dimensions, rows, columns>::is_in_staggered_cell(const coords_t& coords, const Eigen::Matrix<point_t, dimensions, 1>& vertex) const
+        {
+            if (!this->grid_information_avail)
+            {
+                throw std::runtime_error(__tpf_error_message("Grid information has not been set."));
+            }
+
+            // Check cell
+            for (std::size_t c = 0; c < dimensions; ++c)
+            {
+                if (this->cell_coordinates[c][coords[c] - this->extent[c].first] > vertex[c] || this->cell_coordinates[c][coords[c] + 1 - this->extent[c].first] < vertex[c])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        template <typename value_t, typename point_t, int dimensions, int rows, int columns>
         inline utility::optional<typename grid<value_t, point_t, dimensions, rows, columns>::coords_t> grid<value_t, point_t, dimensions, rows, columns>::find_cell
             (const std::vector<Eigen::Matrix<point_t, dimensions, 1>>& vertices) const
         {

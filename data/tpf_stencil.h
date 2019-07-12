@@ -123,6 +123,13 @@ namespace tpf
             bool is_on_stencil(const coords_type& coords) const;
 
             /// <summary>
+            /// Are the given coordinates on the underlying grid?
+            /// </summary>
+            /// <param name="coords">Coordinates</param>
+            /// <return>True if (stencil) coordinates are on the underlying grid, false otherwise</return>
+            bool is_on_grid(const coords_type& coords) const;
+
+            /// <summary>
             /// Access data at the coordinates
             /// </summary>
             /// <param name="coords">Coordinates</param>

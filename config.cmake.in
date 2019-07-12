@@ -1,3 +1,19 @@
+##################################################################
+#
+# TPF - Two Phase Flow
+#
+# Header-only library to fascilitate the development of
+# post-processing tools for multiphase flow simulation data,
+# integrated in visualization tools, such as ParaView and
+# MegaMol.
+#
+# Copyright 2016-2019
+# Visualization Research Center, University of Stuttgart, Germany
+#
+# Author(s): Alexander Straub
+#            Moritz Heinemann
+#
+##################################################################
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 # Let user select options
@@ -42,16 +58,32 @@ set(optional_compile_options)
 set(optional_compile_definitions)
 set(optional_link_libraries)
 
+# Find Eigen
 find_package(Eigen3 REQUIRED)
+
+# Find CGAL
 find_package(CGAL REQUIRED)
 
+get_target_property(CGAL_minsizerel CGAL::CGAL IMPORTED_LOCATION_MINSIZEREL)
+get_target_property(CGAL_relwithdebinfo CGAL::CGAL IMPORTED_LOCATION_RELWITHDEBINFO)
+
+if(NOT CGAL_minsizerel)
+  set_target_properties(CGAL::CGAL PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL Release)
+endif()
+if(NOT CGAL_relwithdebinfo)
+  set_target_properties(CGAL::CGAL PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+endif()
+
+# Find OpenMP
 if(tpf_option_use_openmp OR tpf_option_supercomputer)
   find_package(OpenMP REQUIRED)
 
   set(optional_compile_options ${optional_compile_options} ${OpenMP_CXX_FLAGS})
   set(optional_compile_definitions ${optional_compile_definitions} __tpf_use_openmp)
+  set(optional_link_libraries ${optional_link_libraries} ${OpenMP_EXE_LINKER_FLAGS})
 endif()
 
+# Find MPI
 if(tpf_option_use_mpi AND NOT tpf_option_supercomputer)
   find_package(MPI REQUIRED)
 
