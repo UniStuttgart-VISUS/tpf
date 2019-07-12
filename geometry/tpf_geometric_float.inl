@@ -34,7 +34,8 @@ namespace tpf
         }
 
         template <typename floatp_t, typename exact_t>
-        inline geometric_float<floatp_t, exact_t>::operator floatp_t() const
+        template <typename F, typename E>
+        inline geometric_float<floatp_t, exact_t>::operator typename std::enable_if<!std::is_same<F, E>::value, F>::type () const
         {
             return static_cast<floatp_t>(CGAL::to_double(this->value));
         }

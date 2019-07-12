@@ -114,6 +114,28 @@ namespace tpf
         }
 
         template <typename value_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns>
+        inline bool stencil<value_t, point_t, dimensions, rows, columns>::is_on_grid(const coords_type& coords) const
+        {
+#ifdef __tpf_range_checks
+            if (!is_on_stencil(coords))
+            {
+                throw std::runtime_error(__tpf_error_message("Access to illegal stencil coordinates."));
+            }
+#endif
+
+            // Calculate grid coordinates
+            coords_type grid_coords = coords;
+
+            for (std::size_t i = 0; i < dimensions; ++i)
+            {
+                grid_coords[i] += this->extent[i].first;
+            }
+
+            // Check: inside or outside the grid?
+            return this->data_grid.is_on_grid(grid_coords);
+        }
+
+        template <typename value_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns>
         inline const typename stencil<value_t, point_t, dimensions, rows, columns>::return_type stencil<value_t, point_t, dimensions, rows, columns>::operator()(const coords_type& coords) const
         {
             return const_cast<stencil<value_t, point_t, dimensions, rows, columns>*>(this)->access(coords);
