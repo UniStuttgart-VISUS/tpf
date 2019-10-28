@@ -32,37 +32,33 @@ string(SUBSTRING "${tpf_version}" ${delimiter_plus_one} -1 tpf_version_minor)
 add_library(tpf INTERFACE)
 
 target_include_directories(tpf INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
 install(TARGETS tpf EXPORT tpf-export)
 
 # Copy include directory
-install(DIRECTORY "" DESTINATION include/tpf
+install(DIRECTORY include/ DESTINATION include
   PATTERN "*.txt" EXCLUDE
-  PATTERN "*.in" EXCLUDE
-  PATTERN "*.md" EXCLUDE
-  PATTERN ".git" EXCLUDE
-  PATTERN "version" EXCLUDE)
+  PATTERN "*.md" EXCLUDE)
 
 # Create config file for including tpf in other projects
 configure_file(config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.cmake DESTINATION share/tpf/cmake RENAME tpf-config.cmake)
 
 # Copy markdown readme files into documentation folder
-file(GLOB_RECURSE md_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.md)
+file(GLOB_RECURSE md_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include/tpf/*.md)
 
 foreach(md_file ${md_files})
   get_filename_component(md_file_path ${md_file} DIRECTORY)
 
-  if(md_file_path)
-    string(REGEX REPLACE "[/\\]" "_" md_file_name "${md_file_path}")
+  string(REPLACE "include/tpf/" "" md_file_path "${md_file_path}")
+  string(REGEX REPLACE "[/\\]" "_" md_file_name "${md_file_path}")
 
-    install(FILES ${md_file} DESTINATION share/tpf/doc RENAME tpf_${md_file_name}.md)
-  else()
-    install(FILES ${md_file} DESTINATION share/tpf/doc RENAME tpf.md)
-  endif()
+  install(FILES ${md_file} DESTINATION share/tpf/doc RENAME tpf_${md_file_name}.md)
 endforeach()
+
+install(FILES "readme.md" DESTINATION share/tpf/doc RENAME tpf.md)
 
 # Export project
 install(EXPORT tpf-export DESTINATION share/tpf/cmake)
