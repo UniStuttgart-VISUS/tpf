@@ -9,6 +9,8 @@
 
 #include "../log/tpf_log.h"
 
+#include "Eigen/Dense"
+
 #include <algorithm>
 #include <array>
 #include <list>
@@ -24,19 +26,25 @@ namespace tpf
         namespace
         {
             template <typename number_t>
-            number_t initialize_zero()
+            struct initialize_zero
             {
-                return static_cast<number_t>(0);
-            }
+                inline number_t operator()()
+                {
+                    return static_cast<number_t>(0);
+                }
+            };
 
-            template <template <typename, int, int> typename vector_t, typename number_t, int rows, int columns>
-            vector_t<number_t, rows, columns> initialize_zero()
+            template <typename number_t, int rows, int columns>
+            struct initialize_zero<Eigen::Matrix<number_t, rows, columns>>
             {
-                vector_t<number_t, rows, columns> vector;
-                vector.setZero();
+                inline Eigen::Matrix<number_t, rows, columns> operator()()
+                {
+                    Eigen::Matrix<number_t, rows, columns> vector;
+                    vector.setZero();
 
-                return vector;
-            }
+                    return vector;
+                }
+            };
         }
 
         template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
@@ -278,7 +286,7 @@ namespace tpf
                     log::warning_message(__tpf_warning_message("Interpolation failed and returned 0-value. Point is probably located outside of the interpolatable region"));
 #endif
 
-                    return initialize_zero<value_t>();
+                    return initialize_zero<value_t>()();
                 }
 
                 // Get points and respective values for interpolation
@@ -314,14 +322,14 @@ namespace tpf
                 log::warning_message(__tpf_nested_warning_message(e.what(), "Interpolation failed and returned 0-value. Point is probably located outside of the covered domain"));
 #endif
 
-                return initialize_zero<value_t>();
+                return initialize_zero<value_t>()();
             }
 
 #ifdef __tpf_debug
             log::warning_message(__tpf_warning_message(e.what(), "Interpolation failed and returned 0-value"));
 #endif
 
-            return initialize_zero<value_t>();
+            return initialize_zero<value_t>()();
         }
 
         template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
