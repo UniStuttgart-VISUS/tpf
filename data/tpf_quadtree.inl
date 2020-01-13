@@ -161,5 +161,13 @@ namespace tpf
 
             return directions;
         }
+
+        template <typename float_t, typename value_t, typename kernel_t>
+        std::array<neighbor_t, 4> quadtree<float_t, value_t, kernel_t>::get_directions() const
+        {
+            return std::array<neighbor_t, 4> {
+                neighbor_t::LEFT, neighbor_t::RIGHT, neighbor_t::BOTTOM, neighbor_t::TOP
+            };
+        }
     }
 }
