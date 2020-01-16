@@ -17,6 +17,14 @@ namespace tpf
 {
     namespace data
     {
+        namespace
+        {
+            constexpr unsigned int constexpr_log2(const unsigned int x)
+            {
+                return x == 1 ? 0 : 1 + constexpr_log2(x >> 1);
+            }
+        }
+
         /// <summary>
         /// Octree data structure
         /// </summary>
@@ -132,6 +140,20 @@ namespace tpf
             virtual std::pair<std::shared_ptr<node>, std::list<position_t>> find_node(const geometry::point<float_t, kernel_type>& point) const = 0;
 
             /// <summary>
+            /// Get path of the given node
+            /// </summary>
+            /// <param name="point">Point for which to get the path</param>
+            /// <returns>The path from the root to the given node</returns>
+            std::list<position_t> get_node_path(const std::shared_ptr<node> node) const;
+
+            /// <summary>
+            /// Get neighbors of a node
+            /// </summary>
+            /// <param name="node">Node for which the neighbors should be found</param>
+            /// <returns>Neighboring nodes</returns>
+            std::vector<std::shared_ptr<node>> get_neighbors(const std::shared_ptr<node> node) const;
+
+            /// <summary>
             /// Interpolate the value at a given point
             /// </summary>
             /// <param name="point">Point at which the value should be interpolated</param>
@@ -161,6 +183,12 @@ namespace tpf
             /// <param name="relative_point">Point coordinates relative to the mid point of its cell</param>
             /// <returns>Interpolation directions</returns>
             virtual std::array<neighbor_t, num_children - 1> get_directions(const geometry::point<float_t, kernel_type>& relative_point) const = 0;
+
+            /// <summary>
+            /// Get all potential directions, based solely on the kind of n-tree
+            /// </summary>
+            /// <returns>Neighboring directions</returns>
+            virtual std::array<neighbor_t, constexpr_log2(num_children) * 2> get_directions() const = 0;
 
         private:
             /// <summary>

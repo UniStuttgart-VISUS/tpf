@@ -100,6 +100,12 @@ namespace tpf
             /// <param name="relative_point">Point coordinates relative to the mid point of its cell</param>
             /// <returns>Interpolation directions</returns>
             virtual std::array<neighbor_t, 7> get_directions(const geometry::point<float_t, kernel_type>& relative_point) const override;
+
+            /// <summary>
+            /// Get all potential directions, based solely on the kind of n-tree
+            /// </summary>
+            /// <returns>Neighboring directions</returns>
+            virtual std::array<neighbor_t, 6> get_directions() const override;
         };
     }
 }

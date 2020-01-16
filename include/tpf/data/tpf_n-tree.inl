@@ -9,6 +9,8 @@
 
 #include "../log/tpf_log.h"
 
+#include "Eigen/Dense"
+
 #include <algorithm>
 #include <array>
 #include <list>
@@ -24,19 +26,25 @@ namespace tpf
         namespace
         {
             template <typename number_t>
-            number_t initialize_zero()
+            struct initialize_zero
             {
-                return static_cast<number_t>(0);
-            }
+                inline number_t operator()()
+                {
+                    return static_cast<number_t>(0);
+                }
+            };
 
-            template <template <typename, int, int> typename vector_t, typename number_t, int rows, int columns>
-            vector_t<number_t, rows, columns> initialize_zero()
+            template <typename number_t, int rows, int columns>
+            struct initialize_zero<Eigen::Matrix<number_t, rows, columns>>
             {
-                vector_t<number_t, rows, columns> vector;
-                vector.setZero();
+                inline Eigen::Matrix<number_t, rows, columns> operator()()
+                {
+                    Eigen::Matrix<number_t, rows, columns> vector;
+                    vector.setZero();
 
-                return vector;
-            }
+                    return vector;
+                }
+            };
         }
 
         template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
@@ -175,6 +183,97 @@ namespace tpf
         }
 
         template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
+        std::list<position_t> n_tree<float_t, value_t, geometry_t, num_children>::get_node_path(const std::shared_ptr<node> _node) const
+        {
+            std::list<position_t> path;
+
+            auto* child_node = _node.get();
+            auto* current_node = _node.get();
+
+            while (current_node->get_parent() != nullptr)
+            {
+                current_node = static_cast<node*>(current_node->get_parent());
+
+                for (unsigned int i = 0; i < num_children; ++i)
+                {
+                    if (current_node->get_children()[i].get() == child_node)
+                    {
+                        path.push_front(static_cast<position_t>(i));
+                        break;
+                    }
+                }
+
+                child_node = current_node;
+            }
+
+            return path;
+        }
+
+        template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
+        inline auto n_tree<float_t, value_t, geometry_t, num_children>::get_neighbors(const std::shared_ptr<node> center) const -> std::vector<std::shared_ptr<node>>
+        {
+            const auto directions = get_directions();
+
+            // Compute hypothetical paths for each direction
+            const auto node_path = get_node_path(center);
+            std::array<std::vector<position_t>, num_children - 1> neighbor_paths;
+
+            for (std::size_t neighbor_index = 0; neighbor_index < num_children - 1; ++neighbor_index)
+            {
+                neighbor_paths[neighbor_index].insert(neighbor_paths[neighbor_index].end(), node_path.begin(), node_path.end());
+
+                // Find deepest possible turn
+                for (auto it = neighbor_paths[neighbor_index].rbegin(); it != neighbor_paths[neighbor_index].rend(); ++it)
+                {
+                    const auto possible_position = *it + directions[neighbor_index];
+
+                    if (possible_position != position_t::INVALID)
+                    {
+                        *it = possible_position;
+
+                        // Adjust all deeper positions
+                        if (it != neighbor_paths[neighbor_index].rbegin())
+                        {
+                            for (--it; it != neighbor_paths[neighbor_index].rbegin(); --it)
+                            {
+                                *it = *it - directions[neighbor_index];
+                            }
+
+                            *it = *it - directions[neighbor_index];
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            // Check for existance of neighboring nodes
+            std::vector<std::shared_ptr<node>> neighbors;
+            neighbors.reserve(num_children);
+
+            for (auto& neighbor_path : neighbor_paths)
+            {
+                auto neighbor_node = get_node(neighbor_path);
+
+                // Move higher up the tree until the requested node exists or the root has been reached
+                while (neighbor_node == nullptr && !neighbor_path.empty())
+                {
+                    neighbor_path.pop_back();
+
+                    neighbor_node = get_node(neighbor_path);
+                }
+
+                // If there is a valid neighbor node, store it
+                if (neighbor_node != nullptr)
+                {
+                    neighbors.push_back(neighbor_node);
+                }
+            }
+
+            return neighbors;
+        }
+
+        template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
         inline value_t n_tree<float_t, value_t, geometry_t, num_children>::interpolate(const geometry::point<float_t, kernel_type>& point) const
         {
             try
@@ -278,7 +377,7 @@ namespace tpf
                     log::warning_message(__tpf_warning_message("Interpolation failed and returned 0-value. Point is probably located outside of the interpolatable region"));
 #endif
 
-                    return initialize_zero<value_t>();
+                    return initialize_zero<value_t>()();
                 }
 
                 // Get points and respective values for interpolation
@@ -314,14 +413,14 @@ namespace tpf
                 log::warning_message(__tpf_nested_warning_message(e.what(), "Interpolation failed and returned 0-value. Point is probably located outside of the covered domain"));
 #endif
 
-                return initialize_zero<value_t>();
+                return initialize_zero<value_t>()();
             }
 
 #ifdef __tpf_debug
             log::warning_message(__tpf_warning_message(e.what(), "Interpolation failed and returned 0-value"));
 #endif
 
-            return initialize_zero<value_t>();
+            return initialize_zero<value_t>()();
         }
 
         template <typename float_t, typename value_t, typename geometry_t, std::size_t num_children>
