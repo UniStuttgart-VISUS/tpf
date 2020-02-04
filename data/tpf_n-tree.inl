@@ -417,7 +417,7 @@ namespace tpf
             }
 
 #ifdef __tpf_debug
-            log::warning_message(__tpf_warning_message(e.what(), "Interpolation failed and returned 0-value"));
+            log::warning_message(__tpf_warning_message("Interpolation failed and returned 0-value"));
 #endif
 
             return initialize_zero<value_t>()();
