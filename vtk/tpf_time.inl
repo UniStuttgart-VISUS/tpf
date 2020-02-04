@@ -34,7 +34,7 @@ namespace tpf
                         timesteps.push_back(static_cast<float_t>(time_steps[num_time_steps]));
                     }
 
-                    timesteps.push_back(static_cast<float_t>(time_steps[++num_time_steps]));
+                    timesteps.push_back(static_cast<float_t>(time_steps[num_time_steps]));
 
                     return timesteps;
                 }
@@ -77,8 +77,6 @@ namespace tpf
                             current_time_step_index = num_time_steps;
                         }
                     }
-
-                    ++num_time_steps;
 
                     if (std::abs(static_cast<float_t>(time_steps[num_time_steps]) - current_time_step) < min_time_step_diff)
                     {
