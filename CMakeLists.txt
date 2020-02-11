@@ -19,15 +19,6 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 # Create project/solution
 project("tpf")
 
-file(STRINGS "version" tpf_version LIMIT_COUNT 1)
-message(STATUS "TPF is at version ${tpf_version}")
-
-string(FIND "${tpf_version}" "\." delimiter)
-math(EXPR delimiter_plus_one "${delimiter} + 1")
-
-string(SUBSTRING "${tpf_version}" 0 ${delimiter} tpf_version_major)
-string(SUBSTRING "${tpf_version}" ${delimiter_plus_one} -1 tpf_version_minor)
-
 # Create header-only target for installation
 add_library(tpf INTERFACE)
 
