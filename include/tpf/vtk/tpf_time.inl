@@ -5,6 +5,8 @@
 #include "vtkDataObject.h"
 #include "vtkDataSet.h"
 #include "vtkInformation.h"
+#include "vtkInformationDoubleKey.h"
+#include "vtkInformationDoubleVectorKey.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <cmath>
@@ -200,6 +202,36 @@ namespace tpf
             catch (...)
             {
                 throw std::runtime_error(__tpf_error_message("Error getting time step delta."));
+            }
+        }
+
+        inline void copy_time_information(vtkInformation* source_info, vtkInformation* target_info)
+        {
+            if (source_info && target_info && source_info->Has(vtkStreamingDemandDrivenPipeline::TIME_RANGE()))
+            {
+                target_info->CopyEntry(source_info, vtkStreamingDemandDrivenPipeline::TIME_RANGE(), 1);
+            }
+
+            if (source_info && target_info && source_info->Has(vtkStreamingDemandDrivenPipeline::TIME_STEPS()))
+            {
+                target_info->CopyEntry(source_info, vtkStreamingDemandDrivenPipeline::TIME_STEPS(), 1);
+            }
+        }
+
+        template <typename... alg_t>
+        inline void copy_time_information(vtkDataSet* source_alg, vtkDataSet* target_alg, alg_t... target_algs)
+        {
+            copy_time_information(source_alg, target_alg);
+            copy_time_information(source_alg, target_algs...);
+        }
+
+        inline void copy_time_information(vtkDataSet* source_alg, vtkDataSet* target_alg)
+        {
+            if (source_alg && target_alg && source_alg->GetInformation() && target_alg->GetInformation() &&
+                source_alg->GetInformation()->Has(vtkDataObject::DATA_TIME_STEP()) &&
+                !target_alg->GetInformation()->Has(vtkDataObject::DATA_TIME_STEP()))
+            {
+                target_alg->GetInformation()->CopyEntry(source_alg->GetInformation(), vtkDataObject::DATA_TIME_STEP(), 1);
             }
         }
     }

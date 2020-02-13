@@ -64,6 +64,28 @@ namespace tpf
         /// <return>Current time step delta</return>
         template <typename float_t>
         float_t get_timestep_delta(vtkInformation* info, vtkDataSet* alg);
+
+        /// <summary>
+        /// Copy time range and time values
+        /// </summary>
+        /// <param name="source_info">Information object, which holds the time range and time values</param>
+        /// <param name="target_info">Information object, which should receive the time range and time values</param>
+        void copy_time_information(vtkInformation* source_info, vtkInformation* target_info);
+
+        /// <summary>
+        /// Copy all time information (time range, time values, and current time step)
+        /// </summary>
+        /// <param name="source_alg">VTK algorithm object, which holds the current time step</param>
+        /// <param name="target_alg">VTK algorithm object, which should receive the current time step</param>
+        template <typename... alg_t>
+        void copy_time_information(vtkDataSet* source_alg, vtkDataSet* target_alg, alg_t... target_algs);
+
+        /// <summary>
+        /// Copy all time information (time range, time values, and current time step)
+        /// </summary>
+        /// <param name="source_alg">VTK algorithm object, which holds the current time step</param>
+        /// <param name="target_alg">VTK algorithm object, which should receive the current time step</param>
+        void copy_time_information(vtkDataSet* source_alg, vtkDataSet* target_alg);
     }
 }
 
