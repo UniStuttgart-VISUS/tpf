@@ -10,6 +10,25 @@
 #include <cmath>
 #include <stdexcept>
 
+namespace
+{
+    template <typename U, typename T>
+    struct caster
+    {
+        template <typename U_ = typename std::remove_reference<U>::type, typename T_ = typename std::remove_reference<T>::type>
+        U& operator()(T& value, typename std::enable_if<std::is_convertible<T_, U_>::value>::type* = nullptr) const
+        {
+            return static_cast<U>(value);
+        }
+
+        template <typename U_ = typename std::remove_reference<U>::type, typename T_ = typename std::remove_reference<T>::type>
+        U operator()(T& value, typename std::enable_if<!std::is_convertible<T_, U_>::value>::type* = nullptr) const
+        {
+            return U(value.data());
+        }
+    };
+}
+
 namespace tpf
 {
     namespace data
@@ -235,13 +254,13 @@ namespace tpf
                     break;
                 case GRADIENT:
                     this->temp_constant = gradient(grid_coords);
-                    return this->temp_constant;
+                    return caster<return_type, element_type>()(this->temp_constant);
 
                     break;
                 case CONSTANT:
                 default:
                     this->temp_constant = this->constant;
-                    return this->temp_constant;
+                    return caster<return_type, element_type>()(this->temp_constant);
                 }
             }
         }
