@@ -43,10 +43,10 @@ file(GLOB_RECURSE md_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_
 foreach(md_file ${md_files})
   get_filename_component(md_file_path ${md_file} DIRECTORY)
 
-  string(REPLACE "include/tpf/" "" md_file_path "${md_file_path}")
+  string(REPLACE "include/" "" md_file_path "${md_file_path}")
   string(REGEX REPLACE "[/\\]" "_" md_file_name "${md_file_path}")
 
-  install(FILES ${md_file} DESTINATION share/tpf/doc RENAME tpf_${md_file_name}.md)
+  install(FILES ${md_file} DESTINATION share/tpf/doc RENAME ${md_file_name}.md)
 endforeach()
 
 install(FILES "readme.md" DESTINATION share/tpf/doc RENAME tpf.md)
@@ -84,3 +84,6 @@ if(MSVC)
 
   add_custom_target(tpf_library SOURCES ${tpf_files})
 endif()
+
+# Add source directory for building plug-ins, standalones, ...
+add_subdirectory(src)

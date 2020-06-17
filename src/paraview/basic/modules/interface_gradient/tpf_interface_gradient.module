@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_interface_gradient
+LIBRARY_NAME
+  tpf_interface_gradient
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

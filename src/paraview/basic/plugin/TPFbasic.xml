@@ -1,0 +1,45 @@
+<ServerManagerConfiguration>
+    <ProxyGroup name="filters">
+        <!--
+
+        Interface gradient.
+
+        Calculate the gradient at the phase interface.
+
+        -->
+        <SourceProxy name="Interface Gradient" class="tpf_interface_gradient" label="Interface Gradient">
+            <Documentation>
+                Calculate the gradient at the phase interface.
+            </Documentation>
+
+            <InputProperty name="VOF" command="SetInputConnection" port_index="0">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain name="fractions_array" number_of_components="1"/>
+                <Documentation>
+                    Grid storing a volume of fluid field
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="VOF" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>

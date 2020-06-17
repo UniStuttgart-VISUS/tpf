@@ -72,15 +72,8 @@ if(NOT TARGET CGAL::CGAL)
   message(FATAL_ERROR "Target for CGAL not found")
 endif()
 
-get_target_property(CGAL_minsizerel CGAL::CGAL IMPORTED_LOCATION_MINSIZEREL)
-get_target_property(CGAL_relwithdebinfo CGAL::CGAL IMPORTED_LOCATION_RELWITHDEBINFO)
-
-if(NOT CGAL_minsizerel)
-  set_target_properties(CGAL::CGAL PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL Release)
-endif()
-if(NOT CGAL_relwithdebinfo)
-  set_target_properties(CGAL::CGAL PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
-endif()
+set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL Release)
+set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
 
 # Find OpenMP
 if(tpf_option_use_openmp OR tpf_option_supercomputer)
@@ -104,16 +97,18 @@ if(tpf_option_use_mpi AND tpf_option_use_mpi_io)
 endif()
 
 # Create imported target
-get_filename_component(tpf_config_dir "${CMAKE_CURRENT_LIST_FILE}" PATH)
+if(NOT TARGET tpf)
+  get_filename_component(tpf_config_dir "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
-include(${tpf_config_dir}/tpf-export.cmake)
+  include(${tpf_config_dir}/tpf-export.cmake)
 
-# Add properties of imported target based on dependencies
-get_target_property(tpf_includes tpf INTERFACE_INCLUDE_DIRECTORIES)
+  # Add properties of imported target based on dependencies
+  get_target_property(tpf_includes tpf INTERFACE_INCLUDE_DIRECTORIES)
 
-set_target_properties(tpf PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${tpf_includes};${CGAL_INCLUDE_DIRS};${CGAL_3RD_PARTY_INCLUDE_DIRS};${optional_includes}"
-  INTERFACE_COMPILE_OPTIONS "${optional_compile_options}"
-  INTERFACE_COMPILE_DEFINITIONS "${optional_compile_definitions}"
-  INTERFACE_LINK_LIBRARIES "Eigen3::Eigen;CGAL::CGAL;${optional_link_libraries}"
-)
+  set_target_properties(tpf PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${tpf_includes};${CGAL_INCLUDE_DIRS};${CGAL_3RD_PARTY_INCLUDE_DIRS};${optional_includes}"
+    INTERFACE_COMPILE_OPTIONS "${optional_compile_options}"
+    INTERFACE_COMPILE_DEFINITIONS "${optional_compile_definitions}"
+    INTERFACE_LINK_LIBRARIES "Eigen3::Eigen;CGAL::CGAL;${optional_link_libraries}"
+  )
+endif()

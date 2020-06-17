@@ -30,7 +30,7 @@ namespace tpf
 
 #ifndef __tpf_use_mpi
         /// Define communicator type and world communicator for non-MPI version
-#define MPI_Comm nullptr_t
+#define MPI_Comm void*
 #define MPI_COMM_WORLD nullptr
 
         /// Define gather operation type and gather operations for non-MPI version

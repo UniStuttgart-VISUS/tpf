@@ -20,7 +20,7 @@ namespace tpf
     namespace mpi
     {
         template <typename value_t, typename point_t, int dimensions, int components>
-        inline data::grid<value_t, point_t, dimensions, components> mpi_grid::all_gather(const data::grid<value_t, point_t, dimensions, components>& source, const MPI_Comm comm)
+        inline data::grid<value_t, point_t, dimensions, components> mpi_grid::all_gather(const data::grid<value_t, point_t, dimensions, components>& source, MPI_Comm comm)
         {
 #ifdef __tpf_use_mpi
             const auto& mpi = get_instance(comm);
@@ -89,7 +89,7 @@ namespace tpf
         }
 
         template <typename value_t, typename point_t, int dimensions, int components>
-        inline void mpi_grid::synchronize_boundaries(data::grid<value_t, point_t, dimensions, components>& grid, const MPI_Comm comm)
+        inline void mpi_grid::synchronize_boundaries(data::grid<value_t, point_t, dimensions, components>& grid, MPI_Comm comm)
         {
 #ifdef __tpf_use_mpi
             const auto& mpi = get_instance(comm);

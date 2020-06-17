@@ -560,7 +560,7 @@ namespace tpf
 #endif
         }
 
-        inline const mpi& get_instance(const MPI_Comm comm)
+        inline const mpi& get_instance(MPI_Comm comm)
         {
             return mpi::get_instance(comm);
         }

@@ -14,7 +14,7 @@ namespace tpf
 {
     namespace mpi
     {
-        inline std::pair<data::extent_t, std::size_t> mpi_base::get_local_extent(const data::extent_t& extent, const MPI_Comm comm)
+        inline std::pair<data::extent_t, std::size_t> mpi_base::get_local_extent(const data::extent_t& extent, MPI_Comm comm)
         {
 #ifdef __tpf_use_mpi
             const auto& mpi = get_instance(comm);
