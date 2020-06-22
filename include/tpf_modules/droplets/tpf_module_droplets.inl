@@ -48,35 +48,35 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void droplets<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
-            std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>> input)
+        inline void droplets<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions, const data::grid<float_t, float_t, 3, 3>& positions,
+            std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>> velocities)
         {
-            this->fractions = &std::get<0>(input);
-            this->positions = &std::get<1>(input);
-            this->velocities = get_or_default<const data::grid<float_t, float_t, 3, 3>>(std::get<2>(input));
+            this->fractions = &fractions;
+            this->positions = &positions;
+            this->velocities = get_or_default<const data::grid<float_t, float_t, 3, 3>>(velocities);
         }
 
         template <typename float_t>
-        inline void droplets<float_t>::set_algorithm_output(std::tuple<data::grid<long long, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
-            std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&> output)
+        inline void droplets<float_t>::set_algorithm_output(data::grid<long long, float_t, 3, 1>& droplet_ids, data::grid<float_t, float_t, 3, 1>& droplet_volumes,
+            std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>> droplet_velocities, data::polydata<float_t>& droplets)
         {
-            this->droplet_ids = &std::get<0>(output);
-            this->droplet_volumes = &std::get<1>(output);
-            this->droplet_velocities = get_or_default<data::grid<float_t, float_t, 3, 3>>(std::get<2>(output));
-            this->local_droplets = &std::get<3>(output);
+            this->droplet_ids = &droplet_ids;
+            this->droplet_volumes = &droplet_volumes;
+            this->droplet_velocities = get_or_default<data::grid<float_t, float_t, 3, 3>>(droplet_velocities);
+            this->local_droplets = &droplets;
         }
 
         template <typename float_t>
-        inline void droplets<float_t>::set_algorithm_parameters(std::tuple<bool, bool, bool, bool,
-            droplets_aux::scale_method_t, droplets_aux::rotation_method_t> parameters)
+        inline void droplets<float_t>::set_algorithm_parameters(bool calculate_translation, bool calculate_rotation, bool calculate_energy, bool calculate_inertia,
+            droplets_aux::scale_method_t scaling_method, droplets_aux::rotation_method_t rotation_method)
         {
-            this->calculate_translation = std::get<0>(parameters);
-            this->calculate_rotation = std::get<1>(parameters);
-            this->calculate_energy = std::get<2>(parameters);
-            this->calculate_inertia = std::get<3>(parameters);
+            this->calculate_translation = calculate_translation;
+            this->calculate_rotation = calculate_rotation;
+            this->calculate_energy = calculate_energy;
+            this->calculate_inertia = calculate_inertia;
 
-            this->scale_method = std::get<4>(parameters);
-            this->rotation_method = std::get<5>(parameters);
+            this->scale_method = scaling_method;
+            this->rotation_method = rotation_method;
         }
 
         template <typename float_t>

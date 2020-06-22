@@ -34,7 +34,7 @@ namespace tpf
     namespace modules
     {
         template <typename float_t>
-        inline plic3<float_t>::plic3() : f(nullptr), f3(nullptr), f_norm_3ph(nullptr), plic3_interface(nullptr) { }
+        inline plic3<float_t>::plic3() { }
 
         template <typename float_t>
         inline std::string plic3<float_t>::get_name() const
@@ -43,12 +43,12 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic3<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-            const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&> input)
+        inline void plic3<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& f,
+            const data::grid<float_t, float_t, 3, 1>& f3, const data::grid<float_t, float_t, 3, 3>& f_norm_3ph)
         {
-            this->f = &std::get<0>(input);
-            this->f3 = &std::get<1>(input);
-            this->f_norm_3ph = &std::get<2>(input);
+            this->f = &f;
+            this->f3 = &f3;
+            this->f_norm_3ph = &f_norm_3ph;
         }
 
         template <typename float_t>
@@ -58,10 +58,11 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic3<float_t>::set_algorithm_parameters(std::tuple<std::optional<std::size_t>, std::optional<std::size_t>> parameters)
+        inline void plic3<float_t>::set_algorithm_parameters(std::optional<std::size_t> num_iterations_plic,
+            std::optional<std::size_t> num_iterations_plic3)
         {
-            this->plic_iterations_ = get_or_default<std::size_t>(std::get<0>(parameters), 15);
-            this->plic3_iterations_ = get_or_default<std::size_t>(std::get<1>(parameters), 15);
+            this->plic_iterations_ = get_or_default<std::size_t>(num_iterations_plic, 15);
+            this->plic3_iterations_ = get_or_default<std::size_t>(num_iterations_plic3, 15);
         }
 
         template <typename float_t>

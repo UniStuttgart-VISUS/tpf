@@ -47,18 +47,18 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void fluid_position<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-            std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>> input)
+        inline void fluid_position<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+            std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>> gradients)
         {
-            this->fractions = &std::get<0>(input);
-            this->gradients = get_or_default<const data::grid<float_t, float_t, 3, 3>>(std::get<1>(input));
+            this->fractions = &fractions;
+            this->gradients = get_or_default<const data::grid<float_t, float_t, 3, 3>>(gradients);
         }
 
         template <typename float_t>
-        inline void fluid_position<float_t>::set_algorithm_output(std::tuple<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&> output)
+        inline void fluid_position<float_t>::set_algorithm_output(data::grid<float_t, float_t, 3, 3>& positions_grid, data::polydata<float_t>& positions_points)
         {
-            this->positions_grid = &std::get<0>(output);
-            this->positions_points = &std::get<1>(output);
+            this->positions_grid = &positions_grid;
+            this->positions_points = &positions_points;
         }
 
         template <typename float_t>
@@ -70,13 +70,6 @@ namespace tpf
         template <typename float_t>
         inline void fluid_position<float_t>::run_algorithm()
         {
-            // Check user input
-            if (this->gradients == nullptr && (this->position_type == fluid_position_aux::position_t::FLUID_CENTER
-                || this->position_type == fluid_position_aux::position_t::INTERFACE))
-            {
-                throw std::runtime_error(__tpf_error_message("For the calculation of the center of mass, gradients must be set as input."));
-            }
-
             // Get input and output
             const data::grid<float_t, float_t, 3, 1>& fractions = *this->fractions;
 

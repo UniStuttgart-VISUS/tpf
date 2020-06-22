@@ -1,6 +1,9 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
@@ -38,18 +41,15 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class fluid_position : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>,
-            // Output
-            std::tuple<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&>,
-            // Parameters
-            fluid_position_aux::position_t,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>,
+            interface_output<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&>,
+            interface_parameters<fluid_position_aux::position_t>>
         {
-            using base_t = module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>,
-                std::tuple<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&>, fluid_position_aux::position_t, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>;
+            using output_t = interface_output<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&>;
+            using parameters_t = interface_parameters<fluid_position_aux::position_t>;
+
+            using base_t = module_base<input_t, output_t, parameters_t>;
 
         public:
             /// <summary>
@@ -73,15 +73,17 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [fractions, optional gradients]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>> input) override;
+            /// <param name="fractions">Input fractions</param>
+            /// <param name="gradients">Input optional gradients</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>> gradients) override;
 
             /// <summary>
             /// Set output
             /// </summary>
-            /// <param name="output">Output [positions grid, positions points]</param>
-            virtual void set_algorithm_output(std::tuple<data::grid<float_t, float_t, 3, 3>&, data::polydata<float_t>&> output) override;
+            /// <param name="positions_grid">Output positions grid</param>
+            /// <param name="positions_points">Output positions points</param>
+            virtual void set_algorithm_output(data::grid<float_t, float_t, 3, 3>& positions_grid, data::polydata<float_t>& positions_points) override;
 
             /// <summary>
             /// Set paramter

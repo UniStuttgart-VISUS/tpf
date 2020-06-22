@@ -39,7 +39,7 @@ namespace tpf
         template <typename float_t, typename kernel_t>
         inline void stl_reader<float_t, kernel_t>::set_algorithm_output(stl_reader_aux::polydata_or_buffer<float_t> output)
         {
-            if (output.tag == output_t::POLYDATA)
+            if (output.tag == stl_reader_aux::polydata_or_buffer<float_t>::POLYDATA)
             {
                 this->triangles = output.polydata;
             }

@@ -28,12 +28,12 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void surface_tension<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-            const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&> input)
+        inline void surface_tension<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+            const data::grid<float_t, float_t, 3, 3>& gradients, const data::grid<float_t, float_t, 3, 1>& curvature)
         {
-            this->fractions = &std::get<0>(input);
-            this->gradients = &std::get<1>(input);
-            this->curvature = &std::get<2>(input);
+            this->fractions = &fractions;
+            this->gradients = &gradients;
+            this->curvature = &curvature;
         }
 
         template <typename float_t>
@@ -43,11 +43,11 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void surface_tension<float_t>::set_algorithm_parameters(std::tuple<float_t, float_t, float_t> parameters)
+        inline void surface_tension<float_t>::set_algorithm_parameters(const float_t coefficient, const float_t density, const float_t timestep)
         {
-            this->coefficient = std::get<0>(parameters);
-            this->density = std::get<1>(parameters);
-            this->timestep = std::get<2>(parameters);
+            this->coefficient = coefficient;
+            this->density = density;
+            this->timestep = timestep;
         }
 
         template <typename float_t>

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_grid_information.h"
@@ -24,18 +27,17 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class plic3 : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
-            const data::grid<float_t, float_t, 3, 3>&>,
-            // Output
-            data::polydata<float_t>&,
-            // Parameters
-            std::tuple<std::optional<std::size_t>, std::optional<std::size_t>>,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
+                const data::grid<float_t, float_t, 3, 3>&>,
+            interface_output<data::polydata<float_t>&>,
+            interface_parameters<std::optional<std::size_t>, std::optional<std::size_t>>>
         {
-            using base_t = module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&>, data::polydata<float_t>&, std::tuple<std::optional<std::size_t>, std::optional<std::size_t>>, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
+                const data::grid<float_t, float_t, 3, 3>&>;
+            using output_t = interface_output<data::polydata<float_t>&>;
+            using parameters_t = interface_parameters<std::optional<std::size_t>, std::optional<std::size_t>>;
+
+            using base_t = module_base<input_t, output_t, parameters_t>;
 
         public:
             enum polygon_t {
@@ -70,9 +72,11 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [f-field, f3-field, f_norm_3ph]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&> input) override;
+            /// <param name="f">Input f-field</param>
+            /// <param name="f3">Input f3-field</param>
+            /// <param name="f_norm_3ph">Input normal</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& f, const data::grid<float_t, float_t, 3, 1>& f3,
+                const data::grid<float_t, float_t, 3, 3>& f_norm_3ph) override;
 
             /// <summary>
             /// Set output
@@ -83,8 +87,10 @@ namespace tpf
             /// <summary>
             /// Set parameter
             /// </summary>
-            /// <param name="parameters">[Number of iterations for PLIC, Number of iterations for PLIC3]</param>
-            virtual void set_algorithm_parameters(std::tuple<std::optional<std::size_t>, std::optional<std::size_t>> parameters) override;
+            /// <param name="num_iterations_plic">Number of iterations for PLIC</param>
+            /// <param name="num_iterations_plic3">Number of iterations for PLIC3]</param>
+            virtual void set_algorithm_parameters(std::optional<std::size_t> num_iterations_plic,
+                std::optional<std::size_t> num_iterations_plic3) override;
 
             /// <summary>Run module</summary>
             void run_algorithm() override;

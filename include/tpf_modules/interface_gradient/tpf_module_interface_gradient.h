@@ -1,6 +1,8 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_grid_information.h"
@@ -19,16 +21,13 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class interface_gradient : public module_base<
-            // Input
-            const data::grid<float_t, float_t, 3, 1>&,
-            // Output
-            data::grid<float_t, float_t, 3, 3>&,
-            // Parameters
-            void,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&>,
+            interface_output<data::grid<float_t, float_t, 3, 3>&>>
         {
-            using base_t = module_base<const data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 3>&, void, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&>;
+            using output_t = interface_output<data::grid<float_t, float_t, 3, 3>&>;
+
+            using base_t = module_base<input_t, output_t>;
 
         public:
             /// <summary>

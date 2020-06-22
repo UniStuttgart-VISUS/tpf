@@ -1,6 +1,8 @@
 #pragma once
 
 #include "tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include <string>
 #include <utility>
@@ -34,9 +36,14 @@ namespace tpf
         /// Reader module base class
         /// </summary>
         template <typename Output>
-        class reader_base : public module_base<void, Output, const std::string&, void>
+        class reader_base : public module_base<
+            interface_output<Output>,
+            interface_parameters<const std::string&>>
         {
-            using base_t = module_base<void, Output, const std::string&, void>;
+            using output_t = interface_output<Output>;
+            using parameters_t = interface_parameters<const std::string&>;
+
+            using base_t = module_base<output_t, parameters_t>;
 
         public:
             /// <summary>
@@ -52,12 +59,6 @@ namespace tpf
             virtual void set_run_parameters(std::size_t timestep = 0, const data::extent_t& extent = data::extent_t(0)) = 0;
 
         protected:
-            /// <summary>
-            /// Set the input needed for algorithm execution.
-            /// The input types are defined by the derived class.
-            /// </summary>
-            virtual void set_algorithm_input() override;
-
             /// <summary>
             /// Provide information prior to module run
             /// </summary>

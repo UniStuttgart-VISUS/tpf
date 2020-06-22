@@ -47,10 +47,11 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&> input)
+        inline void plic<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+            const data::grid<float_t, float_t, 3, 3>& gradients)
         {
-            this->fractions = &std::get<0>(input);
-            this->gradients = &std::get<1>(input);
+            this->fractions = &fractions;
+            this->gradients = &gradients;
         }
 
         template <typename float_t>
@@ -60,10 +61,10 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic<float_t>::set_algorithm_parameters(std::tuple<std::size_t, std::optional<float_t>> parameters)
+        inline void plic<float_t>::set_algorithm_parameters(const std::size_t num_iterations, std::optional<float_t> pertubation)
         {
-            this->num_iterations = std::get<0>(parameters);
-            this->perturbation = get_or_default<float_t>(std::get<1>(parameters), static_cast<float_t>(0.00001L));
+            this->num_iterations = num_iterations;
+            this->perturbation = get_or_default(pertubation, static_cast<float_t>(0.00001L));
         }
 
         template <typename float_t>

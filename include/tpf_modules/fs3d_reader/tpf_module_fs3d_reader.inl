@@ -22,7 +22,7 @@ namespace tpf
         template <typename float_t>
         inline void fs3d_reader<float_t>::set_algorithm_output(fs3d_reader_aux::scalar_or_vector<float_t> output)
         {
-            if (output.tag == output_t::SCALAR)
+            if (output.tag == fs3d_reader_aux::scalar_or_vector<float_t>::SCALAR)
             {
                 this->fractions = output.scalar_field;
             }

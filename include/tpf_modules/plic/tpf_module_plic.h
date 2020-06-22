@@ -1,6 +1,9 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
@@ -25,17 +28,15 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class plic : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>,
-            // Output
-            data::polydata<float_t>&,
-            // Parameters
-            std::tuple<std::size_t, std::optional<float_t>>,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>,
+            interface_output<data::polydata<float_t>&>,
+            interface_parameters<std::size_t, std::optional<float_t>>>
         {
-            using base_t = module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>,
-                data::polydata<float_t>&, std::tuple<std::size_t, std::optional<float_t>>, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>;
+            using output_t = interface_output<data::polydata<float_t>&>;
+            using parameters_t = interface_parameters<std::size_t, std::optional<float_t>>;
+
+            using base_t = module_base<input_t, output_t, parameters_t>;
 
         public:
             /// <summary>
@@ -59,8 +60,10 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [fractions, gradients]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&> input) override;
+            /// <param name="fractions">Input fractions</param>
+            /// <param name="gradients">Input gradients</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+                const data::grid<float_t, float_t, 3, 3>& gradients) override;
 
             /// <summary>
             /// Set output
@@ -71,8 +74,9 @@ namespace tpf
             /// <summary>
             /// Set parameter
             /// </summary>
-            /// <param name="parameters">[Number of iterations, Perturbation of vertices to prevent numerical instability]</param>
-            virtual void set_algorithm_parameters(std::tuple<std::size_t, std::optional<float_t>> parameters) override;
+            /// <param name="num_iterations">Number of iterations</param>
+            /// <param name="pertubation">Perturbation of vertices to prevent numerical instability</param>
+            virtual void set_algorithm_parameters(std::size_t num_iterations, std::optional<float_t> pertubation) override;
 
             /// <summary>Run module</summary>
             virtual void run_algorithm() override;

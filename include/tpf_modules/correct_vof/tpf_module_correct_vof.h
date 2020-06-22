@@ -1,6 +1,8 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
 
 #include "tpf/data/tpf_grid.h"
 
@@ -16,17 +18,14 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class correct_vof : public module_base<
-            // Input
-            const data::grid<float_t, float_t, 3, 1>&,
-            // Output
-            data::grid<float_t, float_t, 3, 1>&,
-            // Parameters
-            void,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&>,
+            interface_output<data::grid<float_t, float_t, 3, 1>&>>
         {
         public:
-            using base_t = module_base<const data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&, void, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&>;
+            using output_t = interface_output<data::grid<float_t, float_t, 3, 1>&>;
+
+            using base_t = module_base<input_t, output_t>;
 
             /// <summary>
             /// Return the number of ghost levels

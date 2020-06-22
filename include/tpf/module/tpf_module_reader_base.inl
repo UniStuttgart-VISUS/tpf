@@ -10,10 +10,5 @@ namespace tpf
         reader_base<Output>::reader_base()
         {
         }
-
-        template <typename Output>
-        void reader_base<Output>::set_algorithm_input()
-        {
-        }
     }
 }

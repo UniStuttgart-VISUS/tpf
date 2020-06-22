@@ -39,12 +39,12 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void interface_curvature<float_t>::set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-            const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 3>&> input)
+        inline void interface_curvature<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+            const data::grid<float_t, float_t, 3, 3>& gradients, const data::grid<float_t, float_t, 3, 3>& positions)
         {
-            this->fractions = &std::get<0>(input);
-            this->gradients = &std::get<1>(input);
-            this->positions = &std::get<2>(input);
+            this->fractions = &fractions;
+            this->gradients = &gradients;
+            this->positions = &positions;
         }
 
         template <typename float_t>

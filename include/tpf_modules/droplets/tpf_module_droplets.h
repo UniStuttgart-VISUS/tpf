@@ -1,6 +1,9 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
@@ -41,21 +44,19 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class droplets : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
-            std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>,
-            // Output
-            std::tuple<data::grid<long long, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
-            std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&>,
-            // Parameters
-            std::tuple<bool, bool, bool, bool, droplets_aux::scale_method_t, droplets_aux::rotation_method_t>,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
+                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>,
+            interface_output<data::grid<long long, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
+                std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&>,
+            interface_parameters<bool, bool, bool, bool, droplets_aux::scale_method_t, droplets_aux::rotation_method_t>>
         {
-            using base_t = module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
-                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>, std::tuple<data::grid<long long, float_t, 3, 1>&,
-                data::grid<float_t, float_t, 3, 1>&, std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&>,
-                std::tuple<bool, bool, bool, bool, droplets_aux::scale_method_t, droplets_aux::rotation_method_t>, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
+                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>>;
+            using output_t = interface_output<data::grid<long long, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
+                std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&>;
+            using parameters_t = interface_parameters<bool, bool, bool, bool, droplets_aux::scale_method_t, droplets_aux::rotation_method_t>;
+
+            using base_t = module_base<input_t, output_t, parameters_t>;
 
         public:
             /// <summary>
@@ -79,24 +80,33 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [fractions, positions, velocities]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
-                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>>> input) override;
+            /// <param name="fractions">Input fractions</param>
+            /// <param name="positions">Input positions</param>
+            /// <param name="velocities">Input velocities</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions, const data::grid<float_t, float_t, 3, 3>& positions,
+                std::optional<std::reference_wrapper<const data::grid<float_t, float_t, 3, 3>>> velocities) override;
 
             /// <summary>
             /// Set output
             /// </summary>
-            /// <param name="output">Output [droplet IDs, volumes, velocities, droplets]</param>
-            virtual void set_algorithm_output(std::tuple<data::grid<long long, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
-                std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>>, data::polydata<float_t>&> output) override;
+            /// <param name="droplet_ids">Output droplet IDs</param>
+            /// <param name="droplet_volumes">Output volumes</param>
+            /// <param name="droplet_velocities">Output velocities</param>
+            /// <param name="droplets">Output droplets</param>
+            virtual void set_algorithm_output(data::grid<long long, float_t, 3, 1>& droplet_ids, data::grid<float_t, float_t, 3, 1>& droplet_volumes,
+                std::optional<std::reference_wrapper<data::grid<float_t, float_t, 3, 3>>> droplet_velocities, data::polydata<float_t>& droplets) override;
 
             /// <summary>
             /// Set parameter
             /// </summary>
-            /// <param name="parameters">[Calculate translational velocity, Calculate rotational velocity,
-            /// Calculate energy, Calculate inertia, Scaling method, Method for computing rotation]</param>
-            virtual void set_algorithm_parameters(std::tuple<bool, bool, bool, bool,
-                droplets_aux::scale_method_t, droplets_aux::rotation_method_t> parameters) override;
+            /// <param name="calculate_translation">Calculate translational velocity</param>
+            /// <param name="calculate_rotation">Calculate rotational velocity</param>
+            /// <param name="calculate_energy">Calculate energy</param>
+            /// <param name="calculate_inertia">Calculate inertia</param>
+            /// <param name="scaling_method">Scaling method</param>
+            /// <param name="rotation_method">Method for computing rotation</param>
+            virtual void set_algorithm_parameters(bool calculate_translation, bool calculate_rotation, bool calculate_energy, bool calculate_inertia,
+                droplets_aux::scale_method_t scaling_method, droplets_aux::rotation_method_t rotation_method) override;
 
             /// <summary>
             /// Run module

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_grid_information.h"
@@ -22,18 +24,15 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class interface_curvature : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
-            const data::grid<float_t, float_t, 3, 3>&>,
-            // Output
-            data::grid<float_t, float_t, 3, 1>&,
-            // Parameters
-            void,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
+                const data::grid<float_t, float_t, 3, 3>&>,
+            interface_output<data::grid<float_t, float_t, 3, 1>&>>
         {
-            using base_t = modules::module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 3>&>, data::grid<float_t, float_t, 3, 1>&, void, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
+                const data::grid<float_t, float_t, 3, 3>&>;
+            using output_t = interface_output<data::grid<float_t, float_t, 3, 1>&>;
+
+            using base_t = modules::module_base<input_t, output_t>;
 
         public:
             /// <summary>
@@ -57,9 +56,11 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [fractions, gradients, positions]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 3>&> input) override;
+            /// <param name="fractions">Input fractions</param>
+            /// <param name="gradients">Input gradients</param>
+            /// <param name="positions">Input positions</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+                const data::grid<float_t, float_t, 3, 3>& gradients, const data::grid<float_t, float_t, 3, 3>& positions) override;
 
             /// <summary>
             /// Set output

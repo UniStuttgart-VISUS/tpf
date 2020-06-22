@@ -3,6 +3,8 @@
 #include "tpf_fs3d_data_writer.h"
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_data_information.h"
 #include "tpf/data/tpf_grid.h"
@@ -21,16 +23,13 @@ namespace tpf
         /// <template name="Components">Number of components of the data to write</template>
         template <typename float_t, int Components>
         class fs3d_writer : public module_base<
-            // Input
-            const data::grid<float_t, float_t, 3, Components>&,
-            // Output
-            void,
-            // Parameters
-            const std::string&,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, Components>&>,
+            interface_parameters<const std::string&>>
         {
-            using base_t = module_base<const data::grid<float_t, float_t, 3, Components>&, void, const std::string&, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, Components>&>;
+            using parameters_t = interface_parameters<const std::string&>;
+
+            using base_t = module_base<input_t, parameters_t>;
 
         public:
             /// <summary>
@@ -56,11 +55,6 @@ namespace tpf
             /// </summary>
             /// <param name="grid">Input grid</param>
             virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, Components>& grid) override;
-
-            /// <summary>
-            /// Set output (empty function, as there is no output)
-            /// </summary>
-            virtual void set_algorithm_output() override;
 
             /// <summary>
             /// Set parameters

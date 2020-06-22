@@ -21,7 +21,7 @@ namespace tpf
         }
 
         template <typename float_t, int Components>
-        inline fs3d_writer<float_t, Components>::fs3d_writer() : grid(nullptr), file_name(""), writer(nullptr), run_parameter_set(false) { }
+        inline fs3d_writer<float_t, Components>::fs3d_writer() : file_name(""), run_parameter_set(false) { }
 
         template <typename float_t, int Components>
         inline std::string fs3d_writer<float_t, Components>::get_name() const
@@ -33,11 +33,6 @@ namespace tpf
         inline void fs3d_writer<float_t, Components>::set_algorithm_input(const data::grid<float_t, float_t, 3, Components>& grid)
         {
             this->grid = &grid;
-        }
-
-        template <typename float_t, int Components>
-        inline void fs3d_writer<float_t, Components>::set_algorithm_output()
-        {
         }
 
         template <typename float_t, int Components>

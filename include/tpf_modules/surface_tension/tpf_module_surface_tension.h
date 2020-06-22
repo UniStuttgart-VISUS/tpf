@@ -1,6 +1,9 @@
 #pragma once
 
 #include "tpf/module/tpf_module_base.h"
+#include "tpf/module/tpf_module_interface_input.h"
+#include "tpf/module/tpf_module_interface_output.h"
+#include "tpf/module/tpf_module_interface_parameters.h"
 
 #include "tpf/data/tpf_grid.h"
 
@@ -17,19 +20,16 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class surface_tension : public module_base<
-            // Input
-            std::tuple<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&>,
-            // Output
-            data::grid<float_t, float_t, 3, 3>&,
-            // Parameters
-            std::tuple<float_t, float_t, float_t>,
-            // Callbacks
-            void>
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&>,
+            interface_output<data::grid<float_t, float_t, 3, 3>&>,
+            interface_parameters<float_t, float_t, float_t>>
         {
         public:
-            using base_t = module_base<std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&>,
-                data::grid<float_t, float_t, 3, 3>&, std::tuple<float_t, float_t, float_t>, void>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&>;
+            using output_t = interface_output<data::grid<float_t, float_t, 3, 3>&>;
+            using parameters_t = interface_parameters<float_t, float_t, float_t>;
+
+            using base_t = module_base<input_t, output_t, parameters_t>;
 
             /// <summary>
             /// Return the number of ghost levels
@@ -52,9 +52,11 @@ namespace tpf
             /// <summary>
             /// Set input
             /// </summary>
-            /// <param name="input">Input [fractions, gradients, curvature]</param>
-            virtual void set_algorithm_input(std::tuple<const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 1>&> input) override;
+            /// <param name="fractions">Input fractions</param>
+            /// <param name="gradients">Input gradients</param>
+            /// <param name="curvature">Input curvature</param>
+            virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
+                const data::grid<float_t, float_t, 3, 3>& gradients, const data::grid<float_t, float_t, 3, 1>& curvature) override;
 
             /// <summary>
             /// Set output
@@ -65,8 +67,10 @@ namespace tpf
             /// <summary>
             /// Set parameters
             /// </summary>
-            /// <param name="parameters">Parameters: [coefficient depending on the media involved, density, time step]</param>
-            virtual void set_algorithm_parameters(std::tuple<float_t, float_t, float_t> parameters) override;
+            /// <param name="coefficient">Coefficient depending on the media involved</param>
+            /// <param name="density">Density</param>
+            /// <param name="timestep">Time step</param>
+            virtual void set_algorithm_parameters(float_t coefficient, float_t density, float_t timestep) override;
 
             /// <summary>
             /// Run module
