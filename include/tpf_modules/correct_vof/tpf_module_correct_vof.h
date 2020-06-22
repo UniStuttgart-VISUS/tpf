@@ -3,9 +3,6 @@
 #include "tpf/module/tpf_module_base.h"
 
 #include "tpf/data/tpf_grid.h"
-#include "tpf/data/tpf_grid_information.h"
-
-#include "Eigen/Dense"
 
 #include <string>
 
@@ -18,19 +15,19 @@ namespace tpf
         /// </summary>
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
-        class interface_gradient : public module_base<
+        class correct_vof : public module_base<
             // Input
             const data::grid<float_t, float_t, 3, 1>&,
             // Output
-            data::grid<float_t, float_t, 3, 3>&,
+            data::grid<float_t, float_t, 3, 1>&,
             // Parameters
             void,
             // Callbacks
             void>
         {
-            using base_t = module_base<const data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 3>&, void, void>;
-
         public:
+            using base_t = module_base<const data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&, void, void>;
+
             /// <summary>
             /// Return the number of ghost levels
             /// </summary>
@@ -40,7 +37,7 @@ namespace tpf
             /// <summary>
             /// Constructor
             /// </summary>
-            interface_gradient();
+            correct_vof();
 
             /// <summary>
             /// Return the name of the module
@@ -59,30 +56,21 @@ namespace tpf
             /// Set output
             /// </summary>
             /// <param name="gradients">Output gradients</param>
-            virtual void set_algorithm_output(data::grid<float_t, float_t, 3, 3>& gradients) override;
+            virtual void set_algorithm_output(data::grid<float_t, float_t, 3, 1>& correct_fractions) override;
 
             /// <summary>
             /// Run module
             /// </summary>
             void run_algorithm() override;
 
-        public:
-            /// <summary>
-            /// Calculate the gradient at the given position
-            /// </summary>
-            /// <param name="coords">Coordinates</param>
-            /// <param name="fractions">VOF</param>
-            /// <return>Gradient</return>
-            static Eigen::Matrix<float_t, 3, 1> calculate_gradient(const data::coords3_t& coords, const data::grid<float_t, float_t, 3, 1>& fractions);
-
         private:
             /// Fractions
             const data::grid<float_t, float_t, 3, 1>* fractions;
 
             /// Gradients
-            data::grid<float_t, float_t, 3, 3>* gradients;
+            data::grid<float_t, float_t, 3, 1>* correct_fractions;
         };
     }
 }
 
-#include "tpf_module_interface_gradient.inl"
+#include "tpf_module_correct_vof.inl"

@@ -6,36 +6,46 @@
 #include "tpf/mpi/tpf_mpi_exceptions.h"
 
 #include <exception>
+#include <functional>
+#include <optional>
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 namespace tpf
 {
     namespace modules
     {
-        template <typename Parameters, typename Callbacks>
-        inline module_base<Parameters, Callbacks>::module_base() : parameters_set(false), callbacks_set(false)
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        inline module_base<Input, Output, Parameters, Callbacks>::module_base() :
+            input_set(false), output_set(false), parameters_set(false), callbacks_set(false)
         {
         }
 
-        template <typename Parameters, typename Callbacks>
-        inline void module_base<Parameters, Callbacks>::run()
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        inline void module_base<Input, Output, Parameters, Callbacks>::run()
         {
             // Perform sanity checks on parameters and callbacks
             if (!sanity_check())
             {
                 tpf::mpi::get_instance().communicate_error(true);
 
-                if (!this->parameters_set && !this->callbacks_set)
+                if (needs_input() && !this->input_set)
                 {
                     throw std::runtime_error(__tpf_error_message("Module run of '", get_name(), "' failed. ",
-                        "Parameters and callbacks were not set properly."));
+                        "Input was not set properly."));
                 }
-                else if (!this->parameters_set)
+                else if (needs_output() && !this->output_set)
+                {
+                    throw std::runtime_error(__tpf_error_message("Module run of '", get_name(), "' failed. ",
+                        "Output was not set properly."));
+                }
+                else if (needs_parameters() && !this->parameters_set)
                 {
                     throw std::runtime_error(__tpf_error_message("Module run of '", get_name(), "' failed. ",
                         "Parameters were not set properly."));
                 }
-                else if (!this->callbacks_set)
+                else if (needs_callbacks() && !this->callbacks_set)
                 {
                     throw std::runtime_error(__tpf_error_message("Module run of '", get_name(), "' failed. ",
                         "Callbacks were not set properly."));
@@ -81,52 +91,111 @@ namespace tpf
             }
         }
 
-        template <typename Parameters, typename Callbacks>
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename in_t>
+        void module_base<Input, Output, Parameters, Callbacks>::set_input(typename std::enable_if<!std::is_same<in_t, void>::value, input_t>::type inputs)
+        {
+            set_algorithm_input(std::forward<input_t>(inputs));
+
+            this->input_set = true;
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename in_t>
+        void module_base<Input, Output, Parameters, Callbacks>::set_input(typename std::enable_if<std::is_same<in_t, void>::value>::type)
+        {
+            this->input_set = true;
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename out_t>
+        void module_base<Input, Output, Parameters, Callbacks>::set_output(typename std::enable_if<!std::is_same<out_t, void>::value, output_t>::type outputs)
+        {
+            set_algorithm_output(std::forward<output_t>(outputs));
+
+            this->output_set = true;
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename out_t>
+        void module_base<Input, Output, Parameters, Callbacks>::set_output(typename std::enable_if<std::is_same<out_t, void>::value>::type)
+        {
+            this->output_set = true;
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
         template <typename param_t>
-        inline void module_base<Parameters, Callbacks>::set_parameters(typename std::enable_if<!std::is_same<param_t, void>::value, parameters_t>::type parameters)
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_parameters(typename std::enable_if<!std::is_same<param_t, void>::value, parameters_t>::type parameters)
         {
             set_algorithm_parameters(std::forward<parameters_t>(parameters));
 
             this->parameters_set = true;
         }
 
-        template <typename Parameters, typename Callbacks>
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
         template <typename param_t>
-        inline void module_base<Parameters, Callbacks>::set_parameters(typename std::enable_if<std::is_same<param_t, void>::value>::type)
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_parameters(typename std::enable_if<std::is_same<param_t, void>::value>::type)
         {
             this->parameters_set = true;
         }
 
-        template <typename Parameters, typename Callbacks>
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
         template <typename cb_t>
-        inline void module_base<Parameters, Callbacks>::set_callbacks(typename std::enable_if<!std::is_same<cb_t, void>::value, callbacks_t>::type callbacks)
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_callbacks(typename std::enable_if<!std::is_same<cb_t, void>::value, callbacks_t>::type callbacks)
         {
             set_algorithm_callbacks(std::forward<callbacks_t>(callbacks));
 
             this->callbacks_set = true;
         }
 
-        template <typename Parameters, typename Callbacks>
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
         template <typename cb_t>
-        inline void module_base<Parameters, Callbacks>::set_callbacks(typename std::enable_if<std::is_same<cb_t, void>::value>::type)
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_callbacks(typename std::enable_if<std::is_same<cb_t, void>::value>::type)
         {
             this->callbacks_set = true;
         }
 
-        template <typename Parameters, typename Callbacks>
-        inline void module_base<Parameters, Callbacks>::set_algorithm_parameters(parameters_t)
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_algorithm_parameters(parameters_t)
         {
         }
 
-        template <typename Parameters, typename Callbacks>
-        inline void module_base<Parameters, Callbacks>::set_algorithm_callbacks(callbacks_t)
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        inline void module_base<Input, Output, Parameters, Callbacks>::set_algorithm_callbacks(callbacks_t)
         {
         }
 
-        template <typename Parameters, typename Callbacks>
-        inline bool module_base<Parameters, Callbacks>::sanity_check() const
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        inline bool module_base<Input, Output, Parameters, Callbacks>::sanity_check() const
         {
-            return this->parameters_set && this->callbacks_set;
+            return (!needs_input() || this->input_set)
+                && (!needs_output() || this->output_set)
+                && (!needs_parameters() || this->parameters_set)
+                && (!needs_callbacks() || this->callbacks_set);
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename T>
+        inline T module_base<Input, Output, Parameters, Callbacks>::get_or_default(std::optional<T> parameter, T default_value) const
+        {
+            if (parameter)
+            {
+                return *parameter;
+            }
+
+            return default_value;
+        }
+
+        template <typename Input, typename Output, typename Parameters, typename Callbacks>
+        template <typename T>
+        inline T* module_base<Input, Output, Parameters, Callbacks>::get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value) const
+        {
+            if (parameter)
+            {
+                return &parameter->get();
+            }
+
+            return default_value;
         }
     }
 }

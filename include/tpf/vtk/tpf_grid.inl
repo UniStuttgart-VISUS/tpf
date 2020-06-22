@@ -8,6 +8,7 @@
 
 #include "../log/tpf_log.h"
 
+#include "vtkDataArray.h"
 #include "vtkDoubleArray.h"
 #include "vtkFloatArray.h"
 #include "vtkRectilinearGrid.h"
@@ -26,6 +27,11 @@ namespace tpf
         inline void get_grid_information(vtkRectilinearGrid* grid, const data::topology_t data_type, typename data::grid_information<point_t>::array_type& cell_coordinates,
             typename data::grid_information<point_t>::array_type& node_coordinates, typename data::grid_information<point_t>::array_type& cell_sizes, data::extent_t& extent)
         {
+            if (grid == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input grid."));
+            }
+
             try
             {
                 // Clear arrays
@@ -145,6 +151,11 @@ namespace tpf
         template <typename data_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns>
         inline data::grid<data_t, point_t, dimensions, rows, columns> get_grid(vtkRectilinearGrid* grid, const data::topology_t data_type, std::string data_name)
         {
+            if (grid == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input grid."));
+            }
+
             // Get data
             if (!has_array(grid, data_type, data_name))
             {
@@ -198,8 +209,24 @@ namespace tpf
         }
 
         template <typename data_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns>
+        inline data::grid<data_t, point_t, dimensions, rows, columns> get_grid(vtkRectilinearGrid* grid, const data::topology_t data_type, vtkDataArray* data_array)
+        {
+            if (data_array == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Input array not found."));
+            }
+
+            return get_grid<data_t, point_t, dimensions, rows, columns>(grid, data_type, data_array->GetName());
+        }
+
+        template <typename data_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns>
         inline data::grid<data_t, point_t, dimensions, rows, columns> get_grid(vtkRectilinearGrid* grid, const data::topology_t data_type, const std::vector<std::string>& data_names)
         {
+            if (grid == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input grid."));
+            }
+
             // Try to return the grid with the first name
             std::string last_error;
 

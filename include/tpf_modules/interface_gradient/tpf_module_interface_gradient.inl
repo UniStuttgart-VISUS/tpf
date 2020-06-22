@@ -10,7 +10,6 @@
 
 #include "Eigen/Dense"
 
-#include <stdexcept>
 #include <string>
 
 namespace tpf
@@ -29,17 +28,17 @@ namespace tpf
         template <typename float_t>
         inline std::string interface_gradient<float_t>::get_name() const
         {
-            return std::string("Interface gradient");
+            return std::string("Interface Gradient");
         }
 
         template <typename float_t>
-        inline void interface_gradient<float_t>::set_input(const data::grid<float_t, float_t, 3, 1>& fractions)
+        inline void interface_gradient<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions)
         {
             this->fractions = &fractions;
         }
 
         template <typename float_t>
-        inline void interface_gradient<float_t>::set_output(data::grid<float_t, float_t, 3, 3>& gradients)
+        inline void interface_gradient<float_t>::set_algorithm_output(data::grid<float_t, float_t, 3, 3>& gradients)
         {
             this->gradients = &gradients;
         }
@@ -47,11 +46,6 @@ namespace tpf
         template <typename float_t>
         inline void interface_gradient<float_t>::run_algorithm()
         {
-            if (this->fractions == nullptr || this->gradients == nullptr)
-            {
-                throw std::runtime_error(__tpf_error_message("Module run started before assigning input and output."));
-            }
-
             // Get input and output
             const data::grid<float_t, float_t, 3, 1>& fractions = *this->fractions;
 

@@ -43,6 +43,11 @@ namespace tpf
 
         inline bool has_data(vtkDataSet* data, const data::topology_t data_type)
         {
+            if (data == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input data."));
+            }
+
             if (data_type == data::topology_t::CELL_DATA)
             {
                 return data->GetCellData()->GetNumberOfArrays() > 0;
@@ -64,6 +69,11 @@ namespace tpf
 
         inline bool has_array(vtkDataSet* data, const data::topology_t data_type, const std::string& array_name)
         {
+            if (data == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input data."));
+            }
+
             if (data_type == data::topology_t::CELL_DATA)
             {
                 return data->GetCellData()->GetArray(array_name.c_str()) != nullptr;
@@ -86,6 +96,11 @@ namespace tpf
         template <typename value_t, class array_t, bool dynamic>
         inline std::vector<value_t> get_data(vtkAbstractArray* data, const std::string& array_name)
         {
+            if (data == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input array."));
+            }
+
             try
             {
                 static_assert(std::is_base_of<vtkDataArray, array_t>::value, "Class must be a derived class from vtkDataArray!");
@@ -204,6 +219,11 @@ namespace tpf
         template <typename value_t, class array_t, bool dynamic>
         inline std::vector<value_t> get_data(vtkDataSet* data, const data::topology_t data_type, const std::string& array_name)
         {
+            if (data == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("No input data."));
+            }
+
             try
             {
                 static_assert(std::is_base_of<vtkDataArray, array_t>::value, "Class must be a derived class from vtkDataArray!");

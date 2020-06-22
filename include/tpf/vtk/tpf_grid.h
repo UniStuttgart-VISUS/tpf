@@ -4,6 +4,7 @@
 #include "../data/tpf_grid.h"
 #include "../data/tpf_grid_information.h"
 
+#include "vtkDataArray.h"
 #include "vtkRectilinearGrid.h"
 
 #include <string>
@@ -51,6 +52,21 @@ namespace tpf
         /// <returns>Grid</returns>
         template <typename data_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns = 1>
         data::grid<data_t, point_t, dimensions, rows, columns> get_grid(vtkRectilinearGrid* grid, data::topology_t data_type, std::string data_name);
+
+        /// <summary>
+        /// Create grid from VTK rectilinear grid
+        /// </summary>
+        /// <template name="data_t">Data type</template>
+        /// <template name="point_t">Point type</template>
+        /// <template name="dimensions">Number of dimensions</template>
+        /// <template name="rows">Number of row components</template>
+        /// <template name="columns">Number of column components</template>
+        /// <param name="grid">VTK grid</param>
+        /// <param name="data_type">Data type</param>
+        /// <param name="data_array">Data array extracted from GetInputArrayToProcess</param>
+        /// <returns>Grid</returns>
+        template <typename data_t, typename point_t, std::size_t dimensions, std::size_t rows, std::size_t columns = 1>
+        data::grid<data_t, point_t, dimensions, rows, columns> get_grid(vtkRectilinearGrid* grid, data::topology_t data_type, vtkDataArray* data_array);
 
         /// <summary>
         /// Create grid from VTK rectilinear grid
