@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_test_data
+LIBRARY_NAME
+  tpf_test_data
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
