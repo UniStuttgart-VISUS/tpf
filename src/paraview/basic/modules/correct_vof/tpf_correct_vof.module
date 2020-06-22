@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_correct_vof
+LIBRARY_NAME
+  tpf_correct_vof
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

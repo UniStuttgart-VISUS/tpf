@@ -53,7 +53,7 @@ function(pv_project NAME ENABLED)
   endif()
 endfunction()
 
-function(pv_plugin NAME MODULES)
+function(pv_plugin NAME MODULES PARAMETERS)
   # Collect modules and corresponding headers
   set(module_names)
   set(module_headers)
@@ -72,6 +72,7 @@ function(pv_plugin NAME MODULES)
     add_paraview_plugin(${NAME} 1.0
       SERVER_MANAGER_XML ${NAME}.xml
       SERVER_MANAGER_SOURCES ${module_headers}
+      ${PARAMETERS}
     )
 
     target_link_libraries(${NAME} PRIVATE ${module_names})
@@ -81,7 +82,9 @@ function(pv_plugin NAME MODULES)
     paraview_add_plugin(${NAME}
       VERSION                  1.0
       SERVER_MANAGER_XML      ${NAME}.xml
+      ${PARAMETERS}
       MODULES                 ${module_names}
+      SOURCES                 tpf_main.cpp
     )
   endif()
 endfunction()
@@ -96,7 +99,7 @@ function(pv_module NAME PLUGIN SOURCES RESULT_TARGET)
     target_include_directories(${PLUGIN}_${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} PRIVATE ${common_include})
 
     set_target_properties(${PLUGIN}_${NAME} PROPERTIES VTK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.h")
-    set_target_properties(${PLUGIN}_${NAME} PROPERTIES CXX_STANDARD 14)
+    set_target_properties(${PLUGIN}_${NAME} PROPERTIES CXX_STANDARD 17)
 
     set(${RESULT_TARGET} ${PLUGIN}_${NAME} PARENT_SCOPE)
   else()
@@ -113,6 +116,6 @@ function(pv_module NAME PLUGIN SOURCES RESULT_TARGET)
     set(${RESULT_TARGET} ${_RESULT_TARGET} PARENT_SCOPE)
 
     target_include_directories(${_RESULT_TARGET} PRIVATE ${common_include})
-    set_target_properties(${_RESULT_TARGET} PROPERTIES CXX_STANDARD 14)
+    vtk_module_set_properties(${PLUGIN}::${NAME} CXX_STANDARD 17)
   endif()
 endfunction()

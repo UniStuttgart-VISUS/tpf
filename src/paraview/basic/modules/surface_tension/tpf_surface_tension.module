@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_surface_tension
+LIBRARY_NAME
+  tpf_surface_tension
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

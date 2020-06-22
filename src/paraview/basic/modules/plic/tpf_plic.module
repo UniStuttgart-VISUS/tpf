@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_plic
+LIBRARY_NAME
+  tpf_plic
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

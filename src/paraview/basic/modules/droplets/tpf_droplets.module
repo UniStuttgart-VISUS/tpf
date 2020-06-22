@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_droplets
+LIBRARY_NAME
+  tpf_droplets
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

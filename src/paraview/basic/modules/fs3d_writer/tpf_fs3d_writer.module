@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_fs3d_writer
+LIBRARY_NAME
+  tpf_fs3d_writer
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

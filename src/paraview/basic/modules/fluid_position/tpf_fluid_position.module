@@ -1,0 +1,8 @@
+NAME
+  TPFbasic::tpf_fluid_position
+LIBRARY_NAME
+  tpf_fluid_position
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
