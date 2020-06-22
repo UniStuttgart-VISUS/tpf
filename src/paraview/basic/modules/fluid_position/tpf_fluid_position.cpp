@@ -83,8 +83,8 @@ int tpf_fluid_position::RequestData(vtkInformation *vtkNotUsed(request), vtkInfo
         {
             tpf::modules::fluid_position<float_t> fluid_position;
 
-            fluid_position.set_input(std::make_tuple(vof, std::nullopt));
-            fluid_position.set_output(typename tpf::modules::fluid_position<float_t>::output_t{ positions_grid, positions_points });
+            fluid_position.set_input(vof, std::nullopt);
+            fluid_position.set_output(positions_grid, positions_points);
             fluid_position.set_parameters(static_cast<tpf::modules::fluid_position_aux::position_t>(this->PositionType));
 
             fluid_position.run();
@@ -96,8 +96,8 @@ int tpf_fluid_position::RequestData(vtkInformation *vtkNotUsed(request), vtkInfo
 
             tpf::modules::fluid_position<float_t> fluid_position;
 
-            fluid_position.set_input(std::make_tuple(vof, gradients));
-            fluid_position.set_output(typename tpf::modules::fluid_position<float_t>::output_t{ positions_grid, positions_points });
+            fluid_position.set_input(vof, gradients);
+            fluid_position.set_output(positions_grid, positions_points);
             fluid_position.set_parameters(static_cast<tpf::modules::fluid_position_aux::position_t>(this->PositionType));
 
             fluid_position.run();

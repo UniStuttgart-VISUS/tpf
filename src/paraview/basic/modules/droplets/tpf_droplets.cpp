@@ -97,14 +97,14 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
         // Run droplet module
         tpf::modules::droplets<float_t> droplets_module;
 
-        droplets_module.set_parameters(std::make_tuple(this->CalculateTranslation != 0, this->CalculateRotation != 0, this->CalculateEnergy != 0,
+        droplets_module.set_parameters(this->CalculateTranslation != 0, this->CalculateRotation != 0, this->CalculateEnergy != 0,
             this->CalculateInertia != 0, static_cast<tpf::modules::droplets_aux::scale_method_t>(this->Scale),
-            static_cast<tpf::modules::droplets_aux::rotation_method_t>(this->RotationMethod)));
+            static_cast<tpf::modules::droplets_aux::rotation_method_t>(this->RotationMethod));
 
         if (!has_velocity)
         {
-            droplets_module.set_input(std::make_tuple(vof, positions, std::nullopt));
-            droplets_module.set_output(typename tpf::modules::droplets<float_t>::output_t{ droplet_ids, droplet_volumes, std::nullopt, droplets });
+            droplets_module.set_input(vof, positions, std::nullopt);
+            droplets_module.set_output(droplet_ids, droplet_volumes, std::nullopt, droplets);
 
             droplets_module.run();
         }
@@ -115,8 +115,8 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
 
             auto global_velocities = vof.copy_structure<float_t, 3>("Global Velocities");
 
-            droplets_module.set_input(std::make_tuple(vof, positions, velocities));
-            droplets_module.set_output(typename tpf::modules::droplets<float_t>::output_t{ droplet_ids, droplet_volumes, std::make_optional(std::ref(global_velocities)), droplets });
+            droplets_module.set_input(vof, positions, velocities);
+            droplets_module.set_output(droplet_ids, droplet_volumes, global_velocities, droplets);
 
             droplets_module.run();
 

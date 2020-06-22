@@ -80,9 +80,9 @@ int tpf_surface_tension::RequestData(vtkInformation*, vtkInformationVector** inp
         // Run interface gradient module
         tpf::modules::surface_tension<float_t> surface_tension_module;
 
-        surface_tension_module.set_input(std::make_tuple(vof, gradients, curvature));
+        surface_tension_module.set_input(vof, gradients, curvature);
         surface_tension_module.set_output(surface_tension);
-        surface_tension_module.set_parameters(std::make_tuple(this->Coefficient, this->Density, this->Timestep));
+        surface_tension_module.set_parameters(this->Coefficient, this->Density, this->Timestep);
 
         surface_tension_module.run();
 

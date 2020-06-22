@@ -99,9 +99,9 @@ int tpf_plic::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVec
         // Run PLIC module
         tpf::modules::plic<float_t> plic_module;
 
-        plic_module.set_input(std::make_tuple(vof, gradients));
+        plic_module.set_input(vof, gradients);
         plic_module.set_output(plic_interface);
-        plic_module.set_parameters(std::make_tuple(this->NumIterations, static_cast<float_t>(this->Perturbation)));
+        plic_module.set_parameters(this->NumIterations, static_cast<float_t>(this->Perturbation));
         plic_module.run();
 
         // Set output

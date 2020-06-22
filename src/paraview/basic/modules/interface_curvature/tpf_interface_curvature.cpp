@@ -80,7 +80,7 @@ int tpf_interface_curvature::RequestData(vtkInformation *vtkNotUsed(request), vt
         // Run interface gradient module
         tpf::modules::interface_curvature<float_t> interface_curvature;
 
-        interface_curvature.set_input(std::make_tuple(vof, gradients, positions));
+        interface_curvature.set_input(vof, gradients, positions);
         interface_curvature.set_output(curvature);
 
         interface_curvature.run();
