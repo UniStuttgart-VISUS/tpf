@@ -23,7 +23,7 @@ vtkStandardNewMacro(tpf_surface_tension);
 
 tpf_surface_tension::tpf_surface_tension() : num_ghost_levels(0)
 {
-    this->SetNumberOfInputPorts(3);
+    this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -37,16 +37,6 @@ int tpf_surface_tension::FillInputPortInformation(int port, vtkInformation* info
     }
 
     if (port == 0)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        return 1;
-    }
-    else if (port == 1)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        return 1;
-    }
-    else if (port == 2)
     {
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
         return 1;
@@ -89,7 +79,7 @@ int tpf_surface_tension::RequestData(vtkInformation*, vtkInformationVector** inp
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(in_grid);
+        output->ShallowCopy(in_grid);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, surface_tension.get_name(), surface_tension.get_data(), surface_tension.get_num_components());
     }
     catch (const std::runtime_error& ex)

@@ -33,7 +33,7 @@ vtkStandardNewMacro(tpf_droplets);
 
 tpf_droplets::tpf_droplets() : num_ghost_levels(0)
 {
-    this->SetNumberOfInputPorts(3);
+    this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -51,22 +51,11 @@ int tpf_droplets::FillInputPortInformation(int port, vtkInformation* info)
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
         return 1;
     }
-    else if (port == 1)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        return 1;
-    }
-    else if (port == 2)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        info->Set(vtkAlgorithm::INPUT_IS_OPTIONAL(), 1);
-        return 1;
-    }
 
     return 0;
 }
 
-int tpf_droplets::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_droplets::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
         std::max(this->num_ghost_levels, tpf::modules::droplets<float_t>::get_num_required_ghost_levels()));
@@ -74,7 +63,7 @@ int tpf_droplets::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkIn
     return 1;
 }
 
-int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_droplets::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {
@@ -92,8 +81,8 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
         tpf::data::polydata<float_t> droplets;
 
         auto output_grid = vtkSmartPointer<vtkRectilinearGrid>::New();
-        output_grid->CopyStructure(in_grid);
-        
+        output_grid->ShallowCopy(in_grid);
+
         // Run droplet module
         tpf::modules::droplets<float_t> droplets_module;
 
@@ -110,8 +99,7 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
         }
         else
         {
-            auto in_velocities = vtkRectilinearGrid::GetData(input_vector[2]);
-            const auto velocities = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_velocities, tpf::data::topology_t::CELL_DATA, GetInputArrayToProcess(2, in_grid));
+            const auto velocities = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, GetInputArrayToProcess(2, in_grid));
 
             auto global_velocities = vof.copy_structure<float_t, 3>("Global Velocities");
 
@@ -134,7 +122,7 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
         tpf::vtk::set_data<float_t>(output_grid, tpf::data::topology_t::CELL_DATA, droplet_volumes.get_name(), droplet_volumes.get_data(), droplet_volumes.get_num_components());
 
         output->SetBlock(0u, output_grid);
-        output->GetMetaData(0u)->Set(vtkCompositeDataSet::NAME(), "Grid");
+        output->GetMetaData(0u)->Set(vtkCompositeDataSet::NAME(), "grid");
 
         // Set output points
         auto output_positions = vtkSmartPointer<vtkPolyData>::New();
@@ -194,7 +182,7 @@ int tpf_droplets::RequestData(vtkInformation *vtkNotUsed(request), vtkInformatio
             tpf::data::data_information<float_t, 1>{ "Radius", tpf::data::topology_t::POINT_DATA });
 
         output->SetBlock(1u, output_positions);
-        output->GetMetaData(1u)->Set(vtkCompositeDataSet::NAME(), "Positions");
+        output->GetMetaData(1u)->Set(vtkCompositeDataSet::NAME(), "positions");
 
         // Copy time information
         tpf::vtk::copy_time_information(in_grid, vtkDataSet::SafeDownCast(output->GetBlock(0u)), vtkDataSet::SafeDownCast(output->GetBlock(1u)));

@@ -24,7 +24,7 @@ vtkStandardNewMacro(tpf_interface_curvature);
 
 tpf_interface_curvature::tpf_interface_curvature() : num_ghost_levels(0)
 {
-    this->SetNumberOfInputPorts(3);
+    this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -42,21 +42,11 @@ int tpf_interface_curvature::FillInputPortInformation(int port, vtkInformation* 
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
         return 1;
     }
-    else if (port == 1)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        return 1;
-    }
-    else if (port == 2)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        return 1;
-    }
 
     return 0;
 }
 
-int tpf_interface_curvature::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_interface_curvature::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
         std::max(this->num_ghost_levels, tpf::modules::interface_curvature<float_t>::get_num_required_ghost_levels()));
@@ -64,7 +54,7 @@ int tpf_interface_curvature::RequestUpdateExtent(vtkInformation *vtkNotUsed(requ
     return 1;
 }
 
-int tpf_interface_curvature::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_interface_curvature::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {
@@ -88,7 +78,7 @@ int tpf_interface_curvature::RequestData(vtkInformation *vtkNotUsed(request), vt
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(in_grid);
+        output->ShallowCopy(in_grid);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, curvature.get_name(), curvature.get_data(), curvature.get_num_components());
     }
     catch (const std::runtime_error& ex)

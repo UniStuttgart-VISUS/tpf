@@ -45,7 +45,7 @@ int tpf_interface_gradient::FillInputPortInformation(int port, vtkInformation* i
     return 0;
 }
 
-int tpf_interface_gradient::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_interface_gradient::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
         std::max(this->num_ghost_levels, tpf::modules::interface_gradient<float_t>::get_num_required_ghost_levels()));
@@ -53,7 +53,7 @@ int tpf_interface_gradient::RequestUpdateExtent(vtkInformation *vtkNotUsed(reque
     return 1;
 }
 
-int tpf_interface_gradient::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_interface_gradient::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {
@@ -75,7 +75,7 @@ int tpf_interface_gradient::RequestData(vtkInformation *vtkNotUsed(request), vtk
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(in_vof);
+        output->ShallowCopy(in_vof);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, gradients.get_name(), gradients.get_data(), gradients.get_num_components());
     }
     catch (const std::runtime_error& ex)

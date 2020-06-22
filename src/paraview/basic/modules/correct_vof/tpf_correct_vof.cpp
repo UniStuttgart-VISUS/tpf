@@ -75,7 +75,7 @@ int tpf_correct_vof::RequestData(vtkInformation*, vtkInformationVector** input_v
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(in_vof);
+        output->ShallowCopy(in_vof);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, new_vof.get_name(), new_vof.get_data(), new_vof.get_num_components());
     }
     catch (const std::runtime_error& ex)
@@ -84,6 +84,6 @@ int tpf_correct_vof::RequestData(vtkInformation*, vtkInformationVector** input_v
 
         return 0;
     }
-    
+
     return 1;
 }

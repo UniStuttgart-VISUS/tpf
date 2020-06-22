@@ -57,7 +57,7 @@ int tpf_fs3d_writer::FillInputPortInformation(int port, vtkInformation* info)
     return 0;
 }
 
-int tpf_fs3d_writer::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_fs3d_writer::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
         std::max(this->num_ghost_levels, tpf::modules::fs3d_writer<float_t, 3>::get_num_required_ghost_levels()));
@@ -65,7 +65,7 @@ int tpf_fs3d_writer::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vt
     return 1;
 }
 
-int tpf_fs3d_writer::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_fs3d_writer::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {

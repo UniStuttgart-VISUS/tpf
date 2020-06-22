@@ -38,7 +38,7 @@ tpf_fs3d_reader::~tpf_fs3d_reader()
     delete[] this->FileName;
 }
 
-int tpf_fs3d_reader::RequestInformation(vtkInformation *vtkNotUsed(request), vtkInformationVector **vtkNotUsed(input_vector), vtkInformationVector *output_vector)
+int tpf_fs3d_reader::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
 {
     try
     {
@@ -85,7 +85,7 @@ int tpf_fs3d_reader::RequestInformation(vtkInformation *vtkNotUsed(request), vtk
     return 1;
 }
 
-int tpf_fs3d_reader::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_fs3d_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
 {
     try
     {

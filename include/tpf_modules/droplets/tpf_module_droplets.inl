@@ -233,7 +233,7 @@ namespace tpf
 
             // Create arrays for the poly data
             data::array<long long, 1>& ids = *complete_droplets.template create<long long, 1>("Droplet IDs", data::topology_t::POINT_DATA);
-            data::array<float_t, 1>& volume = *complete_droplets.template create<float_t, 1>("Volumes", data::topology_t::POINT_DATA);
+            data::array<float_t, 1>& volume = *complete_droplets.template create<float_t, 1>("Volume", data::topology_t::POINT_DATA);
             data::array<float_t, 1>& radius = *complete_droplets.template create<float_t, 1>("Radius", data::topology_t::POINT_DATA);
 
             std::shared_ptr<data::array<float_t, 3>> translation_ptr = nullptr;

@@ -28,7 +28,7 @@ vtkStandardNewMacro(tpf_plic);
 
 tpf_plic::tpf_plic() : num_ghost_levels(0)
 {
-    this->SetNumberOfInputPorts(2);
+    this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -46,17 +46,11 @@ int tpf_plic::FillInputPortInformation(int port, vtkInformation* info)
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
         return 1;
     }
-    else if (port == 1)
-    {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
-        info->Set(vtkAlgorithm::INPUT_IS_OPTIONAL(), 1);
-        return 1;
-    }
 
     return 0;
 }
 
-int tpf_plic::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_plic::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
         std::max(this->num_ghost_levels, tpf::modules::plic<float_t>::get_num_required_ghost_levels()));
@@ -64,20 +58,19 @@ int tpf_plic::RequestUpdateExtent(vtkInformation *vtkNotUsed(request), vtkInform
     return 1;
 }
 
-int tpf_plic::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {
         // Get input data
-        auto in_vof = vtkRectilinearGrid::GetData(input_vector[0]);
-        vtkDataArray *data_array_vof = this->GetInputArrayToProcess(0, &input_vector[0]);
-        const auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_vof, tpf::data::topology_t::CELL_DATA, data_array_vof->GetName());
+        auto in_grid = vtkRectilinearGrid::GetData(input_vector[0]);
+        const auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, this->GetInputArrayToProcess(0, in_grid));
 
         // Create output data
         auto plic_interface = tpf::data::polydata<float_t>();
 
         // Run interface gradient module to calculate the gradient if necessary
-        const bool has_gradients = input_vector[1]->GetInformationObject(0) != nullptr;
+        const bool has_gradients = this->GetInputArrayToProcess(1, in_grid) != nullptr;
 
         auto gradients = vof.template copy_structure<float_t, 3>("Interface Gradient");
 
@@ -91,9 +84,7 @@ int tpf_plic::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVec
         }
         else
         {
-            auto in_gradients = vtkRectilinearGrid::GetData(input_vector[1]);
-            vtkDataArray *data_array_grad = this->GetInputArrayToProcess(1, &input_vector[1]);
-            gradients = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_gradients, tpf::data::topology_t::CELL_DATA, data_array_grad->GetName());
+            gradients = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, this->GetInputArrayToProcess(1, in_grid));
         }
 
         // Run PLIC module

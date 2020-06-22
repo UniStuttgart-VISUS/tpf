@@ -28,7 +28,7 @@ tpf_test_data::tpf_test_data()
 
 tpf_test_data::~tpf_test_data() {}
 
-int tpf_test_data::RequestInformation(vtkInformation *vtkNotUsed(request), vtkInformationVector **vtkNotUsed(input_vector), vtkInformationVector *output_vector)
+int tpf_test_data::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
 {
     vtkInformation* output_info = output_vector->GetInformationObject(0);
 
@@ -49,7 +49,7 @@ int tpf_test_data::RequestInformation(vtkInformation *vtkNotUsed(request), vtkIn
     return 1;
 }
 
-int tpf_test_data::RequestData(vtkInformation *vtkNotUsed(request), vtkInformationVector **vtkNotUsed(input_vector), vtkInformationVector *output_vector)
+int tpf_test_data::RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
 {
     try
     {

@@ -12,7 +12,7 @@
                 Correct volume of fluid by removing single-cell droplets.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection">
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -26,7 +26,7 @@
                 </Documentation>
             </InputProperty>
 
-            <StringVectorProperty name="Input Grid" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -264,7 +264,7 @@
                 Allows to write rectilinear grids and their attached fields in the FS3D file format.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection">
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -391,7 +391,7 @@
                 Calculate the gradient at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -433,7 +433,7 @@
                 Reconstruct the interface between two fluid phases by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -498,7 +498,7 @@
                 Reconstruct the interface between two fluid phases and a solid phase by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -671,7 +671,9 @@
                 <ShowInMenu category="Two-Phase Flow"/>
             </Hints>
         </SourceProxy>
+    </ProxyGroup>
 
+    <ProxyGroup name="sources">
         <!--
 
         Test data.
