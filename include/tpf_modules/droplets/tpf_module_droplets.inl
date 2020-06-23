@@ -105,7 +105,7 @@ namespace tpf
             const auto complete_velocities = mpi::mpi_grid::all_gather((this->velocities != nullptr) ? *this->velocities : data::grid<float_t, float_t, 3, 3>());
 
             // Create and initialize complete droplet IDs and droplets
-            data::grid<long long, float_t, 3, 1> complete_droplet_indices("Droplet IDs", complete_fractions.get_extent());
+            data::grid<long long, float_t, 3, 1> complete_droplet_indices("Droplet ID", complete_fractions.get_extent());
             complete_droplet_indices.initialize(-1LL);
 
             data::polydata<float_t> complete_droplets;
@@ -232,7 +232,7 @@ namespace tpf
             }
 
             // Create arrays for the poly data
-            data::array<long long, 1>& ids = *complete_droplets.template create<long long, 1>("Droplet IDs", data::topology_t::POINT_DATA);
+            data::array<long long, 1>& ids = *complete_droplets.template create<long long, 1>("Droplet ID", data::topology_t::POINT_DATA);
             data::array<float_t, 1>& volume = *complete_droplets.template create<float_t, 1>("Volume", data::topology_t::POINT_DATA);
             data::array<float_t, 1>& radius = *complete_droplets.template create<float_t, 1>("Radius", data::topology_t::POINT_DATA);
 

@@ -80,7 +80,7 @@ namespace tpf
                 ifs.ignore(80 * sizeof(uint8_t));
                 ifs.read(reinterpret_cast<char*>(&num_triangles), sizeof(uint32_t));
 
-                info.datasets.push_back(std::make_pair("Surface Normals", static_cast<std::size_t>(num_triangles)));
+                info.datasets.push_back(std::make_pair("Surface Normal", static_cast<std::size_t>(num_triangles)));
 
                 // Sanity check for file size
                 ifs.ignore(std::numeric_limits<std::streamsize>::max());
@@ -155,7 +155,7 @@ namespace tpf
                 bool normals_match = true;
 
 #ifdef __tpf_detailed
-                auto validity_ref = std::make_shared<data::array<unsigned char, 1>>(module_name::stl_reader::validity, static_cast<std::size_t>(num_triangles));
+                auto validity_ref = std::make_shared<data::array<unsigned char, 1>>("Valid", static_cast<std::size_t>(num_triangles));
                 auto& validity = *validity_ref;
 #endif
 #endif
@@ -165,7 +165,7 @@ namespace tpf
                     std::vector<std::shared_ptr<geometry::geometric_object<float_t>>> triangles;
                     triangles.reserve(static_cast<std::size_t>(num_triangles));
 
-                    auto normals_ref = std::make_shared<data::array<float_t, 3>>("Surface Normals", static_cast<std::size_t>(num_triangles));
+                    auto normals_ref = std::make_shared<data::array<float_t, 3>>("Surface Normal", static_cast<std::size_t>(num_triangles));
                     auto& normals = *normals_ref;
 
                     for (std::size_t triangle_index = 0; triangle_index < static_cast<std::size_t>(num_triangles); ++triangle_index)

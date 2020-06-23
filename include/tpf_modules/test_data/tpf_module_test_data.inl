@@ -130,8 +130,8 @@ namespace tpf
             }
 
             // Create and return empty grids
-            *this->fractions = data::grid<float_t, float_t, 3, 1>("VOF", extent, cell_coordinates, node_coordinates, cell_sizes);
-            *this->velocities = data::grid<float_t, float_t, 3, 3>("Velocities", extent, cell_coordinates, node_coordinates, cell_sizes);
+            *this->fractions = data::grid<float_t, float_t, 3, 1>("Volume of Fluid", extent, cell_coordinates, node_coordinates, cell_sizes);
+            *this->velocities = data::grid<float_t, float_t, 3, 3>("Velocity", extent, cell_coordinates, node_coordinates, cell_sizes);
         }
     }
 }

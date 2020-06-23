@@ -81,7 +81,7 @@ namespace tpf
             std::size_t interface_cells = 0;
             std::size_t illegal_cells = 0;
 
-            auto error = std::make_shared<data::array<float_t, 1>>(module_name::plic::error);
+            auto error = std::make_shared<data::array<float_t, 1>>("Error");
 #endif
 
             for (auto z = fractions.get_extent()[2].first; z <= fractions.get_extent()[2].second; ++z)
