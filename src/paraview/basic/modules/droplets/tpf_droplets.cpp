@@ -75,8 +75,8 @@ int tpf_droplets::RequestData(vtkInformation*, vtkInformationVector** input_vect
         const bool has_velocity = GetInputArrayToProcess(2, in_grid) != nullptr;
 
         // Create output data
-        auto droplet_ids = vof.copy_structure<long long, 1>("Droplet IDs");
-        auto droplet_volumes = vof.copy_structure<float_t, 1>("Volumes");
+        auto droplet_ids = vof.copy_structure<long long, 1>("Droplet ID");
+        auto droplet_volumes = vof.copy_structure<float_t, 1>("Volume");
 
         tpf::data::polydata<float_t> droplets;
 
@@ -101,7 +101,7 @@ int tpf_droplets::RequestData(vtkInformation*, vtkInformationVector** input_vect
         {
             const auto velocities = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, GetInputArrayToProcess(2, in_grid));
 
-            auto global_velocities = vof.copy_structure<float_t, 3>("Global Velocities");
+            auto global_velocities = vof.copy_structure<float_t, 3>("Global Velocity");
 
             droplets_module.set_input(vof, positions, velocities);
             droplets_module.set_output(droplet_ids, droplet_volumes, global_velocities, droplets);
@@ -126,7 +126,7 @@ int tpf_droplets::RequestData(vtkInformation*, vtkInformationVector** input_vect
 
         // Set output points
         auto output_positions = vtkSmartPointer<vtkPolyData>::New();
-        tpf::vtk::set_polydata(output_positions, droplets, tpf::data::data_information<long long, 1>{ "Droplet IDs", tpf::data::topology_t::POINT_DATA });
+        tpf::vtk::set_polydata(output_positions, droplets, tpf::data::data_information<long long, 1>{ "Droplet ID", tpf::data::topology_t::POINT_DATA });
 
         if (has_velocity)
         {

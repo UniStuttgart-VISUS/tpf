@@ -68,7 +68,7 @@ int tpf_fluid_position::RequestData(vtkInformation*, vtkInformationVector** inpu
         const bool has_gradients = GetInputArrayToProcess(1, in_grid) != nullptr;
 
         // Create output data
-        auto positions_grid = vof.copy_structure<float_t, 3>("Fluid Positions");
+        auto positions_grid = vof.copy_structure<float_t, 3>("Fluid Position");
 
         tpf::data::polydata<float_t> positions_points;
 

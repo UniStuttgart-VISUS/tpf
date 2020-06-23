@@ -86,9 +86,9 @@ int tpf_stl_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInfo
 
         // Set output
         tpf::vtk::set_polydata(output, triangles
-            , tpf::data::data_information<float_t, 3>{ "Surface Normals", tpf::data::topology_t::CELL_DATA }
+            , tpf::data::data_information<float_t, 3>{ "Surface Normal", tpf::data::topology_t::CELL_DATA }
 #if defined(__tpf_sanity_checks) && defined(__tpf_detailed)
-            , tpf::data::data_information<unsigned char, 1>{ tpf::module_name::stl_reader::validity, tpf::data::topology_t::CELL_DATA }
+            , tpf::data::data_information<unsigned char, 1>{ "Valid", tpf::data::topology_t::CELL_DATA }
 #endif
         );
     }

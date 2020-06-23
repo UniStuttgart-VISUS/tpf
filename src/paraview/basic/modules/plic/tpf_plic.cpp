@@ -101,7 +101,7 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
 #ifndef __tpf_debug
         tpf::vtk::set_polydata(output, plic_interface);
 #else
-        tpf::vtk::set_polydata(output, plic_interface, tpf::data::data_information<float_t, 1>{ tpf::module_name::plic::error, tpf::data::topology_t::CELL_DATA });
+        tpf::vtk::set_polydata(output, plic_interface, tpf::data::data_information<float_t, 1>{ "Error", tpf::data::topology_t::CELL_DATA });
 #endif
     }
     catch (const std::runtime_error& ex)

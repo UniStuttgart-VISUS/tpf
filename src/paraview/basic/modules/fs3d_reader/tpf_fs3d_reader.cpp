@@ -164,7 +164,7 @@ int tpf_fs3d_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInf
 
         return 0;
     }
-    
+
     return 1;
 }
 

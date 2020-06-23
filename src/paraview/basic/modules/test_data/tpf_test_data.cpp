@@ -110,8 +110,8 @@ int tpf_test_data::RequestData(vtkInformation*, vtkInformationVector**, vtkInfor
         output->SetZCoordinates(z_coordinates);
 
         // Set output data
-        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "VOF", vof.get_data(), vof.get_num_components());
-        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "Velocities", velocities.get_data(), velocities.get_num_components());
+        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "Volume of Fluid", vof.get_data(), vof.get_num_components());
+        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "Velocity", velocities.get_data(), velocities.get_num_components());
     }
     catch (const std::runtime_error& ex)
     {

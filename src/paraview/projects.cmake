@@ -71,7 +71,7 @@ function(pv_plugin NAME MODULES PARAMETERS)
 
     add_paraview_plugin(${NAME} 1.0
       SERVER_MANAGER_XML ${NAME}.xml
-      SERVER_MANAGER_SOURCES ${module_headers}
+      SERVER_MANAGER_SOURCES ${module_headers} tpf_main.cpp
       ${PARAMETERS}
     )
 
@@ -99,7 +99,16 @@ function(pv_module NAME PLUGIN SOURCES RESULT_TARGET)
     target_include_directories(${PLUGIN}_${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} PRIVATE ${common_include})
 
     set_target_properties(${PLUGIN}_${NAME} PROPERTIES VTK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.h")
-    set_target_properties(${PLUGIN}_${NAME} PROPERTIES CXX_STANDARD 17)
+    set_target_properties(${PLUGIN}_${NAME} PROPERTIES CXX_STANDARD 17) # Revise warning settings below when updating
+
+    # Silence warnings
+    target_compile_definitions(${PLUGIN}_${NAME} PRIVATE
+      # Deriving from std::iterator is deprecated in C++17 but used by VTK/ParaView. Revise when updating C++ standard!
+      _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+      # std::unary_negate and std::binary_negate are deprecated in C++17 but used by Eigen. Revise when updating C++ standard!
+      _SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING
+      # Many result_type typedefs are deprecated in C++17 but used by Eigen. Revise when updating C++ standard!
+      _SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING)
 
     set(${RESULT_TARGET} ${PLUGIN}_${NAME} PARENT_SCOPE)
   else()
@@ -116,6 +125,15 @@ function(pv_module NAME PLUGIN SOURCES RESULT_TARGET)
     set(${RESULT_TARGET} ${_RESULT_TARGET} PARENT_SCOPE)
 
     target_include_directories(${_RESULT_TARGET} PRIVATE ${common_include})
-    vtk_module_set_properties(${PLUGIN}::${NAME} CXX_STANDARD 17)
+    vtk_module_set_properties(${PLUGIN}::${NAME} CXX_STANDARD 17) # Revise warning settings below when updating
+
+    # Silence warnings
+    vtk_module_definitions(${PLUGIN}::${NAME} PRIVATE
+      # Deriving from std::iterator is deprecated in C++17 but used by VTK/ParaView. Revise when updating C++ standard!
+      _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+      # std::unary_negate and std::binary_negate are deprecated in C++17 but used by Eigen. Revise when updating C++ standard!
+      _SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING
+      # Many result_type typedefs are deprecated in C++17 but used by Eigen. Revise when updating C++ standard!
+      _SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING)
   endif()
 endfunction()

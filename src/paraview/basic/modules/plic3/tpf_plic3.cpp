@@ -59,7 +59,7 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         const auto f_norm_3ph = tpf::vtk::get_grid<float_t, float_t, 3, 3>(grid, tpf::data::topology_t::CELL_DATA, data_array_f_norm_3ph->GetName());
 
         // Create output data
-        auto plic3_interface = tpf::data::polydata<float_t>();
+        tpf::data::polydata<float_t> plic3_interface;
 
         // Run PLIC module
         tpf::modules::plic3<float_t> plic3_module;
