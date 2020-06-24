@@ -72,8 +72,10 @@ if(NOT TARGET CGAL::CGAL)
   message(FATAL_ERROR "Target for CGAL not found")
 endif()
 
-set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL Release)
-set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+if (TARGET CGAL)
+  set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL Release)
+  set_target_properties(CGAL PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+endif()
 
 # Find OpenMP
 if(tpf_option_use_openmp OR tpf_option_supercomputer)
