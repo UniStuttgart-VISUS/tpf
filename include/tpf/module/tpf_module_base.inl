@@ -67,9 +67,8 @@ namespace tpf
             int dummy[] = { (Interfaces::sanity_check(), 0)... };
         }
 
-        template <typename... Interfaces>
         template <typename T>
-        inline T module_base<Interfaces...>::get_or_default(std::optional<T> parameter, T default_value) const
+        inline T get_or_default(std::optional<T> parameter, T default_value)
         {
             if (parameter)
             {
@@ -79,9 +78,8 @@ namespace tpf
             return default_value;
         }
 
-        template <typename... Interfaces>
         template <typename T>
-        inline T* module_base<Interfaces...>::get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value) const
+        inline T* get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value)
         {
             if (parameter)
             {

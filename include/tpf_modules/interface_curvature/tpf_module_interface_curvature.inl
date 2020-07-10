@@ -73,7 +73,7 @@ namespace tpf
                 read global:    fractions, gradients, positions, global_fractions
                 write global:    curvature
             **/
-            #pragma omp parallel for schedule(dynamic) default(none) shared(fractions, gradients, positions, curvature)
+            #pragma omp parallel for schedule(dynamic) default(none) shared(fractions, global_fractions, gradients, positions, curvature)
             for (long long z_omp = static_cast<long long>(fractions.get_extent()[2].first); z_omp <= static_cast<long long>(fractions.get_extent()[2].second); ++z_omp)
             {
                 std::size_t z = static_cast<std::size_t>(z_omp);

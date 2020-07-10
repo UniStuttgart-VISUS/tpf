@@ -43,19 +43,19 @@ namespace tpf
             /// Perform a sanity check on input, output, parameters and callbacks
             /// </summary>
             void sanity_checks() const;
-
-            /// <summary>
-            /// Process an optional parameter and set its default value if none was given
-            /// </summary>
-            template <typename T>
-            T get_or_default(std::optional<T> parameter, T default_value) const;
-
-            /// <summary>
-            /// Process an optional reference parameter and set its default value if none was given
-            /// </summary>
-            template <typename T>
-            T* get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value = nullptr) const;
         };
+
+        /// <summary>
+        /// Process an optional parameter and set its default value if none was given
+        /// </summary>
+        template <typename T>
+        T get_or_default(std::optional<T> parameter, T default_value);
+
+        /// <summary>
+        /// Process an optional reference parameter and set its default value if none was given
+        /// </summary>
+        template <typename T>
+        T* get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value = nullptr);
     }
 }
 
