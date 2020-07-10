@@ -1,0 +1,303 @@
+<ServerManagerConfiguration>
+    <ProxyGroup name="filters">
+        <!--
+
+        Flow Field (Octo-Tiger).
+
+        Compute stream-, streak- or pathlines on the octree from Octo-Tiger simulation results.
+
+        -->
+        <SourceProxy name="Flow Field (Octo-Tiger)" class="tpf_flow_field_octree" label="Flow Field (Octo-Tiger)">
+            <Documentation>
+                Compute stream-, streak- or pathlines on the octree from Octo-Tiger simulation results.
+            </Documentation>
+
+            <InputProperty name="Points" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPointSet"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="id_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="vx_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="vy_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="vz_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="field" name="xmin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="xmax_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="ymin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="ymax_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="zmin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="zmax_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="field" name="omega_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="field" name="theta_array" number_of_components="1"/>
+                <Documentation>
+                    Points with ID, velocities, density, and meta information about the grid and its rotation
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="ID" label="Point ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    IDs indicating the point position within the octree
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity X" label="Velocity X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vx_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity component for x-direction
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity Y" label="Velocity Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vy_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity component for y-direction
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity Z" label="Velocity Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vz_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity component for z-direction
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density" label="Density" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Density (rho)
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Minimum X" label="Minimum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmin_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Left domain boundary; minimum x value
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Maximum X" label="Maximum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmax_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Right domain boundary; maximum x value
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Minimum Y" label="Minimum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymin_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Lower domain boundary; minimum y value
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Maximum Y" label="Maximum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymax_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Upper domain boundary; maximum y value
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Minimum Z" label="Minimum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="9">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmin_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Back domain boundary; minimum z value
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Maximum Z" label="Maximum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="10">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmax_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Front domain boundary; maximum z value
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Time" label="Time" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="11">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="time_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Timestep of the data
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Grid Rotation" label="Grid rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="omega_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Grid rotation given by the angle omega
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity Rotation" label="Velocity rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="13">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="theta_array">
+                    <RequiredProperties>
+                        <Property name="Points" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity vector rotation given by the angle theta
+                </Documentation>
+            </StringVectorProperty>
+
+            <IntVectorProperty name="Method" command="SetMethod" label="Method" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Streamlines"/>
+                    <Entry value="1" text="Streaklines"/>
+                    <Entry value="2" text="Pathlines"/>
+                </EnumerationDomain>
+                <Documentation>
+                    Method for the computation of the flow lines
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of lines" number_of_elements="1" default_values="20">
+                <Documentation>
+                    Number of advection steps
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="ForceFixedTimeStep" command="SetForceFixedTimeStep" label="Force fixed time step" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Force a fixed time step for streak- and pathline computation
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="StreamTimeStep" command="SetStreamTimeStep" label="Timestep for stream lines" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedTimeStep" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Time step size for streamline computation; and for streak- and pathline computation in case of a fixed time step
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="ForceFixedFrequency" command="SetForceFixedFrequency" label="Force fixed frequency" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Override the omega rotation given by the dataset
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="FrequencyOmega" command="SetFrequencyOmega" label="Rotational frequency (omega)" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedFrequency" value="1" />
+                </Hints>
+                <Documentation>
+                    Omega rotation when overriding the value given by the dataset
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <IntVectorProperty name="SeedMethod" command="SetSeedMethod" label="Seed method" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Octree leaves"/>
+                    <Entry value="1" text="Isosurface"/>
+                </EnumerationDomain>
+                <Documentation>
+                    Seeding strategy
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="SeedOffset" command="SetSeedOffset" label="Seed offset" number_of_elements="1" default_values="0" panel_visibility="advanced">
+                <Documentation>
+                    Start the seeding in the n-th cell
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="SeedSize" command="SetSeedSize" label="Seed size" number_of_elements="1" default_values="-1" panel_visibility="advanced">
+                <Documentation>
+                    Only seed in a limited number of cells
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="Isovalue" command="SetIsovalue" label="Isovalue" number_of_elements="1" default_values="0.000001">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedMethod" value="1" />
+                </Hints>
+                <Documentation>
+                    Isovalue for density-based seeding (isosurface)
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <PropertyGroup label="Point data">
+                <Property name="ID" />
+                <Property name="Velocity X" />
+                <Property name="Velocity Y" />
+                <Property name="Velocity Z" />
+                <Property name="Density" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Domain data">
+                <Property name="Minimum X" />
+                <Property name="Maximum X" />
+                <Property name="Minimum Y" />
+                <Property name="Maximum Y" />
+                <Property name="Minimum Z" />
+                <Property name="Time" />
+                <Property name="Grid Rotation" />
+                <Property name="Velocity Rotation" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Computation">
+                <Property name="Method" />
+                <Property name="NumAdvections" />
+                <Property name="ForceFixedTimeStep" />
+                <Property name="StreamTimeStep" />
+                <Property name="ForceFixedFrequency" />
+                <Property name="FrequencyOmega" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Seeding">
+                <Property name="SeedMethod" />
+                <Property name="SeedOffset" />
+                <Property name="SeedSize" />
+                <Property name="Isovalue" />
+            </PropertyGroup>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>
