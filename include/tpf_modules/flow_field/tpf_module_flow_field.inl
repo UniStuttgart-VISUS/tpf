@@ -89,11 +89,11 @@ namespace tpf
             particles.insert(seed_points.begin(), seed_points.end());
 
             // Compute integration lines
-            if (this->method == STREAM)
+            if (this->method == flow_field_aux::method_t::STREAM)
             {
                 compute_streamlines(std::move(particles));
             }
-            else if (this->method == PATH)
+            else if (this->method == flow_field_aux::method_t::PATH)
             {
                 compute_pathlines(std::move(particles));
             }
@@ -362,8 +362,8 @@ namespace tpf
         inline void flow_field<float_t, point_t>::create_lines(const flow_field_aux::simple_trace<float_t>& particles, const std::size_t num_advections, const bool inverse)
         {
             // Create array
-            auto id_advection_ref = std::make_shared<tpf::data::array<std::size_t, 1>>(tpf::module_name::flow_field::id_advection, particles.get_num_lines());
-            auto id_distribution_ref = std::make_shared<tpf::data::array<std::size_t, 1>>(tpf::module_name::flow_field::id_distribution, particles.get_num_lines());
+            auto id_advection_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Advection)", particles.get_num_lines());
+            auto id_distribution_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Distribution)", particles.get_num_lines());
 
             auto& id_advection = *id_advection_ref;
             auto& id_distribution = *id_distribution_ref;

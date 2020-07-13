@@ -111,19 +111,19 @@ namespace
                     num_points = in_grid->GetPoints()->GetNumberOfPoints();
                     points = in_grid->GetPoints();
 
-                    in_paths = ID_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(0)));
-                    in_x_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(1)));
-                    in_y_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(2)));
-                    in_z_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(3)));
+                    in_paths = ID_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(0).c_str()));
+                    in_x_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(1).c_str()));
+                    in_y_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(2).c_str()));
+                    in_z_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(3).c_str()));
 
-                    x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5)))->GetValue(0);
-                    x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6)))->GetValue(0);
-                    y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7)))->GetValue(0);
-                    y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8)))->GetValue(0);
-                    z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9)))->GetValue(0);
-                    z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10)))->GetValue(0);
+                    x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
+                    x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
+                    y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+                    y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+                    z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+                    z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
 
-                    time = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11)))->GetValue(0);
+                    time = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
 
                     if (this->fixed_frequency)
                     {
@@ -131,10 +131,10 @@ namespace
                     }
                     else
                     {
-                        rotational_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(12)))->GetValue(0);
+                        rotational_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
                     }
 
-                    domain_rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(13)))->GetValue(0);
+                    domain_rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(13).c_str()))->GetValue(0);
                 }
 
 #ifdef __tpf_use_mpi
@@ -263,7 +263,7 @@ namespace
                 if (tpf::mpi::get_instance().get_rank() == 0)
                 {
                     auto in_next_grid = vtkUnstructuredGrid::SafeDownCast(this->velocity_alg->GetOutputDataObject(0));
-                    next_time = FLOAT_TYPE_ARRAY::SafeDownCast(in_next_grid->GetFieldData()->GetArray(get_array_name(11)))->GetValue(0);
+                    next_time = FLOAT_TYPE_ARRAY::SafeDownCast(in_next_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
                 }
 
 #ifdef __tpf_use_mpi
@@ -373,15 +373,15 @@ tpf::data::polydata<float_t> seed_at_isosurface(vtkUnstructuredGrid* in_grid,
     {
         num_points = in_grid->GetPoints()->GetNumberOfPoints();
 
-        in_paths = ID_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(0)));
-        in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(4)));
+        in_paths = ID_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(0).c_str()));
+        in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(4).c_str()));
 
-        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5)))->GetValue(0);
-        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6)))->GetValue(0);
-        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7)))->GetValue(0);
-        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8)))->GetValue(0);
-        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9)))->GetValue(0);
-        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10)))->GetValue(0);
+        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
+        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
+        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
     }
 
 #ifdef __tpf_use_mpi

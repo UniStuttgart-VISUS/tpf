@@ -44,7 +44,7 @@ namespace tpf
             /// <summary>
             /// method_t of vector flow visualization
             /// </summary>
-            enum method_t
+            enum class method_t
             {
                 INVALID = -1,
                 STREAM, STREAK, PATH
@@ -105,7 +105,7 @@ namespace tpf
             /// <summary>
             /// Set output
             /// </summary>
-            /// <param name="lines">Output flow lines</param>
+            /// <param name="lines">Output flow lines ("ID (Advection)", "ID (Distribution)")</param>
             virtual void set_algorithm_output(data::polydata<float_t>& lines) override;
 
             /// <summary>
