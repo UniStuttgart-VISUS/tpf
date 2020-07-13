@@ -75,7 +75,7 @@ function(pv_plugin NAME MODULES PARAMETERS)
       ${PARAMETERS}
     )
 
-    target_link_libraries(${NAME} PRIVATE ${module_names})
+    target_link_libraries(${NAME} PRIVATE ${module_names} tpf_import)
 
     install(TARGETS ${NAME})
   else()
@@ -86,6 +86,8 @@ function(pv_plugin NAME MODULES PARAMETERS)
       MODULES                 ${module_names}
       SOURCES                 tpf_main.cpp
     )
+
+    target_link_libraries(${NAME} PRIVATE tpf_import)
   endif()
 endfunction()
 
