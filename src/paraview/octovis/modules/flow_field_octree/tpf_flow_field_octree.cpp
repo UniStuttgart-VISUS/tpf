@@ -13,7 +13,6 @@
 #include "tpf/mpi/tpf_mpi.h"
 
 #include "tpf/vtk/tpf_data.h"
-#include "tpf/vtk/tpf_log.h"
 #include "tpf/vtk/tpf_polydata.h"
 #include "tpf/vtk/tpf_time.h"
 
@@ -492,8 +491,6 @@ tpf::data::polydata<float_t> seed_at_isosurface(vtkUnstructuredGrid* in_grid,
 }
 
 vtkStandardNewMacro(tpf_flow_field_octree);
-
-__tpf_create_vtk_log();
 
 tpf_flow_field_octree::tpf_flow_field_octree()
 {
