@@ -98,7 +98,7 @@ namespace tpf
                 }
 
                 // Call function
-                out_begin++ = conditional_return<!std::is_void<typename std::result_of<function_t(const Eigen::Matrix<integral_t, dimensions, 1>&)>::type>::value,
+                out_begin++ = conditional_return<!std::is_void<typename std::invoke_result<function_t, const Eigen::Matrix<integral_t, dimensions, 1>&>::type>::value,
                     function_t, const Eigen::Matrix<integral_t, dimensions, 1>&>::call(function, coords);
             }
         }
@@ -116,7 +116,7 @@ namespace tpf
             for (signed_integral_t outer_index = outer_start; outer_index < outer_end; ++outer_index)
             {
                 // Create container given by the output iterator for temporarily storing private information
-                constexpr bool dummy = std::is_same<output_iterator_t, dummy_output_iterator<typename std::result_of<function_t(Eigen::Matrix<integral_t, dimensions, 1>)>::type>>::value;
+                constexpr bool dummy = std::is_same<output_iterator_t, dummy_output_iterator<typename std::invoke_result<function_t, Eigen::Matrix<integral_t, dimensions, 1>>::type>>::value;
 
                 typename conditional_container<!dummy, output_iterator_t>::type private_container;
 

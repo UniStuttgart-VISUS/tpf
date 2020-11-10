@@ -21,7 +21,7 @@ namespace tpf
     namespace vtk
     {
 #ifdef _MSC_EXTENSIONS
-#define CHECKED_ITERATOR(x, array_t) stdext::checked_array_iterator<typename std::result_of<decltype(&array_t::Begin)(array_t)>::type>(x->Begin(), x->GetNumberOfValues())
+#define CHECKED_ITERATOR(x, array_t) stdext::checked_array_iterator<decltype(x->Begin())>(x->Begin(), x->GetNumberOfValues())
 #else
 #define CHECKED_ITERATOR(x, array_t) x->Begin()
 #endif
