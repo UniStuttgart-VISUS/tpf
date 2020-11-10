@@ -1,0 +1,237 @@
+<ServerManagerConfiguration>
+    <ProxyGroup name="filters">
+        <!--
+
+        Interface bending.
+
+        Calculate the bending at the phase interface as change in curvature.
+
+        -->
+        <SourceProxy name="Interface Bending" class="tpf_interface_bending" label="Interface Bending">
+            <Documentation>
+                Calculate the bending at the phase interface as change in curvature.
+            </Documentation>
+
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="gradients_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="positions_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="velocities_array" number_of_components="3"/>
+                <Documentation>
+                    Grid storing the volume of fluid field, interface gradients, interface barycenters, and velocities
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface gradients
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Interface Positions" label="Interface positions" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="positions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface positions
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocities_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocities
+                </Documentation>
+            </StringVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+
+        <!--
+
+        Interface deformation.
+
+        Calculate the deformation at the phase interface as combination of interface bending and stretching.
+
+        -->
+        <SourceProxy name="Interface Deformation" class="tpf_interface_deformation" label="Interface Deformation">
+            <Documentation>
+                Calculate the deformation at the phase interface as combination of interface bending and stretching.
+            </Documentation>
+
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="velocities_array" number_of_components="3" optional="1"/>
+                <Documentation>
+                    Grid storing the volume of fluid field, and velocities
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocities_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocities
+                </Documentation>
+            </StringVectorProperty>
+
+            <IntVectorProperty name="SurfaceTension" command="SetSurfaceTension" label="Use surface tension force" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Calculate the surface tension and use it instead of the actual velocities (experimental!)
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="Coefficient" command="SetCoefficient" label="Surface tension coefficient" number_of_elements="1" default_values="72.75">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
+                </Hints>
+                <Documentation>
+                    Surface tension coefficient
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="Density" command="SetDensity" label="Density" number_of_elements="1" default_values="0.9982">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
+                </Hints>
+                <Documentation>
+                    Density of the liquid phase
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Alternative time step" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
+                </Hints>
+                <Documentation>
+                    Alternative time step for scaling the surface tension force
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+
+        <!--
+
+        Interface stretching.
+
+        Calculate the stretching at the phase interface as change in size.
+
+        -->
+        <SourceProxy name="Interface Stretching" class="tpf_interface_stretching" label="Interface Stretching">
+            <Documentation>
+                Calculate the stretching at the phase interface as change in size.
+            </Documentation>
+
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="gradients_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="positions_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="velocities_array" number_of_components="3"/>
+                <Documentation>
+                    Grid storing the volume of fluid field, interface gradients, interface barycenters, and velocities
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface gradients
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Interface Positions" label="Interface positions" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="positions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface positions
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocities_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocities
+                </Documentation>
+            </StringVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>
