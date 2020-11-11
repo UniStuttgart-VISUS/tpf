@@ -217,6 +217,17 @@
                 </Documentation>
             </IntVectorProperty>
 
+            <OutputPort name="Grid" index="0" id="grid">
+                <Documentation>
+                    Grid where every cell contains the information about its fluid position.
+                </Documentation>
+            </OutputPort>
+            <OutputPort name="Positions" index="1" id="points">
+                <Documentation>
+                    Points at the fluid positions.
+                </Documentation>
+            </OutputPort>
+
             <Hints>
                 <ShowInMenu category="Two-Phase Flow"/>
             </Hints>
