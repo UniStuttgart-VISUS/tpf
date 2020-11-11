@@ -57,7 +57,7 @@ These modules are filters for manipulating input data, mostly defined on rectili
 | [Fluid Position](src/paraview/basic/modules/fluid_position/Readme.md)             | Calculate a point per cell as the representative fluid position.                                                  |
 | [Interface Curvature](src/paraview/basic/modules/interface_curvature/Readme.md)   | Calculate the curvature at the phase interface.                                                                   |
 | [Interface Gradient](src/paraview/basic/modules/interface_gradient/Readme.md)     | Calculate the gradient at the phase interface.                                                                    |
-| [PLIC](src/paraview/basic/modules/plic/Readme.md)                                 | Reconstruct the interface between two fluid phases with piecewise linear interface calculation.                   |
+| [PLIC](src/paraview/basic/modules/plic/Readme.md)                                 | Reconstruct the interface between two fluid phases with PLIC.                                                     |
 | [PLIC 3](src/paraview/basic/modules/plic3/Readme.md)                              | Reconstruct the interface between two fluid phases and a solid phase with PLIC.                                   |
 | [Surface Tension](src/paraview/basic/modules/surface_tension/Readme.md)           | Calculate the surface tension force at the phase interface.                                                       |
 
