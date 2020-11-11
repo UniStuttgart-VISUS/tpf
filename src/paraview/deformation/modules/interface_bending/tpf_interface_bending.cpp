@@ -88,7 +88,7 @@ int tpf_interface_bending::RequestData(vtkInformation*, vtkInformationVector** i
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(input);
+        output->ShallowCopy(input);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, min_curvature.get_name(), min_curvature.get_data(), min_curvature.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, max_curvature.get_name(), max_curvature.get_data(), max_curvature.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, absmax_curvature.get_name(), absmax_curvature.get_data(), absmax_curvature.get_num_components());

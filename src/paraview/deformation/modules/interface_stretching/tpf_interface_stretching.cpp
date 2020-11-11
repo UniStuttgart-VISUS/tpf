@@ -86,7 +86,7 @@ int tpf_interface_stretching::RequestData(vtkInformation*, vtkInformationVector*
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
 
-        output->CopyStructure(input);
+        output->ShallowCopy(input);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, stretching.get_name(), stretching.get_data(), stretching.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, stretching_max_dir.get_name(), stretching_max_dir.get_data(), stretching_max_dir.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, stretching_min_dir.get_name(), stretching_min_dir.get_data(), stretching_min_dir.get_num_components());

@@ -189,7 +189,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
 
         // Set output
         auto output = vtkRectilinearGrid::GetData(output_vector);
-        output->CopyStructure(input);
+        output->ShallowCopy(input);
 
 #ifdef __tpf_detailed
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, gradients.get_name(), gradients.get_data(), gradients.get_num_components());
