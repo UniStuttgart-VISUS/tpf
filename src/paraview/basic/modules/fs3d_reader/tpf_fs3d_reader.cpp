@@ -103,11 +103,11 @@ int tpf_fs3d_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInf
 
             output->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), this->timesteps[timestep]);
         }
-        
+
         // Get (sub-)extent
         int subextent[6];
         output_info->Get(vtkStreamingDemandDrivenPipeline::UPDATE_EXTENT(), subextent);
-        
+
         tpf::data::extent_t extent(3);
         extent[0] = std::make_pair(static_cast<std::size_t>(subextent[0]), static_cast<std::size_t>(subextent[1] - 1));
         extent[1] = std::make_pair(static_cast<std::size_t>(subextent[2]), static_cast<std::size_t>(subextent[3] - 1));
