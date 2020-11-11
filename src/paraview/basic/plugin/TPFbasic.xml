@@ -699,8 +699,8 @@
 
             <IntVectorProperty name="Geometry" command="SetGeometry" label="Geometry" number_of_elements="1" default_values="0">
                 <EnumerationDomain name="enum">
-                    <Entry value="0" text="Orb"/>
-                    <Entry value="1" text="Ring"/>
+                    <Entry value="0" text="Sphere"/>
+                    <Entry value="1" text="Torus"/>
                 </EnumerationDomain>
                 <Documentation>
                     Choose which type of geometry to create
@@ -711,18 +711,18 @@
                     Number of cells per spatial dimension
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="Spinning" command="SetSpinning" label="Spinning velocity" number_of_elements="1" default_values="0">
+            <IntVectorProperty name="Spinning" command="SetSpinning" label="Rotation velocity" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
                 <Documentation>
-                    Add spinning velocity around the axis of rotation
+                    Add rotation velocity around the axis of rotation
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="SpinningMagnitude" command="SetSpinningMagnitude" label="Spinning velocity magnitude" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="SpinningMagnitude" command="SetSpinningMagnitude" label="Rotation velocity magnitude" number_of_elements="1" default_values="1.0">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Spinning" value="1" />
                 </Hints>
                 <Documentation>
-                    Magnitude for the spinning velocity
+                    Magnitude for the rotation velocity
                 </Documentation>
             </DoubleVectorProperty>
             <IntVectorProperty name="Moving" command="SetMoving" label="Translation velocity" number_of_elements="1" default_values="0">
@@ -753,16 +753,16 @@
                     Mangitude of velocity of expansion
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="Rotating" command="SetRotating" label="Rotation velocity" number_of_elements="1" default_values="0">
+            <IntVectorProperty name="Rotating" command="SetRotating" label="Torus rotation velocity" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Geometry" value="1" />
                 </Hints>
                 <Documentation>
-                    Add rotation velocity for the ring around its center line
+                    Add rotation velocity around the torus' center line
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="RotatingMagnitude" command="SetRotatingMagnitude" label="Rotation velocity magnitude" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="RotatingMagnitude" command="SetRotatingMagnitude" label="Torus rotation velocity magnitude" number_of_elements="1" default_values="1.0">
                 <Hints>
                     <PropertyWidgetDecorator type="CompositeDecorator">
                         <Expression type="and">
