@@ -17,32 +17,38 @@ Every module is wrapped as a filter or source for ParaView, with multiple module
 |---------------------------|-------------------------------------------------------------------------------------------------------|
 | [basic](#basic-plugin)    | Basic computations, e.g., interface gradient and interface curvature, mostly on rectilinear grids.    |
 
-### Sources and filters
+### Basic plugin
 
-The following plugins provide sources and filters.
+This plugin contains several data readers, writers, sources, and filters.
 
-#### Basic plugin
+#### Data readers
 
-The following data readers are available:
+These modules are data readers for loading data from files.
 
 | Reader                                                                            | Description                                                                                   |
 |-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
 | [FS3D Reader](src/paraview/basic/modules/fs3d_reader/Readme.md)                   | Read temporal FS3D files, containing VOF and other scalar fields, as well as velocity fields. |
 | [STL Reader](src/paraview/basic/modules/stl_reader/Readme.md)                     | Read an STL file containing a triangle mesh.                                                  |
 
-The following writers are available:
+#### Data writers
+
+These modules are data writers for writing data to files.
 
 | Filter                                                                            | Description                                                                           |
 |-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | [FS3D Writer](src/paraview/basic/modules/fs3d_writer/Readme.md)                   | Allows to write rectilinear grids and their attached fields in the FS3D file format.  |
 
-The following sources are available:
+#### Sources
+
+These modules are sources for generating data based on input parameters.
 
 | Source                                                                            | Description                                                                           |
 |-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | [Test Data](src/paraview/basic/modules/test_data/Readme.md)                       | Create simple 3D test geometry, represented as VOF field and velocity field.          |
 
-The following filters are available:
+#### Filters
+
+These modules are filters for manipulating input data, mostly defined on rectilinear grids.
 
 | Filter                                                                            | Description                                                                                                       |
 |-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
