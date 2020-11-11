@@ -14,7 +14,6 @@
 
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
-#include "vtkMultiBlockDataSet.h"
 #include "vtkObjectFactory.h"
 #include "vtkPolyData.h"
 #include "vtkRectilinearGrid.h"
@@ -23,23 +22,34 @@
 #include <algorithm>
 #include <stdexcept>
 
+namespace
+{
+    template <typename T>
+    void create_or_get_data_object(const int index, vtkAlgorithm* output_algorithm, vtkInformationVector* output_info)
+    {
+        auto output = T::SafeDownCast(output_info->GetInformationObject(index)->Get(vtkDataObject::DATA_OBJECT()));
+
+        if (!output)
+        {
+            output = T::New();
+            output_info->GetInformationObject(index)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output_algorithm->GetOutputPortInformation(index)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+        }
+    }
+}
+
 vtkStandardNewMacro(tpf_fluid_position);
 
 tpf_fluid_position::tpf_fluid_position() : num_ghost_levels(0)
 {
     this->SetNumberOfInputPorts(1);
-    this->SetNumberOfOutputPorts(1);
+    this->SetNumberOfOutputPorts(2);
 }
 
 tpf_fluid_position::~tpf_fluid_position() {}
 
 int tpf_fluid_position::FillInputPortInformation(int port, vtkInformation* info)
 {
-    if (!this->Superclass::FillInputPortInformation(port, info))
-    {
-        return 0;
-    }
-
     if (port == 0)
     {
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
@@ -47,6 +57,62 @@ int tpf_fluid_position::FillInputPortInformation(int port, vtkInformation* info)
     }
 
     return 0;
+}
+
+int tpf_fluid_position::FillOutputPortInformation(int port, vtkInformation* info)
+{
+    if (port == 0)
+    {
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkRectilinearGrid");
+        return 1;
+    }
+    else if (port == 1)
+    {
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
+        return 1;
+    }
+
+    return 0;
+}
+
+int tpf_fluid_position::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
+{
+    // Create an output object of the correct type.
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA_OBJECT()))
+    {
+        return this->RequestDataObject(request, input_vector, output_vector);
+    }
+
+    // Generate the data
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_INFORMATION()))
+    {
+        return this->RequestInformation(request, input_vector, output_vector);
+    }
+
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA()))
+    {
+        return this->RequestData(request, input_vector, output_vector);
+    }
+
+    if (request->Has(vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT()))
+    {
+        return this->RequestUpdateExtent(request, input_vector, output_vector);
+    }
+
+    return this->Superclass::ProcessRequest(request, input_vector, output_vector);
+}
+
+int tpf_fluid_position::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
+{
+    create_or_get_data_object<vtkRectilinearGrid>(0, this, output_vector);
+    create_or_get_data_object<vtkPolyData>(1, this, output_vector);
+
+    return 1;
+}
+
+int tpf_fluid_position::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
+{
+    return 1;
 }
 
 int tpf_fluid_position::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
@@ -97,22 +163,16 @@ int tpf_fluid_position::RequestData(vtkInformation*, vtkInformationVector** inpu
         }
         
         // Set output grid
-        auto output = vtkMultiBlockDataSet::GetData(output_vector);
-        auto output_grid = vtkSmartPointer<vtkRectilinearGrid>::New();
+        auto output_grid = vtkRectilinearGrid::GetData(output_vector->GetInformationObject(0));
 
         output_grid->ShallowCopy(in_grid);
 
         tpf::vtk::set_data<float_t>(output_grid, tpf::data::topology_t::CELL_DATA, positions_grid.get_name(), positions_grid.get_data(), positions_grid.get_num_components());
 
-        output->SetBlock(0u, output_grid);
-        output->GetMetaData(0u)->Set(vtkCompositeDataSet::NAME(), "grid");
-
         // Set output points
-        auto output_positions = vtkSmartPointer<vtkPolyData>::New();
-        tpf::vtk::set_polydata(output_positions, positions_points);
+        auto output_positions = vtkPolyData::GetData(output_vector->GetInformationObject(1));
 
-        output->SetBlock(1u, output_positions);
-        output->GetMetaData(1u)->Set(vtkCompositeDataSet::NAME(), "positions");
+        tpf::vtk::set_polydata(output_positions, positions_points);
     }
     catch (const std::runtime_error& ex)
     {
