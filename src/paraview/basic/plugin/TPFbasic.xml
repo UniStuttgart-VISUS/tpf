@@ -224,36 +224,6 @@
 
         <!--
 
-        FS3D reader.
-
-        Reader for the FS3D file format.
-
-        -->
-        <SourceProxy name="FS3D Reader" class="tpf_fs3d_reader" label="FS3D Reader">
-            <Documentation>
-                Reader for the FS3D file format.
-            </Documentation>
-
-            <StringVectorProperty name="FileName" animateable="0" command="SetFileName" number_of_elements="1">
-                <FileListDomain name="files"/>
-                <Documentation>
-                    Input file name
-                </Documentation>
-            </StringVectorProperty>
-            <DoubleVectorProperty name="TimestepValues" repeatable="1" information_only="1">
-                <TimeStepsInformationHelper/>
-                <Documentation>
-                    Available time steps
-                </Documentation>
-            </DoubleVectorProperty>
-
-            <Hints>
-                <ReaderFactory extensions="lst" file_description="FS3D Reader"/>
-            </Hints>
-        </SourceProxy>
-
-        <!--
-
         FS3D writer.
 
         Allows to write rectilinear grids and their attached fields in the FS3D file format.
@@ -564,36 +534,6 @@
 
         <!--
 
-        STL reader.
-
-        Read triangle meshes in the STL file format.
-
-        -->
-        <SourceProxy name="STL Reader" class="tpf_stl_reader" label="STL Reader">
-            <Documentation>
-                Read triangle meshes in the STL file format.
-            </Documentation>
-
-            <StringVectorProperty name="FileName" animateable="0" command="SetFileName" number_of_elements="1">
-                <FileListDomain name="files"/>
-                <Documentation>
-                    Input file name
-                </Documentation>
-            </StringVectorProperty>
-            <IntVectorProperty name="CalculateNormals" command="SetCalculateNormals" label="Calculate normals" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Calculate surface normals (although given in the file)
-                </Documentation>
-            </IntVectorProperty>
-
-            <Hints>
-                <ReaderFactory extensions="stl" file_description="STL Reader"/>
-            </Hints>
-        </SourceProxy>
-
-        <!--
-
         Surface tension.
 
         Calculate the surface tension force at the phase interface.
@@ -674,6 +614,66 @@
     </ProxyGroup>
 
     <ProxyGroup name="sources">
+        <!--
+
+        FS3D reader.
+
+        Reader for the FS3D file format.
+
+        -->
+        <SourceProxy name="FS3D Reader" class="tpf_fs3d_reader" label="FS3D Reader">
+            <Documentation>
+                Reader for the FS3D file format.
+            </Documentation>
+
+            <StringVectorProperty name="FileName" animateable="0" command="SetFileName" number_of_elements="1">
+                <FileListDomain name="files"/>
+                <Documentation>
+                    Input file name
+                </Documentation>
+            </StringVectorProperty>
+            <DoubleVectorProperty name="TimestepValues" repeatable="1" information_only="1">
+                <TimeStepsInformationHelper/>
+                <Documentation>
+                    Available time steps
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <Hints>
+                <ReaderFactory extensions="lst" file_description="FS3D Reader"/>
+            </Hints>
+        </SourceProxy>
+
+        <!--
+
+        STL reader.
+
+        Read triangle meshes in the STL file format.
+
+        -->
+        <SourceProxy name="STL Reader" class="tpf_stl_reader" label="STL Reader">
+            <Documentation>
+                Read triangle meshes in the STL file format.
+            </Documentation>
+
+            <StringVectorProperty name="FileName" animateable="0" command="SetFileName" number_of_elements="1">
+                <FileListDomain name="files"/>
+                <Documentation>
+                    Input file name
+                </Documentation>
+            </StringVectorProperty>
+            <IntVectorProperty name="CalculateNormals" command="SetCalculateNormals" label="Calculate normals" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Calculate surface normals (although given in the file)
+                </Documentation>
+            </IntVectorProperty>
+
+            <Hints>
+                <ReaderFactory extensions="stl" file_description="STL Reader"/>
+            </Hints>
+        </SourceProxy>
+
         <!--
 
         Test data.
