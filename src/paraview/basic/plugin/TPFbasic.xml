@@ -219,12 +219,12 @@
 
             <OutputPort name="Grid" index="0" id="grid">
                 <Documentation>
-                    Grid where every cell contains the information about its fluid position.
+                    Grid where every cell contains the information about its fluid position
                 </Documentation>
             </OutputPort>
             <OutputPort name="Positions" index="1" id="points">
                 <Documentation>
-                    Points at the fluid positions.
+                    Points at the fluid positions
                 </Documentation>
             </OutputPort>
 
@@ -495,7 +495,7 @@
                 </Documentation>
             </InputProperty>
 
-            <StringVectorProperty name="SelectInputScalarsF" label="F-Field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+            <StringVectorProperty name="SelectInputScalarsF" label="VOF (liquid)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="input_array_f">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -505,7 +505,7 @@
                     Volume of fluid field
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="SelectInputScalarsF3" label="F3-Field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+            <StringVectorProperty name="SelectInputScalarsF3" label="VOF (solid)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="input_array_f3">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -515,7 +515,7 @@
                     Volume of fluid field for the third phase
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="SelectInputVectorsFNorm3Ph" label="F-Norm-3Ph." command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+            <StringVectorProperty name="SelectInputVectorsFNorm3Ph" label="Interface normals" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="input_array_f_norm_3ph">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
