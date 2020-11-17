@@ -609,12 +609,12 @@
             </DoubleVectorProperty>
             <DoubleVectorProperty name="Density" command="SetDensity" label="Density" number_of_elements="1" default_values="0.9982">
                 <Documentation>
-                    Density of the denser phase
+                    Density of the liquid phase
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Timestep" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Alternative time step" number_of_elements="1" default_values="1.0">
                 <Documentation>
-                    Time step for scaling the resulting surface tension force
+                    Alternative time step for scaling the surface tension force
                 </Documentation>
             </DoubleVectorProperty>
 
