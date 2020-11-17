@@ -7,7 +7,43 @@ This way, all modules can be easily ported to other visualization software by pr
 
 ## Header-only library
 
-todo.
+The library is separated into several categories:
+
+| Namespace                                    | Description                                                  |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| [algorithm](include/tpf/algorithm/readme.md) | General algorithms that are independent of the types provided by this library. |
+| data                                         | Mostly spatial data types, such as grids and trees.          |
+| exception                                    | Additional exceptions for internal exception handling.       |
+| geometry                                     | Implementation of geometric objects using CGAL.              |
+| log                                          | Thread-safe logging implementation.                          |
+| math                                         | Basic math for geometry and linear algebra.                  |
+| module                                       | Base classes and interface for the implementation of modules. |
+| mpi                                          | High-level MPI functions for TPF data types.                 |
+| performance                                  | Performance logging capabilities.                            |
+| policies                                     | Policies through interface classes.                          |
+| stdext                                       | Extension and specializations of classes from the standard template library. |
+| traits                                       | Traits for templates.                                        |
+| [utility](include/tpf/utility/readme.md)     | Small utility functions for templated operations.            |
+| vtk                                          | VTK wrapper for conversion of VTK data types to TPF and vice versa. |
+
+### Modules
+
+The following modules are available, most of which are wrapped in a [ParaView plugin](#paraview-plugin):
+
+| Module              | Description                                                  |
+| ------------------- | ------------------------------------------------------------ |
+| Correct VOF         | Correct the volume of fluid (VOF) field by removing isolated non-zero cells. |
+| Droplets            | Segmentation of droplets in the VOF field, and calculation of droplet-specific properties. |
+| Fluid Position      | Calculate a point per cell as the representative fluid position. |
+| FS3D Reader         | Read temporal FS3D files, containing VOF and other scalar fields, as well as velocity fields. |
+| FS3D Writer         | Allows to write rectilinear grids and their attached fields in the FS3D file format. |
+| Interface Curvature | Calculate the curvature at the phase interface.              |
+| Interface Gradient  | Calculate the gradient at the phase interface.               |
+| PLIC                | Reconstruct the interface between two fluid phases with PLIC. |
+| PLIC 3              | Reconstruct the interface between two fluid phases and a solid phase with PLIC. |
+| STL Reader          | Read an STL file containing a triangle mesh.                 |
+| Surface Tension     | Calculate the surface tension force at the phase interface.  |
+| Test Data           | Create simple 3D test geometry, represented as VOF field and velocity field. |
 
 ## ParaView plugins
 
