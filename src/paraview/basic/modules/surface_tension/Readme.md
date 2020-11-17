@@ -22,6 +22,16 @@ The grid contains the following data fields:
 | Interface gradients   | Gradients in interface cells.                                | Vector | Cell-based |        |
 | Interface curvature   | Field storing the curvature at the interface barycenter.     | Scalar | Cell-based |        |
 
+## Parameters
+
+The following parameters can be set by the user:
+
+| Parameter   | Description                                                  | Type  | Accepted values | Default value |
+| ----------- | ------------------------------------------------------------ | ----- | --------------- | ------------- |
+| Coefficient | Surface tension coefficient based on the involved species.   | Float | \>0             | 72.75         |
+| Density     | Density of the liquid phase.                                 | Float | \>0             | 0.9982        |
+| Time step   | Alternative time step for scaling the surface tension force vectors. If set to zero, use time step derived from the dataset. | Float | &#8805;0        | 0.0           |
+
 ## Output
 
 The following data fields are appended to the input grid:
