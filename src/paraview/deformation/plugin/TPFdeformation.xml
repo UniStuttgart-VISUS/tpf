@@ -134,7 +134,7 @@
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
                 </Hints>
                 <Documentation>
-                    Surface tension coefficient
+                    Surface tension coefficient based on the involved species
                 </Documentation>
             </DoubleVectorProperty>
             <DoubleVectorProperty name="Density" command="SetDensity" label="Density" number_of_elements="1" default_values="0.9982">

@@ -25,8 +25,8 @@ The following parameters can be set by the user:
 
 | Parameter       | Description                                                  | Type    | Accepted values | Default value |
 | --------------- | ------------------------------------------------------------ | ------- | --------------- | ------------- |
-| Surface tension | Calculate and use surface tension force instead of input velocity field. Must be set to *True* when omitting the velocity field input. | Boolean |                 | False         |
-| Coefficient     | Surface tension coefficient.                                 | Float   | \>0             | 72.75         |
+| Surface tension | Calculate and use surface tension force instead of input velocity field. Must be set to *True* when omitting the velocity field input.<br />*Note that this is an experimental feature and is probably far from physically correct.* | Boolean |                 | False         |
+| Coefficient     | Surface tension coefficient based on the involved species.   | Float   | \>0             | 72.75         |
 | Density         | Density of the liquid phase.                                 | Float   | \>0             | 0.9982        |
 | Time step       | Alternative time step for scaling the surface tension force vectors. If set to zero, use time step derived from the dataset. | Float   | &#8805;0        | 0.0           |
 
