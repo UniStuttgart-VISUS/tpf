@@ -65,9 +65,9 @@ The data is stored in z-major ordering for ___vectors___ as follows:
 
 The output is a rectilinear grid with either one of the following data fields:
 
-| Data field                | Description                       | Remark                                                                    |
-|---------------------------|-----------------------------------|---------------------------------------------------------------------------|
-| Scalar field              | A scalar field.                   | A scalar field is assumed when the field stores a single value per node.  |
-| Vector field              | A three-dimensional vector field. | A vector field is assumed when the field stores three values per node.    |
+| Data field   | Description                       | Data   | Type       | Remark                                                       |
+| ------------ | --------------------------------- | ------ | ---------- | ------------------------------------------------------------ |
+| Scalar field | A scalar field.                   | Scalar | Cell-based | A scalar field is assumed when the field stores a single value per node. |
+| Vector field | A three-dimensional vector field. | Vector | Cell-based | A vector field is assumed when the field stores three values per node. |
 
 The name of the respective output field is determined by the name in the input file.
