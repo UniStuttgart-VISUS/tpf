@@ -169,7 +169,7 @@ namespace tpf
                         lines->SetCells(static_cast<vtkIdType>(num_lines), line_indices);
                     }
 
-                    // Create poligons
+                    // Create polygons
                     vtkSmartPointer<vtkCellArray> polys = nullptr;
 
                     if (num_polys > 0)
@@ -311,26 +311,33 @@ namespace tpf
                     }
 
                     // Map object data to cell data.
-
                     const auto object_data_array = polydata.template get_object_data_as<value_t, rows, columns>(data_info.name);
                     const auto cell_nums = polydata.get_num_object_cells();
 
-                    topology = data::topology_t::CELL_DATA;
-                    data_array = std::make_shared<data::array<value_t, rows, columns>>(data_info.name, polydata.get_num_cells());
-
-                    std::size_t idx = 0;
-                    for (std::size_t i = 0; i < polydata.get_num_objects(); ++i)
+                    if (object_data_array != nullptr)
                     {
-                        for (std::size_t j = 0; j < cell_nums[i]; ++j)
+                        topology = data::topology_t::CELL_DATA;
+                        data_array = std::make_shared<data::array<value_t, rows, columns>>(data_info.name, polydata.get_num_cells());
+
+                        std::size_t idx = 0;
+                        for (std::size_t i = 0; i < polydata.get_num_objects(); ++i)
                         {
-                            data_array->at(idx) = object_data_array->at(i);
-                            ++idx;
+                            for (std::size_t j = 0; j < cell_nums[i]; ++j)
+                            {
+                                data_array->at(idx) = object_data_array->at(i);
+                                ++idx;
+                            }
                         }
                     }
                 }
                 else
                 {
                     throw std::runtime_error(__tpf_error_message("Invalid topology type."));
+                }
+
+                if (data_array == nullptr)
+                {
+                    throw std::runtime_error(__tpf_error_message("Data array found but incompatible with the given data type, and number of rows and columns."));
                 }
 
                 set_data<value_t>(data, topology, data_info.name, data_array->get_data(), data_array->get_num_components());
