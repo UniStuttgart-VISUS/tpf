@@ -7,22 +7,22 @@ class VTK_EXPORT tpf_surface_tension : public vtkRectilinearGridAlgorithm
     public:
         static tpf_surface_tension* New();
         vtkTypeMacro(tpf_surface_tension, vtkRectilinearGridAlgorithm);
-        
+
         vtkSetMacro(Coefficient, double);
         vtkGetMacro(Coefficient, double);
-        
+
         vtkSetMacro(Density, double);
         vtkGetMacro(Density, double);
 
         vtkSetMacro(Timestep, double);
         vtkGetMacro(Timestep, double);
- 
+
     protected:
         tpf_surface_tension();
         ~tpf_surface_tension();
 
         int FillInputPortInformation(int, vtkInformation*);
- 
+
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);

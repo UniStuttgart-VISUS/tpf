@@ -5,7 +5,7 @@
 #include "tpf/module/tpf_generic_module_base.h"
 
 #include <memory>
- 
+
 class VTK_EXPORT tpf_stl_reader : public vtkPolyDataAlgorithm
 {
     public:
@@ -17,13 +17,13 @@ class VTK_EXPORT tpf_stl_reader : public vtkPolyDataAlgorithm
 
         vtkSetMacro(CalculateNormals, int);
         vtkGetMacro(CalculateNormals, int);
- 
+
     protected:
         tpf_stl_reader();
         ~tpf_stl_reader();
 
         int RequestInformation(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

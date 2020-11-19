@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vtkRectilinearGridAlgorithm.h"
- 
+
 class VTK_EXPORT tpf_test_data : public vtkRectilinearGridAlgorithm
 {
     public:
@@ -21,13 +21,13 @@ class VTK_EXPORT tpf_test_data : public vtkRectilinearGridAlgorithm
         vtkSetMacro(MovingMagnitude, double);
         vtkSetMacro(ExpandingMagnitude, double);
         vtkSetMacro(RotatingMagnitude, double);
- 
+
     protected:
         tpf_test_data();
         ~tpf_test_data();
 
         int RequestInformation(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:
