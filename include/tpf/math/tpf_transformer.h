@@ -103,28 +103,28 @@ namespace tpf
             /// </summary>
             /// <param name="vec">Vector to transform</param>
             /// <return>Transformed vector</return>
-            Eigen::Matrix<floatp_t, dimension, 1> transform(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+            Eigen::Matrix<floatp_t, dimension, 1> transform(const Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
             /// <summary>
             /// Transform vector inverse
             /// </summary>
             /// <param name="vec">Vector to transform</param>
             /// <return>Transformed vector</return>
-            Eigen::Matrix<floatp_t, dimension, 1> transform_inverse(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+            Eigen::Matrix<floatp_t, dimension, 1> transform_inverse(const Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
             /// <summary>
             /// Transform vector
             /// </summary>
             /// <param name="vec">Vector to transform</param>
             /// <return>Transformed vector</return>
-            Eigen::Matrix<floatp_t, dimension, 1>& transform_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
             /// <summary>
             /// Transform vector inverse
             /// </summary>
             /// <param name="vec">Vector to transform</param>
             /// <return>Transformed vector</return>
-            Eigen::Matrix<floatp_t, dimension, 1>& transform_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
         private:
             /// <summary>
