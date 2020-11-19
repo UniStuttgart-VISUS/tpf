@@ -7,7 +7,7 @@ class VTK_EXPORT tpf_interface_stretching : public vtkRectilinearGridAlgorithm
     public:
         static tpf_interface_stretching* New();
         vtkTypeMacro(tpf_interface_stretching, vtkRectilinearGridAlgorithm);
- 
+
     protected:
         tpf_interface_stretching();
         ~tpf_interface_stretching();
@@ -15,7 +15,7 @@ class VTK_EXPORT tpf_interface_stretching : public vtkRectilinearGridAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

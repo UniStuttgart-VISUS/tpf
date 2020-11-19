@@ -21,7 +21,7 @@ class VTK_EXPORT tpf_interface_deformation : public vtkRectilinearGridAlgorithm
 
         vtkSetMacro(Timestep, double);
         vtkGetMacro(Timestep, double);
- 
+
     protected:
         tpf_interface_deformation();
         ~tpf_interface_deformation();
@@ -29,7 +29,7 @@ class VTK_EXPORT tpf_interface_deformation : public vtkRectilinearGridAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

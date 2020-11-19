@@ -7,7 +7,7 @@ class VTK_EXPORT tpf_interface_bending : public vtkRectilinearGridAlgorithm
     public:
         static tpf_interface_bending* New();
         vtkTypeMacro(tpf_interface_bending, vtkRectilinearGridAlgorithm);
- 
+
     protected:
         tpf_interface_bending();
         ~tpf_interface_bending();
@@ -15,7 +15,7 @@ class VTK_EXPORT tpf_interface_bending : public vtkRectilinearGridAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:
