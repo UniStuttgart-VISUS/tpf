@@ -10,6 +10,8 @@ namespace tpf
 {
     namespace modules
     {
+        template <typename T> using opt_arg = std::optional<std::reference_wrapper<T>>;
+
         /// <summary>
         /// Module base class
         /// </summary>
