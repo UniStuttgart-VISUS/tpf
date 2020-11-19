@@ -161,6 +161,145 @@
 
         <!--
 
+        Interface deformation glyph.
+
+        Create glyphs for visualizing interface deformation.
+
+        -->
+        <SourceProxy name="Interface Deformation Glyph" class="tpf_interface_deformation_glyph" label="Interface Deformation Glyph">
+            <Documentation>
+                Create glyphs for visualizing interface deformation.
+            </Documentation>
+
+            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="positions_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="velocities_array" number_of_components="3" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="stretching_min_array" number_of_components="3" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="stretching_max_array" number_of_components="3" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="bending_min_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="bending_max_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="bending_direction_min_array" number_of_components="3" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="bending_direction_max_array" number_of_components="3" optional="1"/>
+                <Documentation>
+                    Grid storing the interface positions, and optionally velocities, stretching, and bending information
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="VOF" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Interface Positions" label="Interface positions" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="positions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface positions
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocities_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocities
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Stretching Min" label="Stretching (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="stretching_min_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Minimum stretching (direction)
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Stretching Max" label="Stretching (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="stretching_max_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Maximum stretching (direction)
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Bending Min" label="Bending (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="bending_min_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Minimum bending
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Bending Max" label="Bending (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="bending_max_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Maximum bending
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Bending Direction Min" label="Bending direction (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="bending_direction_min_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Minimum bending direction
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Bending Direction Max" label="Bending direction (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="bending_direction_max_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Maximum bending direction
+                </Documentation>
+            </StringVectorProperty>
+
+            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Alternative time step" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
+                </Hints>
+                <Documentation>
+                    Alternative time step for scaling the velocities
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+
+        <!--
+
         Interface stretching.
 
         Calculate the stretching at the phase interface as change in size.

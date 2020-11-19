@@ -1,0 +1,8 @@
+NAME
+  TPFdeformation::tpf_interface_deformation_glyph
+LIBRARY_NAME
+  tpf_interface_deformation_glyph
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
