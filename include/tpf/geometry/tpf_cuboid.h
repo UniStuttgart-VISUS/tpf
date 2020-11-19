@@ -73,10 +73,18 @@ namespace tpf
             bool operator==(const typename kernel_t::Iso_cuboid_3& other) const noexcept;
 
             /// <summary>
-            /// Clone object (deep copy)
+            /// Clone object (deep copy).
+            /// Note that a cuboid only supports scaling and translation, and other transformations cause weird behavior.
             /// </summary>
             /// <returns>Deep copy</returns>
-            virtual std::shared_ptr<geometric_object<floatp_t>> clone() const;
+            virtual std::shared_ptr<geometric_object<floatp_t>> clone(const math::transformer<floatp_t, 3>& trafo = math::transformer<floatp_t, 3>::unit()) const;
+
+            /// <summary>
+            /// Transform this object using a transformer.
+            /// Note that a cuboid only supports scaling and translation, and other transformations cause weird behavior.
+            /// </summary>
+            /// <param name="trafo">Transformer</param>
+            virtual geometric_object<floatp_t>& transform(const math::transformer<floatp_t, 3>& trafo);
 
             /// <summary>
             /// Calculate the volume of the cuboid

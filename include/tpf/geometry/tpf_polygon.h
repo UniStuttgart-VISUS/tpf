@@ -101,10 +101,17 @@ namespace tpf
             bool operator==(const CGAL::Polygon_2<kernel_t>& other) const noexcept;
 
             /// <summary>
-            /// Clone object (deep copy)
+            /// Clone object (deep copy).
+            /// Note that transformations are not supported.
             /// </summary>
             /// <returns>Deep copy</returns>
-            virtual std::shared_ptr<geometric_object<floatp_t>> clone() const;
+            virtual std::shared_ptr<geometric_object<floatp_t>> clone(const math::transformer<floatp_t, 3>& trafo = math::transformer<floatp_t, 3>::unit()) const;
+
+            /// <summary>
+            /// Note that transformations are not supported
+            /// </summary>
+            /// <param name="trafo">Transformer</param>
+            virtual geometric_object<floatp_t>& transform(const math::transformer<floatp_t, 3>& trafo);
 
             /// <summary>
             /// Calculate the polygon area

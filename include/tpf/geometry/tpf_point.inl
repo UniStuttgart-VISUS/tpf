@@ -97,9 +97,25 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
-        inline std::shared_ptr<geometric_object<floatp_t>> point<floatp_t, kernel_t>::clone() const
+        inline std::shared_ptr<geometric_object<floatp_t>> point<floatp_t, kernel_t>::clone(const math::transformer<floatp_t, 3>& trafo) const
         {
-            return std::make_shared<point<floatp_t, kernel_t>>(*this);
+            auto copy = std::make_shared<point<floatp_t, kernel_t>>(*this);
+            copy->transform(trafo);
+
+            return copy;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometric_object<floatp_t>& point<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
+        {
+            if (!trafo.is_unit())
+            {
+                const auto transformed = trafo.transform(get_vertex());
+
+                this->_point = typename kernel_t::Point_3(transformed[0], transformed[1], transformed[2]);
+            }
+
+            return *this;
         }
 
         template <typename floatp_t, typename kernel_t>
