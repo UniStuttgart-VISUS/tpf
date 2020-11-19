@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vtkRectilinearGridAlgorithm.h"
- 
+
 class VTK_EXPORT tpf_interface_curvature : public vtkRectilinearGridAlgorithm
 {
     public:
         static tpf_interface_curvature* New();
         vtkTypeMacro(tpf_interface_curvature, vtkRectilinearGridAlgorithm);
- 
+
     protected:
         tpf_interface_curvature();
         ~tpf_interface_curvature();
@@ -15,7 +15,7 @@ class VTK_EXPORT tpf_interface_curvature : public vtkRectilinearGridAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:
