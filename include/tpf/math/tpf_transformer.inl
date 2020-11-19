@@ -90,7 +90,8 @@ namespace tpf
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
-        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform(
+            const Eigen::Matrix<floatp_t, dimension, 1>& vec, const floatp_t w) const
         {
             static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
 
@@ -99,7 +100,7 @@ namespace tpf
 
             if (dimension == 3)
             {
-                temp << vec, static_cast<floatp_t>(homogeneous);
+                temp << vec, w;
             }
             else if (dimension == 4)
             {
@@ -113,7 +114,8 @@ namespace tpf
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
-        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform_inverse(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform_inverse(
+            const Eigen::Matrix<floatp_t, dimension, 1>& vec, const floatp_t w) const
         {
             static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
 
@@ -122,7 +124,7 @@ namespace tpf
 
             if (dimension == 3)
             {
-                temp << vec, static_cast<floatp_t>(homogeneous);
+                temp << vec, w;
             }
             else if (dimension == 4)
             {
@@ -136,7 +138,8 @@ namespace tpf
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
-        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_inplace(
+            Eigen::Matrix<floatp_t, dimension, 1>& vec, const floatp_t w) const
         {
             static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
 
@@ -145,7 +148,7 @@ namespace tpf
 
             if (dimension == 3)
             {
-                temp << vec, static_cast<floatp_t>(homogeneous);
+                temp << vec, w;
             }
             else if (dimension == 4)
             {
@@ -161,7 +164,8 @@ namespace tpf
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
-        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_inverse_inplace(
+            Eigen::Matrix<floatp_t, dimension, 1>& vec, const floatp_t w) const
         {
             static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
 
@@ -170,7 +174,7 @@ namespace tpf
 
             if (dimension == 3)
             {
-                temp << vec, static_cast<floatp_t>(homogeneous);
+                temp << vec, w;
             }
             else if (dimension == 4)
             {
