@@ -94,9 +94,27 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
-        inline std::shared_ptr<geometric_object<floatp_t>> tetrahedron<floatp_t, kernel_t>::clone() const
+        inline std::shared_ptr<geometric_object<floatp_t>> tetrahedron<floatp_t, kernel_t>::clone(const math::transformer<floatp_t, 3>& trafo) const
         {
-            return std::make_shared<tetrahedron<floatp_t, kernel_t>>(*this);
+            auto copy = std::make_shared<tetrahedron<floatp_t, kernel_t>>(*this);
+            copy->transform(trafo);
+
+            return copy;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometric_object<floatp_t>& tetrahedron<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
+        {
+            if (!trafo.is_unit())
+            {
+                this->_tetrahedron = typename kernel_t::Tetrahedron_3(
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_tetrahedron.vertex(0)).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_tetrahedron.vertex(1)).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_tetrahedron.vertex(2)).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_tetrahedron.vertex(3)).transform(trafo)).get_internal());
+            }
+
+            return *this;
         }
 
         template <typename floatp_t, typename kernel_t>
