@@ -284,14 +284,121 @@
                 </Documentation>
             </StringVectorProperty>
 
-            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Alternative time step" number_of_elements="1" default_values="0.0">
+            <IntVectorProperty name="VelocityGlyph" command="SetVelocityGlyph" label="Create velocity glyph" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Create an arrow glyph to visualize the underlying vector field in interface cells
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="ArrowSize" command="SetArrowSize" label="Size" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Dynamic"/>
+                    <Entry value="1" text="Fixed thickness"/>
+                    <Entry value="2" text="Fixed size"/>
+                </EnumerationDomain>
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SurfaceTension" value="1" />
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
                 </Hints>
                 <Documentation>
-                    Alternative time step for scaling the velocities
+                    Set the arrow size:
+                    "dynamic" scales the arrow by multiplying with the vector magnitude and the size scalar,
+                    "fixed thickness" scales the arrow only in its direction with the vector magnitude and in all directions with the size scalar, and
+                    "fixed size" only scales the arrow with the size scalar.
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="ArrowScalar" command="SetArrowScalar" label="Size scalar" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Scale the velocity glyph
                 </Documentation>
             </DoubleVectorProperty>
+            <DoubleVectorProperty name="ArrowFixedScalar" command="SetArrowFixedScalar" label="Fixed size scalar" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                            <PropertyWidgetDecorator type="CompositeDecorator">
+                                <Expression type="or">
+                                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ArrowSize" value="1" />
+                                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ArrowSize" value="2" />
+                                </Expression>
+                            </PropertyWidgetDecorator>
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Scalar for the fixed component
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="Timestep" command="SetTimestep" label="Alternative time step" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Alternative time step for scaling the velocities. If value is set to 0, a time step is calculated from the data
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="ArrowResolution" command="SetArrowResolution" label="Resolution" number_of_elements="1" default_values="64" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Resolution of the arrow, with larger values leading to a rounder arrow
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="ShaftTipRatio" command="SetShaftTipRatio" label="Shaft-tip-ratio" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
+                <DoubleRangeDomain name="volume_range" min="0.01" max="0.99" />
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Ratio of the shaft, where a larger value leads to a smaller tip
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="ArrowThickness" command="SetArrowThickness" label="Thickness" number_of_elements="1" default_values="0.05" panel_visibility="advanced">
+                <DoubleRangeDomain name="volume_range" min="0.01" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Thickness of the shaft, with twice the thickness for the tip
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <IntVectorProperty name="StretchingGlyph" command="SetStretchingGlyph" label="Create stretching glyph" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Create a disc glyph to visualize the stretching
+                </Documentation>
+            </IntVectorProperty>
+
+            <IntVectorProperty name="BendingGlyph" command="SetBendingGlyph" label="Create bending glyph" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Create a disc glyph to visualize the bending
+                </Documentation>
+            </IntVectorProperty>
+
+            <PropertyGroup label="Velocity glyph">
+                <Property name="VelocityGlyph" />
+                <Property name="ArrowSize" />
+                <Property name="ArrowScalar" />
+                <Property name="ArrowFixedScalar" />
+                <Property name="Timestep" />
+                <Property name="ArrowResolution" />
+                <Property name="ShaftTipRatio" />
+                <Property name="ArrowThickness" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Stretching glyph">
+                <Property name="StretchingGlyph" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Bending glyph">
+                <Property name="BendingGlyph" />
+            </PropertyGroup>
 
             <Hints>
                 <ShowInMenu category="Two-Phase Flow"/>

@@ -87,9 +87,9 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             return std::nullopt;
         };
 
-        const bool velocity_glyph = GetInputArrayToProcess(2, input) != nullptr;
-        const bool stretching_glyph = GetInputArrayToProcess(3, input) != nullptr && GetInputArrayToProcess(4, input) != nullptr;
-        const bool bending_glyph = GetInputArrayToProcess(5, input) != nullptr && GetInputArrayToProcess(6, input) != nullptr
+        const bool velocity_glyph = this->VelocityGlyph && GetInputArrayToProcess(2, input) != nullptr;
+        const bool stretching_glyph = this->StretchingGlyph && GetInputArrayToProcess(3, input) != nullptr && GetInputArrayToProcess(4, input) != nullptr;
+        const bool bending_glyph = this->BendingGlyph && GetInputArrayToProcess(5, input) != nullptr && GetInputArrayToProcess(6, input) != nullptr
             && GetInputArrayToProcess(7, input) != nullptr && GetInputArrayToProcess(8, input) != nullptr;
 
         const auto velocities = get_opt_vector(2);
@@ -111,7 +111,9 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         interface_deformation_glyph.set_input(vof, positions, velocities, stretching_min, stretching_max,
             bending_min, bending_max, bending_direction_min, bending_direction_max);
         interface_deformation_glyph.set_output(velocity_glyphs, stretching_glyphs, bending_glyphs);
-        interface_deformation_glyph.set_parameters(time_step);
+        interface_deformation_glyph.set_parameters(velocity_glyph, stretching_glyph, bending_glyph, time_step,
+            static_cast<tpf::modules::interface_deformation_glyph_aux::arrow_size_t>(this->ArrowSize),
+            this->ArrowScalar, this->ArrowFixedScalar, this->ArrowResolution, this->ShaftTipRatio, this->ArrowThickness);
 
         interface_deformation_glyph.run();
 
@@ -132,7 +134,7 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
 
             ++index;
         }
-        /*
+
         if (stretching_glyph)
         {
             auto output_stretching_glyphs = vtkPolyData::New();
@@ -157,7 +159,7 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             output->GetMetaData(index)->Set(vtkCompositeDataSet::NAME(), "bending");
 
             ++index;
-        }*/
+        }
     }
     catch (const std::runtime_error& ex)
     {
