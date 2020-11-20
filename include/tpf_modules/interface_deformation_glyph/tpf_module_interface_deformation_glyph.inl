@@ -265,12 +265,13 @@ namespace tpf
                             const auto origin = positions(coords);
                             const auto velocity = velocities(coords);
 
-                            // Create transformer
-                            Eigen::Matrix<float_t, 4, 4> translation_matrix, scale_matrix, rotation_matrix;
-
+                            // Translate to correct position
+                            Eigen::Matrix<float_t, 4, 4> translation_matrix;
                             translation_matrix.setIdentity();
                             translation_matrix.col(3).head(3) = origin;
 
+                            // Scale according to user input
+                            Eigen::Matrix<float_t, 4, 4> scale_matrix;
                             scale_matrix.setIdentity();
 
                             switch (arrow_size)
@@ -289,9 +290,26 @@ namespace tpf
                                 scale_matrix(0, 0) = scale_matrix(1, 1) = scale_matrix(2, 2) = arrow_fixed_scalar;
                             }
 
+                            // Rotate to match velocity's direction
+                            Eigen::Matrix<float_t, 4, 4> rotation_matrix;
                             rotation_matrix.setIdentity();
-                            // TODO
 
+                            const auto rotation_axis = Eigen::Matrix<float_t, 3, 1>(1.0, 0.0, 0.0).cross(velocity.normalized()).normalized();
+                            const auto angle = std::acos(Eigen::Matrix<float_t, 3, 1>(1.0, 0.0, 0.0).dot(velocity.normalized()));
+
+                            auto& rotation_matrix_3x3 = rotation_matrix.block(0, 0, 3, 3);
+
+                            Eigen::Matrix<float_t, 3, 3> cross_product_matrix;
+                            cross_product_matrix <<
+                                0.0, -rotation_axis[2], rotation_axis[1],
+                                rotation_axis[2], 0.0, -rotation_axis[0],
+                                -rotation_axis[1], rotation_axis[0], 0.0;
+
+                            rotation_matrix_3x3 *= std::cos(angle);
+                            rotation_matrix_3x3 += std::sin(angle) * cross_product_matrix;
+                            rotation_matrix_3x3 += (static_cast<float_t>(1.0) - std::cos(angle)) * (rotation_axis * rotation_axis.transpose());
+
+                            // Create object matrix
                             const math::transformer<float_t, 3> trafo(translation_matrix * rotation_matrix * scale_matrix);
 
                             // Instantiate glyph
