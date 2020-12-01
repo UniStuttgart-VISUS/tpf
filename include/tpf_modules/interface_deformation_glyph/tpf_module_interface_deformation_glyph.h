@@ -38,8 +38,10 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>>,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>,
             interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>,
@@ -51,8 +53,10 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>>,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>;
             using output_t = interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>;
@@ -85,6 +89,7 @@ namespace tpf
             /// </summary>
             /// <param name="positions">Input volume of fluid</param>
             /// <param name="positions">Input positions</param>
+            /// <param name="gradients">Input optional gradients</param>
             /// <param name="velocities">Input optional velocities</param>
             /// <param name="stretching_min">Input optional minimum stretching (direction)</param>
             /// <param name="stretching_max">Input optional maximum stretching (direction)</param>
@@ -92,15 +97,18 @@ namespace tpf
             /// <param name="bending_max">Input optional maximum bending</param>
             /// <param name="bending_direction_min">Input optional minimum bending direction</param>
             /// <param name="bending_direction_max">Input optional maximum bending direction</param>
+            /// <param name="bending_polynomial">Input optional polynomial describing bending</param>
             virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& vof,
                 const data::grid<float_t, float_t, 3, 3>& positions,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>> gradients,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>> velocities,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>> stretching_min,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>> stretching_max,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>> bending_min,
                 opt_arg<const data::grid<float_t, float_t, 3, 1>> bending_max,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_min,
-                opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_max) override;
+                opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_max,
+                opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_polynomial) override;
 
             /// <summary>
             /// Set output
@@ -174,6 +182,9 @@ namespace tpf
             /// Positions
             const data::grid<float_t, float_t, 3, 3>* positions;
 
+            /// Gradients
+            const data::grid<float_t, float_t, 3, 3>* gradients;
+
             /// Velocities
             const data::grid<float_t, float_t, 3, 3>* velocities;
 
@@ -186,6 +197,7 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 1>* bending_max;
             const data::grid<float_t, float_t, 3, 3>* bending_direction_min;
             const data::grid<float_t, float_t, 3, 3>* bending_direction_max;
+            const data::grid<float_t, float_t, 3, 3>* bending_polynomial;
 
             /// Glyphs
             data::polydata<float_t>* velocity_glyphs;

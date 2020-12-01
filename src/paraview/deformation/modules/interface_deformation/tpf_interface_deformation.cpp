@@ -95,6 +95,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
         auto bend_minimum_direction = vof.copy_structure<float_t, 3>("Bending Direction (minimum)");
         auto bend_maximum_direction = vof.copy_structure<float_t, 3>("Bending Direction (maximum)");
         auto bend_largest_direction = vof.copy_structure<float_t, 3>("Bending Direction (absolute maximum)");
+        auto bend_polynomial = vof.copy_structure<float_t, 3>("Bending Polynomial");
 
         // Get parameters
         bool use_surface_tension = this->SurfaceTension != 0;
@@ -143,7 +144,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
 
             interface_bending_module.set_input(vof, gradients, positions, surface_tension);
             interface_bending_module.set_parameters(time_step);
-            interface_bending_module.set_output(bend_minimum, bend_maximum, bend_largest, bend_minimum_direction, bend_maximum_direction, bend_largest_direction);
+            interface_bending_module.set_output(bend_minimum, bend_maximum, bend_largest, bend_minimum_direction, bend_maximum_direction, bend_largest_direction, bend_polynomial);
 
             // Run modules
             interface_gradient_module.run();
@@ -177,7 +178,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
 
             interface_bending_module.set_input(vof, gradients, positions, velocity);
             interface_bending_module.set_parameters(time_step);
-            interface_bending_module.set_output(bend_minimum, bend_maximum, bend_largest, bend_minimum_direction, bend_maximum_direction, bend_largest_direction);
+            interface_bending_module.set_output(bend_minimum, bend_maximum, bend_largest, bend_minimum_direction, bend_maximum_direction, bend_largest_direction, bend_polynomial);
 
             // Run modules
             interface_gradient_module.run();
@@ -213,6 +214,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, bend_minimum_direction.get_name(), bend_minimum_direction.get_data(), bend_minimum_direction.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, bend_maximum_direction.get_name(), bend_maximum_direction.get_data(), bend_maximum_direction.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, bend_largest_direction.get_name(), bend_largest_direction.get_data(), bend_largest_direction.get_num_components());
+        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, bend_polynomial.get_name(), bend_polynomial.get_data(), bend_polynomial.get_num_components());
     }
     catch (const std::runtime_error& ex)
     {

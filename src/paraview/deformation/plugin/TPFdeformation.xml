@@ -181,6 +181,7 @@
                 </DataTypeDomain>
                 <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="cell" name="positions_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="gradients_array" number_of_components="3" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="velocities_array" number_of_components="3" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="stretching_min_array" number_of_components="3" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="stretching_max_array" number_of_components="3" optional="1"/>
@@ -188,6 +189,7 @@
                 <InputArrayDomain attribute_type="cell" name="bending_max_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="bending_direction_min_array" number_of_components="3" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="bending_direction_max_array" number_of_components="3" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="bending_polynomial" number_of_components="3" optional="1"/>
                 <Documentation>
                     Grid storing the interface positions, and optionally velocities, stretching, and bending information
                 </Documentation>
@@ -213,7 +215,17 @@
                     Interface positions
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+            <StringVectorProperty name="Gradients" label="Interface gradients" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interface gradients
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocities" label="Velocities" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocities_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -223,7 +235,7 @@
                     Velocities
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Stretching Min" label="Stretching (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+            <StringVectorProperty name="Stretching Min" label="Stretching (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="stretching_min_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -233,7 +245,7 @@
                     Minimum stretching (direction)
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Stretching Max" label="Stretching (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+            <StringVectorProperty name="Stretching Max" label="Stretching (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="stretching_max_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -243,7 +255,7 @@
                     Maximum stretching (direction)
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Bending Min" label="Bending (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+            <StringVectorProperty name="Bending Min" label="Bending (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="bending_min_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -253,7 +265,7 @@
                     Minimum bending
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Bending Max" label="Bending (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
+            <StringVectorProperty name="Bending Max" label="Bending (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="bending_max_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -263,7 +275,7 @@
                     Maximum bending
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Bending Direction Min" label="Bending direction (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
+            <StringVectorProperty name="Bending Direction Min" label="Bending direction (minimum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="bending_direction_min_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -273,7 +285,7 @@
                     Minimum bending direction
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Bending Direction Max" label="Bending direction (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
+            <StringVectorProperty name="Bending Direction Max" label="Bending direction (maximum)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="9">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="bending_direction_max_array">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
@@ -281,6 +293,16 @@
                 </ArrayListDomain>
                 <Documentation>
                     Maximum bending direction
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Bending Polynomial" label="Bending polynomial" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="10">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="bending_polynomial">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Polynomial describing bending
                 </Documentation>
             </StringVectorProperty>
 
@@ -413,7 +435,7 @@
                     Resolution around the disc (circle)
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="PolygonalResolution" command="SetPolygonalResolution" label="Polygonal resolution" number_of_elements="1" default_values="20" panel_visibility="advanced">
+            <IntVectorProperty name="PolynomialResolution" command="SetPolynomialResolution" label="Polynomial resolution" number_of_elements="1" default_values="20" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
                 </Hints>
@@ -443,7 +465,7 @@
                 <Property name="BendingSizeScalar" />
                 <Property name="BendingStripSize" />
                 <Property name="BendingDiscResolution" />
-                <Property name="PolygonalResolution" />
+                <Property name="PolynomialResolution" />
             </PropertyGroup>
 
             <Hints>

@@ -87,18 +87,23 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             return std::nullopt;
         };
 
-        const bool velocity_glyph = this->VelocityGlyph && GetInputArrayToProcess(2, input) != nullptr;
-        const bool stretching_glyph = this->StretchingGlyph && GetInputArrayToProcess(3, input) != nullptr && GetInputArrayToProcess(4, input) != nullptr;
-        const bool bending_glyph = this->BendingGlyph && GetInputArrayToProcess(5, input) != nullptr && GetInputArrayToProcess(6, input) != nullptr
-            && GetInputArrayToProcess(7, input) != nullptr && GetInputArrayToProcess(8, input) != nullptr;
+        const bool velocity_glyph = this->VelocityGlyph && GetInputArrayToProcess(3, input) != nullptr;
+        const bool stretching_glyph = this->StretchingGlyph && GetInputArrayToProcess(2, input) != nullptr
+            && GetInputArrayToProcess(4, input) != nullptr && GetInputArrayToProcess(5, input) != nullptr;
+        const bool bending_glyph = this->BendingGlyph && GetInputArrayToProcess(2, input) != nullptr
+            && GetInputArrayToProcess(6, input) != nullptr && GetInputArrayToProcess(7, input) != nullptr
+            && GetInputArrayToProcess(8, input) != nullptr && GetInputArrayToProcess(9, input) != nullptr
+            && GetInputArrayToProcess(10, input) != nullptr;
 
-        const auto velocities = get_opt_vector(2);
-        const auto stretching_min = get_opt_vector(3);
-        const auto stretching_max = get_opt_vector(4);
-        const auto bending_min = get_opt_scalar(5);
-        const auto bending_max = get_opt_scalar(6);
-        const auto bending_direction_min = get_opt_vector(7);
-        const auto bending_direction_max = get_opt_vector(8);
+        const auto gradients = get_opt_vector(2);
+        const auto velocities = get_opt_vector(3);
+        const auto stretching_min = get_opt_vector(4);
+        const auto stretching_max = get_opt_vector(5);
+        const auto bending_min = get_opt_scalar(6);
+        const auto bending_max = get_opt_scalar(7);
+        const auto bending_direction_min = get_opt_vector(8);
+        const auto bending_direction_max = get_opt_vector(9);
+        const auto bending_polynomial = get_opt_vector(10);
 
         const float_t time_step = (this->Timestep != 0.0) ? this->Timestep : tpf::vtk::get_timestep_delta<float_t>(input_vector[0]->GetInformationObject(0), input);
 
@@ -108,13 +113,13 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         // Run interface gradient module
         tpf::modules::interface_deformation_glyph<float_t> interface_deformation_glyph;
 
-        interface_deformation_glyph.set_input(vof, positions, velocities, stretching_min, stretching_max,
-            bending_min, bending_max, bending_direction_min, bending_direction_max);
+        interface_deformation_glyph.set_input(vof, positions, gradients, velocities, stretching_min, stretching_max,
+            bending_min, bending_max, bending_direction_min, bending_direction_max, bending_polynomial);
         interface_deformation_glyph.set_output(velocity_glyphs, stretching_glyphs, bending_glyphs);
         interface_deformation_glyph.set_parameters(velocity_glyph, stretching_glyph, bending_glyph, time_step,
             static_cast<tpf::modules::interface_deformation_glyph_aux::arrow_size_t>(this->ArrowSize),
             this->ArrowScalar, this->ArrowFixedScalar, this->ArrowResolution, this->ShaftTipRatio, this->ArrowThickness,
-            this->BendingDiscResolution, this->PolygonalResolution, this->BendingStripSize, this->BendingSizeScalar, this->BendingScalar);
+            this->BendingDiscResolution, this->PolynomialResolution, this->BendingStripSize, this->BendingSizeScalar, this->BendingScalar);
 
         interface_deformation_glyph.run();
 

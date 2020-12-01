@@ -39,16 +39,20 @@ namespace tpf
         inline void interface_deformation_glyph<float_t>::set_algorithm_input(
             const data::grid<float_t, float_t, 3, 1>& vof,
             const data::grid<float_t, float_t, 3, 3>& positions,
+            opt_arg<const data::grid<float_t, float_t, 3, 3>> gradients,
             opt_arg<const data::grid<float_t, float_t, 3, 3>> velocities,
             opt_arg<const data::grid<float_t, float_t, 3, 3>> stretching_min,
             opt_arg<const data::grid<float_t, float_t, 3, 3>> stretching_max,
             opt_arg<const data::grid<float_t, float_t, 3, 1>> bending_min,
             opt_arg<const data::grid<float_t, float_t, 3, 1>> bending_max,
             opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_min,
-            opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_max)
+            opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_direction_max,
+            opt_arg<const data::grid<float_t, float_t, 3, 3>> bending_polynomial)
         {
             this->vof = &vof;
             this->positions = &positions;
+
+            this->gradients = get_or_default<const data::grid<float_t, float_t, 3, 3>>(gradients);
 
             this->velocities = get_or_default<const data::grid<float_t, float_t, 3, 3>>(velocities);
 
@@ -59,6 +63,7 @@ namespace tpf
             this->bending_max = get_or_default<const data::grid<float_t, float_t, 3, 1>>(bending_max);
             this->bending_direction_min = get_or_default<const data::grid<float_t, float_t, 3, 3>>(bending_direction_min);
             this->bending_direction_max = get_or_default<const data::grid<float_t, float_t, 3, 3>>(bending_direction_max);
+            this->bending_polynomial = get_or_default<const data::grid<float_t, float_t, 3, 3>>(bending_polynomial);
         }
 
         template <typename float_t>
@@ -122,7 +127,7 @@ namespace tpf
             }
 
             // Create stretching glyph
-            if (this->stretching_glyph && this->stretching_min != nullptr && this->stretching_max != nullptr)
+            if (this->stretching_glyph && this->gradients != nullptr && this->stretching_min != nullptr && this->stretching_max != nullptr)
             {
                 // TODO
 
@@ -133,7 +138,7 @@ namespace tpf
             }
 
             // Create bending glyph
-            if (this->bending_glyph && this->bending_min != nullptr && this->bending_max != nullptr &&
+            if (this->bending_glyph && this->gradients != nullptr && this->bending_min != nullptr && this->bending_max != nullptr &&
                 this->bending_direction_min != nullptr && this->bending_direction_max != nullptr)
             {
                 instantiate_bending_glyph(create_bending_glyph_template(this->bending_disc_resolution,
@@ -471,6 +476,8 @@ namespace tpf
 
                         outer[(j - 2) * circle_resolution * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, p4);
                         outer[(j - 2) * circle_resolution * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p1, p4, p3);
+
+                        radius_prev = radius;
                     }
                 }
 
@@ -494,10 +501,10 @@ namespace tpf
                 {
                     const auto x = (i * increment) * 2 - 1;
 
-                    const geometry::point<float_t> p1(x_prev, y_plus, 0.01);
-                    const geometry::point<float_t> p2(x_prev, y_minus, 0.01);
-                    const geometry::point<float_t> p3(x, y_plus, 0.01);
-                    const geometry::point<float_t> p4(x, y_minus, 0.01);
+                    const geometry::point<float_t> p1(x_prev, y_plus, 0.02);
+                    const geometry::point<float_t> p2(x_prev, y_minus, 0.02);
+                    const geometry::point<float_t> p3(x, y_plus, 0.02);
+                    const geometry::point<float_t> p4(x, y_minus, 0.02);
 
                     strip[(i - 1) * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p2, p4, p3);
                     strip[(i - 1) * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p2, p3, p1);
@@ -516,7 +523,12 @@ namespace tpf
         {
             const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
             const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
-            // TODO
+            const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
+            const data::grid<float_t, float_t, 3, 1>& bending_min = *this->bending_min;
+            const data::grid<float_t, float_t, 3, 1>& bending_max = *this->bending_max;
+            const data::grid<float_t, float_t, 3, 3>& bending_direction_min = *this->bending_direction_min;
+            const data::grid<float_t, float_t, 3, 3>& bending_direction_max = *this->bending_direction_max;
+            const data::grid<float_t, float_t, 3, 3>& bending_polynomial = *this->bending_polynomial;
 
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
@@ -535,12 +547,13 @@ namespace tpf
                         {
                             // Get necessary information
                             const auto origin = positions(coords);
-                            // TODO
+                            const auto normal = -gradients(coords).normalized();
+                            const auto direction_min = bending_direction_min(coords).normalized();
+                            const auto direction_max = bending_direction_max(coords).normalized();
+                            const auto polynomial = bending_polynomial(coords);
 
-                            // Translate to correct position
-                            Eigen::Matrix<float_t, 4, 4> translation_matrix;
-                            translation_matrix.setIdentity();
-                            translation_matrix.col(3).head(3) = origin;
+                            // Rotate into basis defined by the interface normal and the eigenvectors
+                            const math::transformer<float_t, 3> translation_and_rotation(origin, direction_min, direction_max, normal);
 
                             // Scale
                             Eigen::Matrix<float_t, 4, 4> scale_matrix;
@@ -550,13 +563,31 @@ namespace tpf
                             scale_matrix(1, 1) = size_scalar * average_cell_size;
                             scale_matrix(2, 2) = size_scalar * average_cell_size;
 
-                            // Rotate into basis defined by the interface normal and the eigenvectors
-                            Eigen::Matrix<float_t, 4, 4> rotation_matrix;
-                            rotation_matrix.setIdentity();
-                            // TODO
+                            // Deform, such that the glyph indicates bending
+                            auto bend = [&polynomial, scalar](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
+                            {
+                                Eigen::Matrix<float_t, 4, 1> bent_vector;
+                                bent_vector << vector[0], vector[1], 
+                                    scalar * (polynomial[0] * vector[0] * vector[1] + polynomial[1] * vector[0] * vector[0]
+                                        + polynomial[2] * vector[1] * vector[1]) + vector[2],
+                                    vector[3];
+
+                                return bent_vector;
+                            };
 
                             // Create object matrix
-                            const math::transformer<float_t, 3> trafo(translation_matrix * rotation_matrix * scale_matrix);
+                            math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
+                            trafo.set_preprocessing(bend);
+
+                            // Extra rotation for second strip
+                            Eigen::Matrix<float_t, 4, 4> rotation_matrix;
+                            rotation_matrix.setIdentity();
+
+                            rotation_matrix(0, 0) = rotation_matrix(1, 1) = 0.0;
+                            rotation_matrix(1, 0) = 1.0;
+                            rotation_matrix(0, 1) = -1.0;
+
+                            math::transformer<float_t, 3> trafo_rotation(rotation_matrix);
 
                             // Instantiate glyph
                             auto pos = std::transform(std::get<0>(glyph_template).begin(), std::get<0>(glyph_template).end(), instance.begin(),
@@ -566,7 +597,12 @@ namespace tpf
                                 [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
 
                             pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
-                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
+                                [&trafo, &trafo_rotation](const std::shared_ptr<geometry::geometric_object<float_t>> obj)
+                                {
+                                    auto clone = obj->clone(trafo_rotation);
+                                    clone->transform(trafo);
+                                    return clone;
+                                });
 
                             this->bending_glyphs->insert(instance);
 
@@ -578,9 +614,39 @@ namespace tpf
 
             // Create data array
             auto bending = std::make_shared<tpf::data::array<float_t>>("Bending");
-            bending->resize(num_interface_cells * (std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size()));
+            bending->reserve(num_interface_cells * (std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size()));
 
-            std::fill(bending->get_data().begin(), bending->get_data().end(), 0.0);
+            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second && num_interface_cells != 0; ++z)
+            {
+                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second && num_interface_cells != 0; ++y)
+                {
+                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second && num_interface_cells != 0; ++x)
+                    {
+                        const data::coords3_t coords(x, y, z);
+
+                        if (vof(coords) > 0 && vof(coords) < 1)
+                        {
+                            const auto min = bending_min(coords);
+                            const auto max = bending_max(coords);
+
+                            for (std::size_t i = 0; i < std::get<0>(glyph_template).size(); ++i)
+                            {
+                                bending->push_back((min + max) / 2.0);
+                            }
+
+                            for (std::size_t i = 0; i < std::get<1>(glyph_template).size(); ++i)
+                            {
+                                bending->push_back(min);
+                            }
+
+                            for (std::size_t i = 0; i < std::get<1>(glyph_template).size(); ++i)
+                            {
+                                bending->push_back(max);
+                            }
+                        }
+                    }
+                }
+            }
 
             this->bending_glyphs->add(bending, tpf::data::topology_t::OBJECT_DATA);
         }
