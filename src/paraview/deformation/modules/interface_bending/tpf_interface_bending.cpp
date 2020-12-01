@@ -72,6 +72,7 @@ int tpf_interface_bending::RequestData(vtkInformation*, vtkInformationVector** i
         auto min_curvature_dir = vof.copy_structure<float_t, 3>("Bending Direction (minimum)");
         auto max_curvature_dir = vof.copy_structure<float_t, 3>("Bending Direction (maximum)");
         auto absmax_curvature_dir = vof.copy_structure<float_t, 3>("Bending Direction (absolute maximum)");
+        auto polynomial = vof.copy_structure<float_t, 3>("Bending Polynomial");
 
         // Get time step
         const float_t timestep = tpf::vtk::get_timestep_delta<float_t>(input_vector[0]->GetInformationObject(0), input);
@@ -80,7 +81,7 @@ int tpf_interface_bending::RequestData(vtkInformation*, vtkInformationVector** i
         tpf::modules::interface_bending<float_t> interface_bending;
 
         interface_bending.set_input(vof, gradients, positions, velocities);
-        interface_bending.set_output(min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir);
+        interface_bending.set_output(min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir, polynomial);
         interface_bending.set_parameters(timestep);
 
         interface_bending.run();
@@ -95,6 +96,7 @@ int tpf_interface_bending::RequestData(vtkInformation*, vtkInformationVector** i
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, min_curvature_dir.get_name(), min_curvature_dir.get_data(), min_curvature_dir.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, max_curvature_dir.get_name(), max_curvature_dir.get_data(), max_curvature_dir.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, absmax_curvature_dir.get_name(), absmax_curvature_dir.get_data(), absmax_curvature_dir.get_num_components());
+        tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, polynomial.get_name(), polynomial.get_data(), polynomial.get_num_components());
     }
     catch (const std::runtime_error& ex)
     {

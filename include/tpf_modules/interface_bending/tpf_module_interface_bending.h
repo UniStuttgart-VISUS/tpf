@@ -26,13 +26,15 @@ namespace tpf
             interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
                 const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 3>&>,
             interface_output<data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
-                data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&>,
+                data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&,
+                data::grid<float_t, float_t, 3, 3>&>,
             interface_parameters<float_t>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&,
                 const data::grid<float_t, float_t, 3, 3>&, const data::grid<float_t, float_t, 3, 3>&>;
             using output_t = interface_output<data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&, data::grid<float_t, float_t, 3, 1>&,
-                data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&>;
+                data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&, data::grid<float_t, float_t, 3, 3>&,
+                data::grid<float_t, float_t, 3, 3>&>;
             using parameters_t = interface_parameters<float_t>;
 
             using base_t = module_base<input_t, output_t, parameters_t>;
@@ -75,9 +77,11 @@ namespace tpf
             /// <param name="min_curvature_dir">Output min direction of curvature change</param>
             /// <param name="max_curvature_dir">Output max direction of curvature change</param>
             /// <param name="absmax_curvature_dir">Output absolute max direction of curvature change</param>
+            /// <param name="polynomial">The polynomial describing the bending in the form of a_xy xy + a_xx x^2 + a_yy y^2 and stored as (a_xy, a_xx, a_yy)</param>
             virtual void set_algorithm_output(data::grid<float_t, float_t, 3, 1>& min_curvature, data::grid<float_t, float_t, 3, 1>& max_curvature,
                 data::grid<float_t, float_t, 3, 1>& absmax_curvature, data::grid<float_t, float_t, 3, 3>& min_curvature_dir,
-                data::grid<float_t, float_t, 3, 3>& max_curvature_dir, data::grid<float_t, float_t, 3, 3>& absmax_curvature_dir) override;
+                data::grid<float_t, float_t, 3, 3>& max_curvature_dir, data::grid<float_t, float_t, 3, 3>& absmax_curvature_dir,
+                data::grid<float_t, float_t, 3, 3>& polynomial) override;
 
             /// <summary>
             /// Set parameters
@@ -140,6 +144,9 @@ namespace tpf
 
             /// Absolute max direction of curvature change
             data::grid<float_t, float_t, 3, 3>* absmax_curvature_dir;
+
+            /// Polynomial describing bending
+            data::grid<float_t, float_t, 3, 3>* polynomial;
 
             // Time step delta
             float_t timestep;

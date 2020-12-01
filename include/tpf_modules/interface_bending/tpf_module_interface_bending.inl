@@ -30,7 +30,7 @@ namespace tpf
         template <typename float_t>
         inline interface_bending<float_t>::interface_bending() : fractions(nullptr), gradients(nullptr), positions(nullptr), velocities(nullptr),
             min_curvature(nullptr), max_curvature(nullptr), absmax_curvature(nullptr), min_curvature_dir(nullptr), max_curvature_dir(nullptr),
-            absmax_curvature_dir(nullptr) { }
+            absmax_curvature_dir(nullptr), polynomial(nullptr) { }
 
         template <typename float_t>
         inline std::string interface_bending<float_t>::get_name() const
@@ -53,7 +53,7 @@ namespace tpf
         inline void interface_bending<float_t>::set_algorithm_output(data::grid<float_t, float_t, 3, 1>& min_curvature,
             data::grid<float_t, float_t, 3, 1>& max_curvature, data::grid<float_t, float_t, 3, 1>& absmax_curvature,
             data::grid<float_t, float_t, 3, 3>& min_curvature_dir, data::grid<float_t, float_t, 3, 3>& max_curvature_dir,
-            data::grid<float_t, float_t, 3, 3>& absmax_curvature_dir)
+            data::grid<float_t, float_t, 3, 3>& absmax_curvature_dir, data::grid<float_t, float_t, 3, 3>& polynomial)
         {
             this->min_curvature = &min_curvature;
             this->max_curvature = &max_curvature;
@@ -61,6 +61,7 @@ namespace tpf
             this->min_curvature_dir = &min_curvature_dir;
             this->max_curvature_dir = &max_curvature_dir;
             this->absmax_curvature_dir = &absmax_curvature_dir;
+            this->polynomial = &polynomial;
         }
 
         template <typename float_t>
@@ -84,16 +85,17 @@ namespace tpf
             data::grid<float_t, float_t, 3, 3>& min_curvature_dir = *this->min_curvature_dir;
             data::grid<float_t, float_t, 3, 3>& max_curvature_dir = *this->max_curvature_dir;
             data::grid<float_t, float_t, 3, 3>& absmax_curvature_dir = *this->absmax_curvature_dir;
+            data::grid<float_t, float_t, 3, 3>& polynomial = *this->polynomial;
 
             // Calculate bending at all cells
             /**
                 OpenMP information
 
                 read global:    fractions, gradients, positions, velocities
-                write global:    min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir
+                write global:   min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir, polynomial
             **/
             #pragma omp parallel for schedule(dynamic) default(none) shared(fractions, gradients, positions, velocities, \
-                    min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir)
+                    min_curvature, max_curvature, absmax_curvature, min_curvature_dir, max_curvature_dir, absmax_curvature_dir, polynomial)
             for (long long z_omp = static_cast<long long>(fractions.get_extent()[2].first); z_omp <= static_cast<long long>(fractions.get_extent()[2].second); ++z_omp)
             {
                 std::size_t z = static_cast<std::size_t>(z_omp);
@@ -110,6 +112,7 @@ namespace tpf
                         min_curvature_dir(coords).setZero();
                         max_curvature_dir(coords).setZero();
                         absmax_curvature_dir(coords).setZero();
+                        polynomial(coords).setZero();
 
                         if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
                             fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
@@ -204,6 +207,8 @@ namespace tpf
 
                             // Calculate curvature of difference
                             auto curvature_difference = calculate_curvature(difference);
+
+                            polynomial(coords) << difference.a_xy, difference.a_xx, difference.a_yy;
 
                             // Sort curvatures and corresponding direcions
                             if (curvature_difference.first_curvature > curvature_difference.second_curvature)
