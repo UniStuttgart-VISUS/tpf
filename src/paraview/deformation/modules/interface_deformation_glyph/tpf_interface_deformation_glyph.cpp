@@ -113,7 +113,8 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         interface_deformation_glyph.set_output(velocity_glyphs, stretching_glyphs, bending_glyphs);
         interface_deformation_glyph.set_parameters(velocity_glyph, stretching_glyph, bending_glyph, time_step,
             static_cast<tpf::modules::interface_deformation_glyph_aux::arrow_size_t>(this->ArrowSize),
-            this->ArrowScalar, this->ArrowFixedScalar, this->ArrowResolution, this->ShaftTipRatio, this->ArrowThickness);
+            this->ArrowScalar, this->ArrowFixedScalar, this->ArrowResolution, this->ShaftTipRatio, this->ArrowThickness,
+            this->BendingDiscResolution, this->PolygonalResolution, this->BendingStripSize, this->BendingSizeScalar, this->BendingScalar);
 
         interface_deformation_glyph.run();
 

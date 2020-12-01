@@ -38,6 +38,21 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAl
         vtkSetMacro(ArrowThickness, float);
         vtkGetMacro(ArrowThickness, float);
 
+        vtkSetMacro(BendingDiscResolution, int);
+        vtkGetMacro(BendingDiscResolution, int);
+
+        vtkSetMacro(PolygonalResolution, int);
+        vtkGetMacro(PolygonalResolution, int);
+
+        vtkSetMacro(BendingStripSize, float);
+        vtkGetMacro(BendingStripSize, float);
+
+        vtkSetMacro(BendingSizeScalar, float);
+        vtkGetMacro(BendingSizeScalar, float);
+
+        vtkSetMacro(BendingScalar, float);
+        vtkGetMacro(BendingScalar, float);
+
     protected:
         tpf_interface_deformation_glyph();
         ~tpf_interface_deformation_glyph();
@@ -64,4 +79,8 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAl
         /// Properties of the velocity glyph
         int ArrowResolution, ArrowSize;
         float ArrowScalar, ArrowFixedScalar, ShaftTipRatio, ArrowThickness;
+
+        /// Properties of the bending glyph
+        int BendingDiscResolution, PolygonalResolution;
+        float BendingStripSize, BendingSizeScalar, BendingScalar;
 };

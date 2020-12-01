@@ -340,7 +340,7 @@
                     Alternative time step for scaling the velocities. If value is set to 0, a time step is calculated from the data
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="ArrowResolution" command="SetArrowResolution" label="Resolution" number_of_elements="1" default_values="64" panel_visibility="advanced">
+            <IntVectorProperty name="ArrowResolution" command="SetArrowResolution" label="Resolution" number_of_elements="1" default_values="16" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
                 </Hints>
@@ -380,6 +380,47 @@
                     Create a disc glyph to visualize the bending
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="BendingScalar" command="SetBendingScalar" label="Scalar" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Scale the curvature values to create more or less bent discs
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="BendingSizeScalar" command="SetBendingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.25">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Scale of the disc glyph
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="BendingStripSize" command="SetBendingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
+                <DoubleRangeDomain name="strip_range" min="0.0" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Thickness of the strips indicating the eigenvector directions
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="BendingDiscResolution" command="SetBendingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="16" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Resolution around the disc (circle)
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="PolygonalResolution" command="SetPolygonalResolution" label="Polygonal resolution" number_of_elements="1" default_values="20" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Resolution along the disc (radius)
+                </Documentation>
+            </IntVectorProperty>
 
             <PropertyGroup label="Velocity glyph">
                 <Property name="VelocityGlyph" />
@@ -398,6 +439,11 @@
 
             <PropertyGroup label="Bending glyph">
                 <Property name="BendingGlyph" />
+                <Property name="BendingScalar" />
+                <Property name="BendingSizeScalar" />
+                <Property name="BendingStripSize" />
+                <Property name="BendingDiscResolution" />
+                <Property name="PolygonalResolution" />
             </PropertyGroup>
 
             <Hints>

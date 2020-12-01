@@ -74,7 +74,9 @@ namespace tpf
         inline void interface_deformation_glyph<float_t>::set_algorithm_parameters(const bool velocity_glyph,
             const bool stretching_glyph, const bool bending_glyph, const float_t timestep,
             const interface_deformation_glyph_aux::arrow_size_t arrow_size, const float_t arrow_scalar,
-            const float_t arrow_fixed_scalar, const int arrow_resolution, const float_t arrow_ratio, const float_t arrow_thickness)
+            const float_t arrow_fixed_scalar, const int arrow_resolution, const float_t arrow_ratio, const float_t arrow_thickness,
+            const int bending_disc_resolution, const int bending_polygonal_resolution, const float_t bending_strip_size,
+            const float_t bending_size_scalar, const float_t bending_scalar)
         {
             this->velocity_glyph = velocity_glyph;
             this->stretching_glyph = stretching_glyph;
@@ -88,6 +90,12 @@ namespace tpf
             this->arrow_resolution = arrow_resolution;
             this->arrow_ratio = arrow_ratio;
             this->arrow_thickness = arrow_thickness;
+
+            this->bending_disc_resolution = bending_disc_resolution;
+            this->bending_polygonal_resolution = bending_polygonal_resolution;
+            this->bending_strip_size = bending_strip_size;
+            this->bending_size_scalar = bending_size_scalar;
+            this->bending_scalar = bending_scalar;
         }
 
         template <typename float_t>
@@ -97,10 +105,14 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
 
             // Calculate average cell size
-            const auto average_cell_size = 
-                std::accumulate(vof.get_cell_sizes()[0].begin(), vof.get_cell_sizes()[0].end(), 0.0) *
-                std::accumulate(vof.get_cell_sizes()[0].begin(), vof.get_cell_sizes()[0].end(), 0.0) *
-                std::accumulate(vof.get_cell_sizes()[0].begin(), vof.get_cell_sizes()[0].end(), 0.0);
+            const auto size_x = (vof.get_node_coordinates()[0].back() - vof.get_node_coordinates()[0].front())
+                / (vof.get_extent()[0].second - vof.get_extent()[0].first + 1);
+            const auto size_y = (vof.get_node_coordinates()[1].back() - vof.get_node_coordinates()[1].front())
+                / (vof.get_extent()[1].second - vof.get_extent()[1].first + 1);
+            const auto size_z = (vof.get_node_coordinates()[2].back() - vof.get_node_coordinates()[2].front())
+                / (vof.get_extent()[2].second - vof.get_extent()[2].first + 1);
+
+            const auto average_cell_size = (size_x + size_y + size_z) / static_cast<float_t>(3.0);
 
             // Create velocity glyph
             if (this->velocity_glyph && this->velocities != nullptr)
@@ -113,20 +125,26 @@ namespace tpf
             if (this->stretching_glyph && this->stretching_min != nullptr && this->stretching_max != nullptr)
             {
                 // TODO
+
+                // Stretch according to eigenvalues in x,y-direction
+                // Rotate such that the new basis are the eigenvectors and the interface normal
+                //   parameter: average_cell_size
+                //              stretch_min, stretch_max (relative to average_cell_size)
             }
 
             // Create bending glyph
             if (this->bending_glyph && this->bending_min != nullptr && this->bending_max != nullptr &&
                 this->bending_direction_min != nullptr && this->bending_direction_max != nullptr)
             {
-                // TODO
+                instantiate_bending_glyph(create_bending_glyph_template(this->bending_disc_resolution,
+                    this->bending_polygonal_resolution, this->bending_strip_size),
+                    average_cell_size, this->bending_size_scalar, this->bending_scalar);
             }
         }
 
         template <typename float_t>
-        inline std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>
-            interface_deformation_glyph<float_t>::create_velocity_glyph_template(const std::size_t resolution,
-                const float_t shaft_tip_ratio, const float_t thickness_ratio) const
+        inline auto interface_deformation_glyph<float_t>::create_velocity_glyph_template(const std::size_t resolution,
+            const float_t shaft_tip_ratio, const float_t thickness_ratio) const -> velocity_glyph_t
         {
             const auto shaft_thickness = thickness_ratio;
             const auto tip_thickness = static_cast<float_t>(2.0) * thickness_ratio;
@@ -134,7 +152,7 @@ namespace tpf
             const auto increment = static_cast<float_t>((2.0 * math::pi<float_t>) / resolution);
 
             // Create arrow glyph...
-            std::vector<std::shared_ptr<geometry::geometric_object<float_t>>> arrow_glyph;
+            velocity_glyph_t arrow_glyph;
 
             {
                 // ... shaft
@@ -237,8 +255,7 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void interface_deformation_glyph<float_t>::instantiate_velocity_glyphs(
-            const std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>& glyph_template,
+        inline void interface_deformation_glyph<float_t>::instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template,
             const interface_deformation_glyph_aux::arrow_size_t arrow_size, const float_t arrow_scalar,
             const float_t arrow_fixed_scalar)
         {
@@ -249,7 +266,7 @@ namespace tpf
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
 
-            std::vector<std::shared_ptr<geometry::geometric_object<float_t>>> instance(glyph_template.size());
+            velocity_glyph_t instance(glyph_template.size());
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
@@ -350,6 +367,222 @@ namespace tpf
             }
 
             this->velocity_glyphs->add(magnitudes, tpf::data::topology_t::OBJECT_DATA);
+        }
+
+        template <typename float_t>
+        inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(const std::size_t circle_resolution,
+            const std::size_t polygonal_resolution, const float_t strip_size) const -> bending_glyph_t
+        {
+            using single_glyph_t = std::vector<std::shared_ptr<geometry::triangle<float_t>>>;
+
+            // Create circle-shape disc on x,y-plane
+            glyph_t disc;
+            disc.reserve(circle_resolution + 2 * circle_resolution * (polygonal_resolution - 1));
+
+            {
+                // Create inner row
+                single_glyph_t inner(circle_resolution);
+
+                {
+                    const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+                    const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
+
+                    auto x_prev = polygonal_increment * std::cos(static_cast<float_t>(0.0));
+                    auto y_prev = polygonal_increment * std::sin(static_cast<float_t>(0.0));
+
+                    const geometry::point<float_t> center(0.0, 0.0, 0.0);
+
+                    for (std::size_t i = 1; i < circle_resolution; ++i)
+                    {
+                        const auto angle = i * circle_increment;
+
+                        const auto x = polygonal_increment * std::cos(angle);
+                        const auto y = polygonal_increment * std::sin(angle);
+
+                        const geometry::point<float_t> p1(x_prev, y_prev, 0.0);
+                        const geometry::point<float_t> p2(x, y, 0.0);
+
+                        inner[i] = std::make_shared<geometry::triangle<float_t>>(center, p1, p2);
+
+                        x_prev = x;
+                        y_prev = y;
+                    }
+
+                    const auto x = polygonal_increment * std::cos(static_cast<float_t>(0.0));
+                    const auto y = polygonal_increment * std::sin(static_cast<float_t>(0.0));
+
+                    const geometry::point<float_t> p1(x_prev, y_prev, 0.0);
+                    const geometry::point<float_t> p2(x, y, 0.0);
+
+                    inner[0] = std::make_shared<geometry::triangle<float_t>>(center, p1, p2);
+                }
+
+                // Create outer rows
+                single_glyph_t outer(2 * circle_resolution * (polygonal_resolution - 1));
+
+                if (polygonal_resolution > 1)
+                {
+                    const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+                    const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
+
+                    auto radius_prev = polygonal_increment;
+
+                    for (std::size_t j = 2; j <= polygonal_resolution; ++j)
+                    {
+                        auto radius = j * polygonal_increment;
+
+                        auto x_prev_inner = radius_prev * std::cos(static_cast<float_t>(0.0));
+                        auto y_prev_inner = radius_prev * std::sin(static_cast<float_t>(0.0));
+                        auto x_prev_outer = radius * std::cos(static_cast<float_t>(0.0));
+                        auto y_prev_outer = radius * std::sin(static_cast<float_t>(0.0));
+
+                        for (std::size_t i = 1; i < circle_resolution; ++i)
+                        {
+                            const auto angle = i * circle_increment;
+
+                            const auto x_inner = radius_prev * std::cos(angle);
+                            const auto y_inner = radius_prev * std::sin(angle);
+                            const auto x_outer = radius * std::cos(angle);
+                            const auto y_outer = radius * std::sin(angle);
+
+                            const geometry::point<float_t> p1(x_prev_inner, y_prev_inner, 0.0);
+                            const geometry::point<float_t> p2(x_prev_outer, y_prev_outer, 0.0);
+                            const geometry::point<float_t> p3(x_inner, y_inner, 0.0);
+                            const geometry::point<float_t> p4(x_outer, y_outer, 0.0);
+
+                            outer[(j - 2) * circle_resolution * 2 + i * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, p4);
+                            outer[(j - 2) * circle_resolution * 2 + i * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p1, p4, p3);
+
+                            x_prev_inner = x_inner;
+                            y_prev_inner = y_inner;
+                            x_prev_outer = x_outer;
+                            y_prev_outer = y_outer;
+                        }
+
+                        const auto x_inner = radius_prev * std::cos(static_cast<float_t>(0.0));
+                        const auto y_inner = radius_prev * std::sin(static_cast<float_t>(0.0));
+                        const auto x_outer = radius * std::cos(static_cast<float_t>(0.0));
+                        const auto y_outer = radius * std::sin(static_cast<float_t>(0.0));
+
+                        const geometry::point<float_t> p1(x_prev_inner, y_prev_inner, 0.0);
+                        const geometry::point<float_t> p2(x_prev_outer, y_prev_outer, 0.0);
+                        const geometry::point<float_t> p3(x_inner, y_inner, 0.0);
+                        const geometry::point<float_t> p4(x_outer, y_outer, 0.0);
+
+                        outer[(j - 2) * circle_resolution * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, p4);
+                        outer[(j - 2) * circle_resolution * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p1, p4, p3);
+                    }
+                }
+
+                // Combine rows
+                disc.insert(disc.end(), inner.begin(), inner.end());
+                disc.insert(disc.end(), outer.begin(), outer.end());
+            }
+
+            // Create strips in x- and y-direction, respectively
+            glyph_t strip(2 * polygonal_resolution);
+
+            {
+                const auto increment = static_cast<float_t>(1.0 / polygonal_resolution);
+
+                auto x_prev = static_cast<float_t>(-1.0);
+
+                const auto y_plus = strip_size / static_cast<float_t>(2.0);
+                const auto y_minus = -strip_size / static_cast<float_t>(2.0);
+
+                for (std::size_t i = 1; i <= polygonal_resolution; ++i)
+                {
+                    const auto x = (i * increment) * 2 - 1;
+
+                    const geometry::point<float_t> p1(x_prev, y_plus, 0.01);
+                    const geometry::point<float_t> p2(x_prev, y_minus, 0.01);
+                    const geometry::point<float_t> p3(x, y_plus, 0.01);
+                    const geometry::point<float_t> p4(x, y_minus, 0.01);
+
+                    strip[(i - 1) * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p2, p4, p3);
+                    strip[(i - 1) * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p2, p3, p1);
+
+                    x_prev = x;
+                }
+            }
+
+            // Return glyphs
+            return std::make_tuple(disc, strip);
+        }
+
+        template <typename float_t>
+        inline void interface_deformation_glyph<float_t>::instantiate_bending_glyph(const bending_glyph_t& glyph_template,
+            const float_t average_cell_size, const float_t size_scalar, const float_t scalar)
+        {
+            const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
+            const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
+            // TODO
+
+            // Iterate over all interface cells
+            std::size_t num_interface_cells = 0;
+
+            glyph_t instance(std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size());
+
+            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+            {
+                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
+                {
+                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
+                    {
+                        const data::coords3_t coords(x, y, z);
+
+                        if (vof(coords) > 0 && vof(coords) < 1)
+                        {
+                            // Get necessary information
+                            const auto origin = positions(coords);
+                            // TODO
+
+                            // Translate to correct position
+                            Eigen::Matrix<float_t, 4, 4> translation_matrix;
+                            translation_matrix.setIdentity();
+                            translation_matrix.col(3).head(3) = origin;
+
+                            // Scale
+                            Eigen::Matrix<float_t, 4, 4> scale_matrix;
+                            scale_matrix.setIdentity();
+
+                            scale_matrix(0, 0) = size_scalar * average_cell_size;
+                            scale_matrix(1, 1) = size_scalar * average_cell_size;
+                            scale_matrix(2, 2) = size_scalar * average_cell_size;
+
+                            // Rotate into basis defined by the interface normal and the eigenvectors
+                            Eigen::Matrix<float_t, 4, 4> rotation_matrix;
+                            rotation_matrix.setIdentity();
+                            // TODO
+
+                            // Create object matrix
+                            const math::transformer<float_t, 3> trafo(translation_matrix * rotation_matrix * scale_matrix);
+
+                            // Instantiate glyph
+                            auto pos = std::transform(std::get<0>(glyph_template).begin(), std::get<0>(glyph_template).end(), instance.begin(),
+                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
+
+                            pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
+                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
+
+                            pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
+                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
+
+                            this->bending_glyphs->insert(instance);
+
+                            ++num_interface_cells;
+                        }
+                    }
+                }
+            }
+
+            // Create data array
+            auto bending = std::make_shared<tpf::data::array<float_t>>("Bending");
+            bending->resize(num_interface_cells * (std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size()));
+
+            std::fill(bending->get_data().begin(), bending->get_data().end(), 0.0);
+
+            this->bending_glyphs->add(bending, tpf::data::topology_t::OBJECT_DATA);
         }
     }
 }
