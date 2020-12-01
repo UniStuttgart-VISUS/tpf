@@ -566,13 +566,35 @@ namespace tpf
                             // Deform, such that the glyph indicates bending
                             auto bend = [&polynomial, scalar](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
                             {
-                                Eigen::Matrix<float_t, 4, 1> bent_vector;
-                                bent_vector << vector[0], vector[1], 
-                                    scalar * (polynomial[0] * vector[0] * vector[1] + polynomial[1] * vector[0] * vector[0]
-                                        + polynomial[2] * vector[1] * vector[1]) + vector[2],
-                                    vector[3];
+                                // If the mixed part of the polynomial (a_xy) is not zero, the eigenvectors do not align with the
+                                // x- and y-axis. This "rotation" has to be removed before sampling the polynomial.
+                                math::transformer<float_t, 4> to_origin = math::transformer<float_t, 4>::unit();
 
-                                return bent_vector;
+                                if (!math::equals(polynomial[0], static_cast<float_t>(0.0L)))
+                                {
+                                    const auto meanCurv = polynomial[1] + polynomial[2];
+                                    const auto gaussCurv = static_cast<float_t>(4.0L) * polynomial[1] * polynomial[2] - polynomial[0] * polynomial[0];
+
+                                    const auto first_curvature = meanCurv - std::sqrt(meanCurv * meanCurv - gaussCurv);
+                                    const auto second_curvature = meanCurv + std::sqrt(meanCurv * meanCurv - gaussCurv);
+
+                                    Eigen::Matrix<float_t, 3, 1> x_axis, y_axis;
+                                    x_axis << polynomial[0], std::min(first_curvature, second_curvature) - static_cast<float_t>(2.0L) * polynomial[1], 0.0;
+                                    y_axis << polynomial[0], std::max(first_curvature, second_curvature) - static_cast<float_t>(2.0L) * polynomial[1], 0.0;
+
+                                    to_origin = math::transformer<float_t, 4>(Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0),
+                                        x_axis.normalized(), y_axis.normalized(), Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0));
+                                }
+
+                                const Eigen::Matrix<float_t, 4, 1> rotated_vector = to_origin.transform(vector);
+
+                                Eigen::Matrix<float_t, 4, 1> bent_vector;
+                                bent_vector << rotated_vector[0], rotated_vector[1],
+                                    scalar * (polynomial[0] * rotated_vector[0] * rotated_vector[1] + polynomial[1] * rotated_vector[0] * rotated_vector[0]
+                                        + polynomial[2] * rotated_vector[1] * rotated_vector[1]) + rotated_vector[2],
+                                    rotated_vector[3];
+
+                                return to_origin.transform_inverse(bent_vector);
                             };
 
                             // Create object matrix
