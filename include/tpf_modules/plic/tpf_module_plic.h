@@ -81,7 +81,10 @@ namespace tpf
             /// <summary>Run module</summary>
             virtual void run_algorithm() override;
 
-        public:
+        private:
+            template<typename T>
+            friend class plic3;
+
             /// <summary>
             /// Compute ISO value for a given VOF value
             /// </summary>
@@ -96,7 +99,6 @@ namespace tpf
                 const Eigen::Matrix<float_t, 3, 1>& cell_coordinates, const Eigen::Matrix<float_t, 3, 1>& cell_size, std::size_t num_iterations,
                 float_t perturbation = static_cast<float_t>(0.00001L));
 
-        private:
             /// Fractions
             const data::grid<float_t, float_t, 3, 1>* fractions;
 

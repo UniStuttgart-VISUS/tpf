@@ -65,7 +65,10 @@ namespace tpf
             /// </summary>
             void run_algorithm() override;
 
-        public:
+        private:
+            template<typename T>
+            friend class plic3;
+
             /// <summary>
             /// Calculate the gradient at the given position
             /// </summary>
@@ -74,7 +77,6 @@ namespace tpf
             /// <return>Gradient</return>
             static Eigen::Matrix<float_t, 3, 1> calculate_gradient(const data::coords3_t& coords, const data::grid<float_t, float_t, 3, 1>& fractions);
 
-        private:
             /// Fractions
             const data::grid<float_t, float_t, 3, 1>* fractions;
 
