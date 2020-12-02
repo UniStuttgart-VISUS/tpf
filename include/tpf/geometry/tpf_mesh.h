@@ -104,6 +104,12 @@ namespace tpf
             void add_face(const triangle<floatp_t, kernel_t>& triangle);
 
             /// <summary>
+            /// Merge this mesh with another, resulting in a single mesh
+            /// </summary>
+            /// <param name="other"></param>
+            std::shared_ptr<mesh<floatp_t, kernel_t>> merge(const mesh<floatp_t, kernel_t>& other) const;
+
+            /// <summary>
             /// Return number of points
             /// </summary>
             /// <returns>Number of points</returns>
