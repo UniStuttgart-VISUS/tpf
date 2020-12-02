@@ -534,16 +534,36 @@
                 </Documentation>
             </StringVectorProperty>
 
-            <IntVectorProperty name="PlicIterations" command="SetPlicIterations" label="PLIC iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
+            <DoubleVectorProperty name="Epsilon" command="SetEpsilon" label="Epsilon" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Epsilon used to detect if cells are empty or full
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="ErrorMarginPlic" command="SetErrorMarginPlic" label="Error margin PLIC" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume for PLIC (uses PLIC internally)
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="ErrorMarginPlic3" command="SetErrorMarginPlic3" label="Error margin PLIC3" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume for PLIC3
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="NumIterationsPlic" command="SetNumIterationsPlic" label="Number of iterations PLIC" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
                     Number of iterations to approximate correct volume for PLIC (uses PLIC internally)
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="Plic3Iterations" command="SetPlic3Iterations" label="PLIC3 iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
+            <IntVectorProperty name="NumIterationsPlic3" command="SetNumIterationsPlic3" label="Number of iterations PLIC3" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
                     Number of iterations to approximate correct volume for PLIC3
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="Perturbation" command="SetPerturbation" label="Perturbation of vertices" number_of_elements="1" default_values="0.00001" panel_visibility="advanced">
+                <Documentation>
+                    Introduce pertubation to prevent degenerate cases
+                </Documentation>
+            </DoubleVectorProperty>
 
             <Hints>
                 <ShowInMenu category="Two-Phase Flow" icon=":/Two-Phase Flow/tpf_plic3.png"/>

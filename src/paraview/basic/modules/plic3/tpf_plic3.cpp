@@ -65,7 +65,7 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         tpf::modules::plic3<float_t> plic3_module;
         plic3_module.set_input(f, f3, f_norm_3ph);
         plic3_module.set_output(plic3_interface);
-        plic3_module.set_parameters(this->PlicIterations, this->Plic3Iterations);
+        plic3_module.set_parameters(this->Epsilon, this->ErrorMarginPlic, this->ErrorMarginPlic3, this->NumIterationsPlic, this->NumIterationsPlic3, this->Perturbation);
         plic3_module.run();
 
         // Set output
