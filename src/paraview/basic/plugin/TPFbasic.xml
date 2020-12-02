@@ -453,9 +453,14 @@
                 </Documentation>
             </StringVectorProperty>
 
+            <DoubleVectorProperty name="ErrorMargin" command="SetErrorMargin" label="Error margin" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume
+                </Documentation>
+            </DoubleVectorProperty>
             <IntVectorProperty name="NumIterations" command="SetNumIterations" label="Number of iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
-                    Number of iterations to approximate correct volume
+                    Maximum number of iterations to approximate correct volume
                 </Documentation>
             </IntVectorProperty>
             <DoubleVectorProperty name="Perturbation" command="SetPerturbation" label="Perturbation of vertices" number_of_elements="1" default_values="0.00001" panel_visibility="advanced">

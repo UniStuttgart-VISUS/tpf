@@ -92,7 +92,7 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
 
         plic_module.set_input(vof, gradients);
         plic_module.set_output(plic_interface);
-        plic_module.set_parameters(this->NumIterations, static_cast<float_t>(this->Perturbation));
+        plic_module.set_parameters(static_cast<float_t>(this->ErrorMargin), this->NumIterations, static_cast<float_t>(this->Perturbation));
         plic_module.run();
 
         // Set output

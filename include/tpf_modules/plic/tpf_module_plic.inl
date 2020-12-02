@@ -61,8 +61,9 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic<float_t>::set_algorithm_parameters(const std::size_t num_iterations, std::optional<float_t> perturbation)
+        inline void plic<float_t>::set_algorithm_parameters(const float_t error_margin, const std::size_t num_iterations, std::optional<float_t> perturbation)
         {
+            this->error_margin = error_margin;
             this->num_iterations = num_iterations;
             this->perturbation = get_or_default(perturbation, static_cast<float_t>(0.00001L));
         }
@@ -96,7 +97,7 @@ namespace tpf
                         {
                             // Create PLIC interface
                             auto reconstruction = reconstruct_interface(fractions(coords), gradients(coords),
-                                fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->num_iterations, this->perturbation);
+                                fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->error_margin, this->num_iterations, this->perturbation);
 
                             if (reconstruction.first != nullptr)
                             {
@@ -132,17 +133,16 @@ namespace tpf
         template <typename float_t>
         inline std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> plic<float_t>::reconstruct_interface(const float_t vof,
             const Eigen::Matrix<float_t, 3, 1>& gradient, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
-            const Eigen::Matrix<float_t, 3, 1>& cell_size, const std::size_t num_iterations, float_t perturbation)
+            const Eigen::Matrix<float_t, 3, 1>& cell_size, const float_t error_margin, const std::size_t num_iterations,
+            float_t perturbation)
         {
             // Auxiliary
             const auto cell_size_half = static_cast<float_t>(0.5) * cell_size;
             const float_t cell_volume = cell_size.prod();
 
             // Calculate error margin, initial minimum, maximum and ISO value
-            const float_t err_margin = static_cast<float_t>(0.0001);
-
-            float_t min_val = err_margin;
-            float_t max_val = static_cast<float_t>(1.0) - err_margin;
+            float_t min_val = error_margin;
+            float_t max_val = static_cast<float_t>(1.0) - error_margin;
 
             // Assume, that this function is only called for cells, where an interface should be calculated.
             // The following definition of starting iso_value will force an interface for the current cell.
@@ -246,7 +246,7 @@ namespace tpf
                 iso_value = (max_val + min_val) / 2.0;
 
                 // Create PLIC on last iteration
-                if ((error = std::abs(volume - vof)) < err_margin || i == num_iterations - 1)
+                if ((error = std::abs(volume - vof)) < error_margin || i == num_iterations - 1)
                 {
                     if (intersections.size() >= 3)
                     {

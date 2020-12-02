@@ -30,11 +30,11 @@ namespace tpf
         class plic : public module_base<
             interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<std::size_t, std::optional<float_t>>>
+            interface_parameters<float_t, std::size_t, std::optional<float_t>>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<std::size_t, std::optional<float_t>>;
+            using parameters_t = interface_parameters<float_t, std::size_t, std::optional<float_t>>;
 
             using base_t = module_base<input_t, output_t, parameters_t>;
 
@@ -74,9 +74,10 @@ namespace tpf
             /// <summary>
             /// Set parameter
             /// </summary>
+            /// <param name="error_margin">Error margin</param>
             /// <param name="num_iterations">Number of iterations</param>
             /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
-            virtual void set_algorithm_parameters(std::size_t num_iterations, std::optional<float_t> perturbation) override;
+            virtual void set_algorithm_parameters(float_t error_margin, std::size_t num_iterations, std::optional<float_t> perturbation) override;
 
             /// <summary>Run module</summary>
             virtual void run_algorithm() override;
@@ -95,8 +96,9 @@ namespace tpf
             /// <param name="num_iterations">Number of iterations</param>
             /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
             /// <returns>PLIC interface</returns>
-            static std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> reconstruct_interface(float_t vof, const Eigen::Matrix<float_t, 3, 1>& gradient,
-                const Eigen::Matrix<float_t, 3, 1>& cell_coordinates, const Eigen::Matrix<float_t, 3, 1>& cell_size, std::size_t num_iterations,
+            static std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> reconstruct_interface(float_t vof,
+                const Eigen::Matrix<float_t, 3, 1>& gradient, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
+                const Eigen::Matrix<float_t, 3, 1>& cell_size, float_t error_margin, std::size_t num_iterations,
                 float_t perturbation = static_cast<float_t>(0.00001L));
 
             /// Fractions
@@ -107,6 +109,9 @@ namespace tpf
 
             /// PLIC interface
             data::polydata<float_t>* plic_interface;
+
+            /// Error margin
+            float_t error_margin;
 
             /// Number of iterations
             std::size_t num_iterations;
