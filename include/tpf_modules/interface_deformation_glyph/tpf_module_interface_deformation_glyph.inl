@@ -13,9 +13,12 @@
 #include "tpf/math/tpf_transformer.h"
 #include "tpf/math/tpf_vector.h"
 
-#include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace tpf
 {
@@ -158,103 +161,76 @@ namespace tpf
             const auto increment = static_cast<float_t>((2.0 * math::pi<float_t>) / resolution);
 
             // Create arrow glyph...
-            velocity_glyph_t arrow_glyph;
+            velocity_glyph_t arrow_glyph = std::make_shared<geometry::mesh<float_t>>();
 
             {
                 // ... shaft
-                std::vector<std::shared_ptr<geometry::triangle<float_t>>> shaft(resolution * 2);
-                std::vector<std::shared_ptr<geometry::triangle<float_t>>> shaft_cap(resolution);
-
                 {
-                    auto y_prev = shaft_thickness * std::cos(static_cast<float_t>(0.0));
-                    auto z_prev = shaft_thickness * std::sin(static_cast<float_t>(0.0));
+                    std::vector<CGAL::SM_Vertex_index> origin_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> target_indices(resolution);
 
-                    const geometry::point<float_t> cap_center(0.0, 0.0, 0.0);
+                    const auto cap_center = arrow_glyph->add_point(geometry::point<float_t>(0.0, 0.0, 0.0));
+
+                    origin_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        0.0,
+                        shaft_thickness * std::cos(static_cast<float_t>(0.0)),
+                        shaft_thickness * std::sin(static_cast<float_t>(0.0))));
+
+                    target_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        shaft_tip_ratio,
+                        shaft_thickness * std::cos(static_cast<float_t>(0.0)),
+                        shaft_thickness * std::sin(static_cast<float_t>(0.0))));
 
                     for (std::size_t i = 1; i < resolution; ++i)
                     {
                         const auto angle = i * increment;
 
-                        const auto y = shaft_thickness * std::cos(angle);
-                        const auto z = shaft_thickness * std::sin(angle);
+                        origin_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            0.0,
+                            shaft_thickness * std::cos(angle),
+                            shaft_thickness * std::sin(angle)));
 
-                        const geometry::point<float_t> p1(0.0, y_prev, z_prev);
-                        const geometry::point<float_t> p2(shaft_tip_ratio, y_prev, z_prev);
-                        const geometry::point<float_t> p3(0.0, y, z);
-                        const geometry::point<float_t> p4(shaft_tip_ratio, y, z);
+                        target_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            shaft_tip_ratio,
+                            shaft_thickness * std::cos(angle),
+                            shaft_thickness * std::sin(angle)));
 
-                        shaft[i * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p3, p2);
-                        shaft[i * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p3, p4, p2);
-
-                        shaft_cap[i] = std::make_shared<geometry::triangle<float_t>>(p1, p3, cap_center);
-
-                        y_prev = y;
-                        z_prev = z;
+                        arrow_glyph->add_face(cap_center, origin_indices[i - 1], origin_indices[i]);
+                        arrow_glyph->add_face({ origin_indices[i - 1], target_indices[i - 1], target_indices[i], origin_indices[i] });
                     }
 
-                    {
-                        const auto y = shaft_thickness * std::cos(static_cast<float_t>(0.0));
-                        const auto z = shaft_thickness * std::sin(static_cast<float_t>(0.0));
-
-                        const geometry::point<float_t> p1(0.0, y_prev, z_prev);
-                        const geometry::point<float_t> p2(shaft_tip_ratio, y_prev, z_prev);
-                        const geometry::point<float_t> p3(0.0, y, z);
-                        const geometry::point<float_t> p4(shaft_tip_ratio, y, z);
-
-                        shaft[0] = std::make_shared<geometry::triangle<float_t>>(p1, p3, p2);
-                        shaft[1] = std::make_shared<geometry::triangle<float_t>>(p3, p4, p2);
-
-                        shaft_cap[0] = std::make_shared<geometry::triangle<float_t>>(p1, p3, cap_center);
-                    }
+                    arrow_glyph->add_face(cap_center, origin_indices.back(), origin_indices.front());
+                    arrow_glyph->add_face({ origin_indices.back(), target_indices.back(), target_indices.front(), origin_indices.front() });
                 }
 
                 // ... tip
-                std::vector<std::shared_ptr<geometry::triangle<float_t>>> tip(resolution);
-                std::vector<std::shared_ptr<geometry::triangle<float_t>>> tip_cap(resolution);
-
                 {
-                    auto y_prev = tip_thickness * std::cos(static_cast<float_t>(0.0));
-                    auto z_prev = tip_thickness * std::sin(static_cast<float_t>(0.0));
+                    std::vector<CGAL::SM_Vertex_index> indices(resolution);
 
-                    const geometry::point<float_t> tip_point(1.0, 0.0, 0.0);
-                    const geometry::point<float_t> cap_center(shaft_tip_ratio, 0.0, 0.0);
+                    const auto tip_center = arrow_glyph->add_point(geometry::point<float_t>(1.0, 0.0, 0.0));
+                    const auto tip_cap_center = arrow_glyph->add_point(geometry::point<float_t>(shaft_tip_ratio, 0.0, 0.0));
+
+                    indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        shaft_tip_ratio,
+                        tip_thickness * std::cos(static_cast<float_t>(0.0)),
+                        tip_thickness * std::sin(static_cast<float_t>(0.0))));
 
                     for (std::size_t i = 1; i < resolution; ++i)
                     {
                         const auto angle = i * increment;
 
-                        const auto y = tip_thickness * std::cos(angle);
-                        const auto z = tip_thickness * std::sin(angle);
+                        indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            shaft_tip_ratio,
+                            tip_thickness * std::cos(angle),
+                            tip_thickness * std::sin(angle)));
 
-                        const geometry::point<float_t> p1(shaft_tip_ratio, y_prev, z_prev);
-                        const geometry::point<float_t> p2(shaft_tip_ratio, y, z);
-
-                        tip[i] = std::make_shared<geometry::triangle<float_t>>(p1, p2, tip_point);
-                        tip_cap[i] = std::make_shared<geometry::triangle<float_t>>(p1, p2, cap_center);
-
-                        y_prev = y;
-                        z_prev = z;
+                        arrow_glyph->add_face(tip_cap_center, indices[i - 1], indices[i]);
+                        arrow_glyph->add_face(tip_center, indices[i], indices[i - 1]);
                     }
 
-                    {
-                        const auto y = tip_thickness * std::cos(static_cast<float_t>(0.0));
-                        const auto z = tip_thickness * std::sin(static_cast<float_t>(0.0));
-
-                        const geometry::point<float_t> p1(shaft_tip_ratio, y_prev, z_prev);
-                        const geometry::point<float_t> p2(shaft_tip_ratio, y, z);
-
-                        tip[0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, tip_point);
-                        tip_cap[0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, cap_center);
-                    }
+                    arrow_glyph->add_face(tip_cap_center, indices.back(), indices.front());
+                    arrow_glyph->add_face(tip_center, indices.front(), indices.back());
                 }
-
-                // Create single vector
-                arrow_glyph.reserve(shaft.size() + tip.size() + 2);
-
-                arrow_glyph.insert(arrow_glyph.end(), shaft.begin(), shaft.end());
-                arrow_glyph.insert(arrow_glyph.end(), shaft_cap.begin(), shaft_cap.end());
-                arrow_glyph.insert(arrow_glyph.end(), tip.begin(), tip.end());
-                arrow_glyph.insert(arrow_glyph.end(), tip_cap.begin(), tip_cap.end());
             }
 
             return arrow_glyph;
@@ -271,8 +247,6 @@ namespace tpf
 
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
-
-            velocity_glyph_t instance(glyph_template.size());
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
@@ -336,10 +310,7 @@ namespace tpf
                             const math::transformer<float_t, 3> trafo(translation_matrix * rotation_matrix * scale_matrix);
 
                             // Instantiate glyph
-                            std::transform(glyph_template.begin(), glyph_template.end(), instance.begin(),
-                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
-
-                            this->velocity_glyphs->insert(instance);
+                            this->velocity_glyphs->insert(glyph_template->clone(trafo));
 
                             ++num_interface_cells;
                         }
@@ -348,23 +319,23 @@ namespace tpf
             }
 
             // Create data array
-            auto magnitudes = std::make_shared<tpf::data::array<float_t>>("Velocity Magnitude");
-            magnitudes->reserve(num_interface_cells * glyph_template.size());
+            auto magnitudes = std::make_shared<data::array<float_t>>("Velocity Magnitude");
+            magnitudes->reserve(num_interface_cells);
 
-            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second && num_interface_cells != 0; ++z)
+            if (num_interface_cells != 0)
             {
-                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second && num_interface_cells != 0; ++y)
+                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
                 {
-                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second && num_interface_cells != 0; ++x)
+                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        if (vof(coords) > 0 && vof(coords) < 1)
+                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
                         {
-                            const auto magnitude = velocities(coords).norm();
+                            const data::coords3_t coords(x, y, z);
 
-                            for (std::size_t i = 0; i < glyph_template.size(); ++i)
+                            if (vof(coords) > 0 && vof(coords) < 1)
                             {
+                                const auto magnitude = velocities(coords).norm();
+
                                 magnitudes->push_back(magnitude);
                             }
                         }
@@ -372,124 +343,82 @@ namespace tpf
                 }
             }
 
-            this->velocity_glyphs->add(magnitudes, tpf::data::topology_t::OBJECT_DATA);
+            this->velocity_glyphs->add(magnitudes, data::topology_t::OBJECT_DATA);
         }
 
         template <typename float_t>
         inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(const std::size_t circle_resolution,
             const std::size_t polygonal_resolution, const float_t strip_size) const -> bending_glyph_t
         {
-            using single_glyph_t = std::vector<std::shared_ptr<geometry::triangle<float_t>>>;
-
             // Create circle-shape disc on x,y-plane
-            glyph_t disc;
-            disc.reserve(circle_resolution + 2 * circle_resolution * (polygonal_resolution - 1));
+            glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
             {
+                const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+                const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
+
                 // Create inner row
-                single_glyph_t inner(circle_resolution);
+                std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
 
                 {
-                    const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
-                    const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
+                    const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, 0.0));
 
-                    auto x_prev = polygonal_increment * std::cos(static_cast<float_t>(0.0));
-                    auto y_prev = polygonal_increment * std::sin(static_cast<float_t>(0.0));
-
-                    const geometry::point<float_t> center(0.0, 0.0, 0.0);
+                    previous_indices[0] = disc->add_point(geometry::point<float_t>(
+                        polygonal_increment * std::cos(static_cast<float_t>(0.0)),
+                        polygonal_increment * std::sin(static_cast<float_t>(0.0)),
+                        0.0));
 
                     for (std::size_t i = 1; i < circle_resolution; ++i)
                     {
                         const auto angle = i * circle_increment;
 
-                        const auto x = polygonal_increment * std::cos(angle);
-                        const auto y = polygonal_increment * std::sin(angle);
+                        previous_indices[i] = disc->add_point(geometry::point<float_t>(
+                            polygonal_increment * std::cos(angle),
+                            polygonal_increment * std::sin(angle),
+                            0.0));
 
-                        const geometry::point<float_t> p1(x_prev, y_prev, 0.0);
-                        const geometry::point<float_t> p2(x, y, 0.0);
-
-                        inner[i] = std::make_shared<geometry::triangle<float_t>>(center, p1, p2);
-
-                        x_prev = x;
-                        y_prev = y;
+                        disc->add_face(center, previous_indices[i - 1], previous_indices[i]);
                     }
 
-                    const auto x = polygonal_increment * std::cos(static_cast<float_t>(0.0));
-                    const auto y = polygonal_increment * std::sin(static_cast<float_t>(0.0));
-
-                    const geometry::point<float_t> p1(x_prev, y_prev, 0.0);
-                    const geometry::point<float_t> p2(x, y, 0.0);
-
-                    inner[0] = std::make_shared<geometry::triangle<float_t>>(center, p1, p2);
+                    disc->add_face(center, previous_indices.back(), previous_indices.front());
                 }
 
                 // Create outer rows
-                single_glyph_t outer(2 * circle_resolution * (polygonal_resolution - 1));
-
                 if (polygonal_resolution > 1)
                 {
-                    const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
-                    const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
-
-                    auto radius_prev = polygonal_increment;
+                    std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
 
                     for (std::size_t j = 2; j <= polygonal_resolution; ++j)
                     {
                         auto radius = j * polygonal_increment;
 
-                        auto x_prev_inner = radius_prev * std::cos(static_cast<float_t>(0.0));
-                        auto y_prev_inner = radius_prev * std::sin(static_cast<float_t>(0.0));
-                        auto x_prev_outer = radius * std::cos(static_cast<float_t>(0.0));
-                        auto y_prev_outer = radius * std::sin(static_cast<float_t>(0.0));
+                        current_indices[0] = disc->add_point(geometry::point<float_t>(
+                            radius * std::cos(static_cast<float_t>(0.0)),
+                            radius * std::sin(static_cast<float_t>(0.0)),
+                            0.0));
 
                         for (std::size_t i = 1; i < circle_resolution; ++i)
                         {
                             const auto angle = i * circle_increment;
 
-                            const auto x_inner = radius_prev * std::cos(angle);
-                            const auto y_inner = radius_prev * std::sin(angle);
-                            const auto x_outer = radius * std::cos(angle);
-                            const auto y_outer = radius * std::sin(angle);
+                            current_indices[i] = disc->add_point(geometry::point<float_t>(
+                                radius * std::cos(angle),
+                                radius * std::sin(angle),
+                                0.0));
 
-                            const geometry::point<float_t> p1(x_prev_inner, y_prev_inner, 0.0);
-                            const geometry::point<float_t> p2(x_prev_outer, y_prev_outer, 0.0);
-                            const geometry::point<float_t> p3(x_inner, y_inner, 0.0);
-                            const geometry::point<float_t> p4(x_outer, y_outer, 0.0);
-
-                            outer[(j - 2) * circle_resolution * 2 + i * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, p4);
-                            outer[(j - 2) * circle_resolution * 2 + i * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p1, p4, p3);
-
-                            x_prev_inner = x_inner;
-                            y_prev_inner = y_inner;
-                            x_prev_outer = x_outer;
-                            y_prev_outer = y_outer;
+                            disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
                         }
 
-                        const auto x_inner = radius_prev * std::cos(static_cast<float_t>(0.0));
-                        const auto y_inner = radius_prev * std::sin(static_cast<float_t>(0.0));
-                        const auto x_outer = radius * std::cos(static_cast<float_t>(0.0));
-                        const auto y_outer = radius * std::sin(static_cast<float_t>(0.0));
+                        disc->add_face({ previous_indices.back(), current_indices.back(), current_indices.front(), previous_indices.front() });
 
-                        const geometry::point<float_t> p1(x_prev_inner, y_prev_inner, 0.0);
-                        const geometry::point<float_t> p2(x_prev_outer, y_prev_outer, 0.0);
-                        const geometry::point<float_t> p3(x_inner, y_inner, 0.0);
-                        const geometry::point<float_t> p4(x_outer, y_outer, 0.0);
-
-                        outer[(j - 2) * circle_resolution * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p1, p2, p4);
-                        outer[(j - 2) * circle_resolution * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p1, p4, p3);
-
-                        radius_prev = radius;
+                        std::swap(current_indices, previous_indices);
                     }
                 }
-
-                // Combine rows
-                disc.insert(disc.end(), inner.begin(), inner.end());
-                disc.insert(disc.end(), outer.begin(), outer.end());
             }
 
             // Create strips in x- and y-direction, respectively
-            glyph_t min_strips(2);
-            glyph_t max_strips(2);
+            glyph_t min_strip;
+            glyph_t max_strip;
 
             {
                 // Create strip in positive x-direction
@@ -527,14 +456,13 @@ namespace tpf
                 math::transformer<float_t, 3> y_pos(origin, y_axis, -x_axis, z_axis);
                 math::transformer<float_t, 3> y_neg(origin, -y_axis, x_axis, z_axis);
 
-                min_strips[0] = strip;
-                min_strips[1] = strip->clone(x_neg);
-                max_strips[0] = strip->clone(y_pos);
-                max_strips[1] = strip->clone(y_neg);
+                min_strip = strip->merge(*std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(x_neg)));
+                max_strip = std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(y_pos))
+                    ->merge(*std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(y_neg)));
             }
 
             // Return glyphs
-            return std::make_tuple(disc, min_strips, max_strips);
+            return std::make_tuple(disc, min_strip, max_strip);
         }
 
         template <typename float_t>
@@ -552,8 +480,6 @@ namespace tpf
 
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
-
-            glyph_t instance(std::get<0>(glyph_template).size() + std::get<1>(glyph_template).size() + std::get<2>(glyph_template).size());
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
@@ -622,16 +548,10 @@ namespace tpf
                             trafo.set_preprocessing(bend);
 
                             // Instantiate glyph
-                            auto pos = std::transform(std::get<0>(glyph_template).begin(), std::get<0>(glyph_template).end(), instance.begin(),
-                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
-
-                            pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
-                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
-
-                            pos = std::transform(std::get<2>(glyph_template).begin(), std::get<2>(glyph_template).end(), pos,
-                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
-
-                            this->bending_glyphs->insert(instance);
+                            this->bending_glyphs->insert(std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>{
+                                std::get<0>(glyph_template)->clone(trafo),
+                                std::get<1>(glyph_template)->clone(trafo),
+                                std::get<2>(glyph_template)->clone(trafo) });
 
                             ++num_interface_cells;
                         }
@@ -640,35 +560,26 @@ namespace tpf
             }
 
             // Create data array
-            auto bending = std::make_shared<tpf::data::array<float_t>>("Bending");
-            bending->reserve(num_interface_cells * (std::get<0>(glyph_template).size()
-                + std::get<1>(glyph_template).size() + std::get<2>(glyph_template).size()));
+            auto bending = std::make_shared<data::array<float_t>>("Bending");
+            bending->reserve(num_interface_cells * 3);
 
-            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second && num_interface_cells != 0; ++z)
+            if (num_interface_cells != 0)
             {
-                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second && num_interface_cells != 0; ++y)
+                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
                 {
-                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second && num_interface_cells != 0; ++x)
+                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        if (vof(coords) > 0 && vof(coords) < 1)
+                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
                         {
-                            const auto min = bending_min(coords);
-                            const auto max = bending_max(coords);
+                            const data::coords3_t coords(x, y, z);
 
-                            for (std::size_t i = 0; i < std::get<0>(glyph_template).size(); ++i)
+                            if (vof(coords) > 0 && vof(coords) < 1)
                             {
+                                const auto min = bending_min(coords);
+                                const auto max = bending_max(coords);
+
                                 bending->push_back((min + max) / 2.0);
-                            }
-
-                            for (std::size_t i = 0; i < std::get<1>(glyph_template).size(); ++i)
-                            {
                                 bending->push_back(min);
-                            }
-
-                            for (std::size_t i = 0; i < std::get<2>(glyph_template).size(); ++i)
-                            {
                                 bending->push_back(max);
                             }
                         }
@@ -676,7 +587,7 @@ namespace tpf
                 }
             }
 
-            this->bending_glyphs->add(bending, tpf::data::topology_t::OBJECT_DATA);
+            this->bending_glyphs->add(bending, data::topology_t::OBJECT_DATA);
         }
     }
 }

@@ -149,7 +149,7 @@ namespace tpf
             virtual void run_algorithm() override;
 
         private:
-            using glyph_t = std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>;
+            using glyph_t = std::shared_ptr<geometry::mesh<float_t>>;
             using velocity_glyph_t = glyph_t;
 
             using bending_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t>;
