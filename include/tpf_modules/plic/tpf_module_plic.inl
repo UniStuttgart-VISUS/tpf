@@ -61,10 +61,10 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic<float_t>::set_algorithm_parameters(const std::size_t num_iterations, std::optional<float_t> pertubation)
+        inline void plic<float_t>::set_algorithm_parameters(const std::size_t num_iterations, std::optional<float_t> perturbation)
         {
             this->num_iterations = num_iterations;
-            this->perturbation = get_or_default(pertubation, static_cast<float_t>(0.00001L));
+            this->perturbation = get_or_default(perturbation, static_cast<float_t>(0.00001L));
         }
 
         template <typename float_t>

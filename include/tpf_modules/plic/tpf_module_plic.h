@@ -75,8 +75,8 @@ namespace tpf
             /// Set parameter
             /// </summary>
             /// <param name="num_iterations">Number of iterations</param>
-            /// <param name="pertubation">Perturbation of vertices to prevent numerical instability</param>
-            virtual void set_algorithm_parameters(std::size_t num_iterations, std::optional<float_t> pertubation) override;
+            /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
+            virtual void set_algorithm_parameters(std::size_t num_iterations, std::optional<float_t> perturbation) override;
 
             /// <summary>Run module</summary>
             virtual void run_algorithm() override;
