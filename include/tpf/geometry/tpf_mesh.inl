@@ -14,6 +14,7 @@
 #include <CGAL/Surface_mesh/Surface_mesh.h>
 
 #include <cmath>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -193,6 +194,42 @@ namespace tpf
                 point<floatp_t, kernel_t>(triangle.get_internal().vertex(2)));
 
             this->valid = false;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline std::shared_ptr<mesh<floatp_t, kernel_t>> mesh<floatp_t, kernel_t>::merge(const mesh<floatp_t, kernel_t>& other) const
+        {
+            auto merged = std::static_pointer_cast<mesh<floatp_t, kernel_t>>(other.clone());
+
+            std::map<CGAL::SM_Vertex_index, CGAL::SM_Vertex_index> index_map;
+
+            // Insert own points and store their indices in a map
+            const auto vertices = this->_mesh.vertices();
+
+            for (auto it = vertices.begin(); it != vertices.end(); ++it)
+            {
+                const auto index = *it;
+
+                index_map[index] = merged->add_point(point<floatp_t, kernel_t>(this->_mesh.point(*it)));
+            }
+
+            // Add own faces using the index map
+            const auto faces = this->_mesh.faces();
+
+            for (auto face_it = faces.begin(); face_it != faces.end(); ++face_it)
+            {
+                const auto vertices = this->_mesh.vertices_around_face(this->_mesh.halfedge(*face_it));
+                std::vector<CGAL::SM_Vertex_index> new_ids;
+
+                for (auto vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it)
+                {
+                    new_ids.push_back(index_map.at(*vertex_it));
+                }
+
+                merged->add_face(new_ids);
+            }
+
+            return merged;
         }
 
         template <typename floatp_t, typename kernel_t>
