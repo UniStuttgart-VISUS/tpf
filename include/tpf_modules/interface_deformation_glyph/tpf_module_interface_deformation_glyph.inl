@@ -3,6 +3,7 @@
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
 
+#include "tpf/geometry/tpf_mesh.h"
 #include "tpf/geometry/tpf_point.h"
 #include "tpf/geometry/tpf_triangle.h"
 
@@ -487,34 +488,53 @@ namespace tpf
             }
 
             // Create strips in x- and y-direction, respectively
-            glyph_t strip(2 * polygonal_resolution);
+            glyph_t min_strips(2);
+            glyph_t max_strips(2);
 
             {
-                const auto increment = static_cast<float_t>(1.0 / polygonal_resolution);
+                // Create strip in positive x-direction
+                auto strip = std::make_shared<geometry::mesh<float_t>>();
 
-                auto x_prev = static_cast<float_t>(-1.0);
+                const auto increment = static_cast<float_t>((1.0 - strip_size) / polygonal_resolution);
 
                 const auto y_plus = strip_size / static_cast<float_t>(2.0);
                 const auto y_minus = -strip_size / static_cast<float_t>(2.0);
+                const auto z_offset = static_cast<float_t>(0.02);
+
+                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_size, y_plus, z_offset));
+                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_size, y_minus, z_offset));
 
                 for (std::size_t i = 1; i <= polygonal_resolution; ++i)
                 {
-                    const auto x = (i * increment) * 2 - 1;
+                    const auto x = i * increment + strip_size;
 
-                    const geometry::point<float_t> p1(x_prev, y_plus, 0.02);
-                    const geometry::point<float_t> p2(x_prev, y_minus, 0.02);
-                    const geometry::point<float_t> p3(x, y_plus, 0.02);
-                    const geometry::point<float_t> p4(x, y_minus, 0.02);
+                    const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, z_offset));
+                    const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, z_offset));
 
-                    strip[(i - 1) * 2 + 0] = std::make_shared<geometry::triangle<float_t>>(p2, p4, p3);
-                    strip[(i - 1) * 2 + 1] = std::make_shared<geometry::triangle<float_t>>(p2, p3, p1);
+                    strip->add_face({ index_prev_1, index_prev_2, index_2, index_1 });
 
-                    x_prev = x;
+                    index_prev_1 = index_1;
+                    index_prev_2 = index_2;
                 }
+
+                // Copy strip for negative x-direction, and both y-directions
+                const Eigen::Matrix<float_t, 3, 1> origin(0.0, 0.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> x_axis(1.0, 0.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> y_axis(0.0, 1.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> z_axis(0.0, 0.0, 1.0);
+
+                math::transformer<float_t, 3> x_neg(origin, -x_axis, -y_axis, z_axis);
+                math::transformer<float_t, 3> y_pos(origin, y_axis, -x_axis, z_axis);
+                math::transformer<float_t, 3> y_neg(origin, -y_axis, x_axis, z_axis);
+
+                min_strips[0] = strip;
+                min_strips[1] = strip->clone(x_neg);
+                max_strips[0] = strip->clone(y_pos);
+                max_strips[1] = strip->clone(y_neg);
             }
 
             // Return glyphs
-            return std::make_tuple(disc, strip);
+            return std::make_tuple(disc, min_strips, max_strips);
         }
 
         template <typename float_t>
@@ -533,7 +553,7 @@ namespace tpf
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
 
-            glyph_t instance(std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size());
+            glyph_t instance(std::get<0>(glyph_template).size() + std::get<1>(glyph_template).size() + std::get<2>(glyph_template).size());
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
@@ -601,16 +621,6 @@ namespace tpf
                             math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
                             trafo.set_preprocessing(bend);
 
-                            // Extra rotation for second strip
-                            Eigen::Matrix<float_t, 4, 4> rotation_matrix;
-                            rotation_matrix.setIdentity();
-
-                            rotation_matrix(0, 0) = rotation_matrix(1, 1) = 0.0;
-                            rotation_matrix(1, 0) = 1.0;
-                            rotation_matrix(0, 1) = -1.0;
-
-                            math::transformer<float_t, 3> trafo_rotation(rotation_matrix);
-
                             // Instantiate glyph
                             auto pos = std::transform(std::get<0>(glyph_template).begin(), std::get<0>(glyph_template).end(), instance.begin(),
                                 [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
@@ -618,13 +628,8 @@ namespace tpf
                             pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
                                 [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
 
-                            pos = std::transform(std::get<1>(glyph_template).begin(), std::get<1>(glyph_template).end(), pos,
-                                [&trafo, &trafo_rotation](const std::shared_ptr<geometry::geometric_object<float_t>> obj)
-                                {
-                                    auto clone = obj->clone(trafo_rotation);
-                                    clone->transform(trafo);
-                                    return clone;
-                                });
+                            pos = std::transform(std::get<2>(glyph_template).begin(), std::get<2>(glyph_template).end(), pos,
+                                [&trafo](const std::shared_ptr<geometry::geometric_object<float_t>> obj) { return obj->clone(trafo); });
 
                             this->bending_glyphs->insert(instance);
 
@@ -636,7 +641,8 @@ namespace tpf
 
             // Create data array
             auto bending = std::make_shared<tpf::data::array<float_t>>("Bending");
-            bending->reserve(num_interface_cells * (std::get<0>(glyph_template).size() + 2 * std::get<1>(glyph_template).size()));
+            bending->reserve(num_interface_cells * (std::get<0>(glyph_template).size()
+                + std::get<1>(glyph_template).size() + std::get<2>(glyph_template).size()));
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second && num_interface_cells != 0; ++z)
             {
@@ -661,7 +667,7 @@ namespace tpf
                                 bending->push_back(min);
                             }
 
-                            for (std::size_t i = 0; i < std::get<1>(glyph_template).size(); ++i)
+                            for (std::size_t i = 0; i < std::get<2>(glyph_template).size(); ++i)
                             {
                                 bending->push_back(max);
                             }

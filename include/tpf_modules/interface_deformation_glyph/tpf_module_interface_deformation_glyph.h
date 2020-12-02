@@ -9,6 +9,7 @@
 #include "tpf/data/tpf_polydata.h"
 
 #include "tpf/geometry/tpf_geometric_object.h"
+#include "tpf/geometry/tpf_mesh.h"
 
 #include <memory>
 #include <string>
@@ -151,7 +152,7 @@ namespace tpf
             using glyph_t = std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>;
             using velocity_glyph_t = glyph_t;
 
-            using bending_glyph_t = std::tuple<glyph_t, glyph_t>;
+            using bending_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t>;
 
             /// <summary>
             /// Create a velocity glyph, based at the origin and pointing in x-direction with length 1
