@@ -19,8 +19,9 @@ namespace tpf
     namespace geometry
     {
         template <typename floatp_t, typename kernel_t>
-        inline plane<floatp_t, kernel_t>::plane(const point<floatp_t, kernel_t>& first, const Eigen::Matrix<floatp_t, 3, 1>& normal) noexcept
+        inline plane<floatp_t, kernel_t>::plane(const point<floatp_t, kernel_t>& first, const Eigen::Matrix<floatp_t, 3, 1>& normal)
         {
+            // Will throw exception if normal is zero.
             const auto vectors = math::template orthonormal<floatp_t>(normal);
 
             const point<floatp_t, kernel_t> second(first.get_vertex() + vectors.first);
