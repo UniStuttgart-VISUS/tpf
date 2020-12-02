@@ -440,11 +440,14 @@
                 </Documentation>
             </StringVectorProperty>
             <StringVectorProperty name="Interface Gradient" label="Gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Interface gradient
                 </Documentation>
