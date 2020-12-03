@@ -214,6 +214,106 @@ namespace tpf
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform_normal(
+            const Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        {
+            static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
+
+            // Calculate transformation
+            Eigen::Matrix<floatp_t, 4, 1> temp;
+
+            if (dimension == 3)
+            {
+                temp << vec, 0.0;
+            }
+            else if (dimension == 4)
+            {
+                temp << vec;
+            }
+
+            temp = this->trafo.inverse().transpose() * temp;
+
+            // Return
+            return temp.template head<dimension>();
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline Eigen::Matrix<floatp_t, dimension, 1> transformer<floatp_t, dimension, homogeneous>::transform_normal_inverse(
+            const Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        {
+            static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
+
+            // Calculate transformation
+            Eigen::Matrix<floatp_t, 4, 1> temp;
+
+            if (dimension == 3)
+            {
+                temp << vec, 0.0;
+            }
+            else if (dimension == 4)
+            {
+                temp << vec;
+            }
+
+            temp = this->trafo.transpose() * temp;
+
+            // Return
+            return temp.template head<dimension>();
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_normal_inplace(
+            Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        {
+            static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
+
+            // Calculate transformation
+            Eigen::Matrix<floatp_t, 4, 1> temp;
+
+            if (dimension == 3)
+            {
+                temp << vec, 0.0;
+            }
+            else if (dimension == 4)
+            {
+                temp << vec;
+            }
+
+            temp = this->trafo.inverse().transpose() * temp;
+
+            // Return
+            vec << temp.template head<dimension>();
+
+            return vec;
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline Eigen::Matrix<floatp_t, dimension, 1>& transformer<floatp_t, dimension, homogeneous>::transform_normal_inverse_inplace(
+            Eigen::Matrix<floatp_t, dimension, 1>& vec) const
+        {
+            static_assert(dimension == 3 || dimension == 4, "Dimension must be either 3 or 4");
+
+            // Calculate transformation
+            Eigen::Matrix<floatp_t, 4, 1> temp;
+
+            if (dimension == 3)
+            {
+                temp << vec, 0.0;
+            }
+            else if (dimension == 4)
+            {
+                temp << vec;
+            }
+
+            temp = this->trafo.transpose() * temp;
+
+            // Return
+            vec << temp.template head<dimension>();
+
+            return vec;
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
         inline void transformer<floatp_t, dimension, homogeneous>::create_transformation_matrix(const Eigen::Matrix<floatp_t, 3, 1>& origin,
             const Eigen::Matrix<floatp_t, 3, 1>& x_axis, const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis,
             const bool invert)

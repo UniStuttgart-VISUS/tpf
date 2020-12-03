@@ -148,6 +148,34 @@ namespace tpf
             /// <return>Transformed vector</return>
             Eigen::Matrix<floatp_t, dimension, 1>& transform_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
+            /// <summary>
+            /// Transform vector
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1> transform_normal(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector inverse
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1> transform_normal_inverse(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_normal_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector inverse
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_normal_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
         private:
             /// <summary>
             /// Create matrix for transformation from input into standard coordinate system
