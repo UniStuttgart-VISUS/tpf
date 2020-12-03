@@ -30,13 +30,13 @@ namespace tpf
             /// <summary>
             /// Create empty mesh
             /// </summary>
-            mesh() noexcept;
+            explicit mesh(bool repair = false) noexcept;
 
             /// <summary>
             /// Construct from existing mesh
             /// </summary>
             /// <param name="mesh">Mesh</param>
-            mesh(const CGAL::Surface_mesh<typename kernel_t::Point_3>& mesh) noexcept;
+            mesh(const CGAL::Surface_mesh<typename kernel_t::Point_3>& mesh, bool repair = false) noexcept;
 
             /// <summary>
             /// Copy constructor
@@ -161,6 +161,9 @@ namespace tpf
         private:
             /// Triangle
             CGAL::Surface_mesh<typename kernel_t::Point_3> _mesh;
+
+            /// Should the mesh be repaired if necessary?
+            bool perform_repair;
 
             /// Flag signalling need for repair
             bool valid;
