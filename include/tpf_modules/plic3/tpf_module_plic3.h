@@ -30,12 +30,12 @@ namespace tpf
             interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
                 const data::grid<float_t, float_t, 3, 3>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>>>
+            interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
                 const data::grid<float_t, float_t, 3, 3>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>>;
+            using parameters_t = interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>;
 
             using base_t = module_base<input_t, output_t, parameters_t>;
 
@@ -94,7 +94,8 @@ namespace tpf
             /// <param name="num_iterations_plic3">Number of iterations for PLIC3]</param>
             /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
             virtual void set_algorithm_parameters(float_t epsilon, float_t error_margin_plic, float_t error_margin_plic3,
-                std::size_t num_iterations_plic, std::size_t num_iterations_plic3, std::optional<float_t> perturbation) override;
+                std::size_t num_iterations_plic, std::size_t num_iterations_plic3, std::optional<float_t> perturbation,
+                std::optional<bool> hide_error_cubes) override;
 
             /// <summary>Run module</summary>
             void run_algorithm() override;
@@ -147,6 +148,9 @@ namespace tpf
 
             /// Perturbation
             float_t perturbation_ = static_cast<float_t>(0.00001L);
+
+            /// Hide error cubes
+            bool hide_error_cubes_ = false;
         };
     }
 }

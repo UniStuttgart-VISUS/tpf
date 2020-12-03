@@ -60,7 +60,7 @@ namespace tpf
         template <typename float_t>
         inline void plic3<float_t>::set_algorithm_parameters(float_t epsilon, float_t error_margin_plic,
             float_t error_margin_plic3, std::size_t num_iterations_plic, std::size_t num_iterations_plic3,
-            std::optional<float_t> perturbation)
+            std::optional<float_t> perturbation, std::optional<bool> hide_error_cubes)
         {
             this->epsilon_ = epsilon;
             this->error_margin_plic_ = error_margin_plic;
@@ -68,6 +68,7 @@ namespace tpf
             this->num_iterations_plic_ = num_iterations_plic;
             this->num_iterations_plic3_ = num_iterations_plic3;
             this->perturbation_ = get_or_default<float_t>(perturbation, static_cast<float_t>(0.00001L));
+            this->hide_error_cubes_ = get_or_default<float_t>(hide_error_cubes, false);
         }
 
         template <typename float_t>
@@ -99,8 +100,7 @@ namespace tpf
                         auto f_value = f(coords);
                         auto f3_value = f3(coords);
                         Eigen::Matrix<float_t, 3, 1> n3_value = f_norm_3ph(coords);
-                        Eigen::Matrix<float_t, 3, 1> n3_output;
-                        n3_output << 0.0, 0.0, 0.0;
+                        Eigen::Matrix<float_t, 3, 1> n3_output = Eigen::Matrix<float_t, 3, 1>::Zero();
 
                         // empty cells
                         if (f_value < epsilon && f3_value < epsilon) {
@@ -274,7 +274,7 @@ namespace tpf
                             }
                         }
 
-                        if (!done) {
+                        if (!done && !this->hide_error_cubes_) {
                             // draw error cube
                             const auto pos = f.get_cell_coordinates(coords);
                             const auto size = f.get_cell_sizes(coords);
@@ -284,13 +284,16 @@ namespace tpf
                             auto cube = std::make_shared<tpf::geometry::cuboid<float_t>>(p_min, p_max);
 
                             plic3_interface.insert(cube);
+                            done = true;
                         }
-                        types->push_back(type);
-                        gradients_f->push_back(grad);
-                        gradients_f3->push_back(grad3);
-                        values_f->push_back(f_value);
-                        values_f3->push_back(f3_value);
-                        values_n3->push_back(n3_output);
+                        if (done) {
+                            types->push_back(type);
+                            gradients_f->push_back(grad);
+                            gradients_f3->push_back(grad3);
+                            values_f->push_back(f_value);
+                            values_f3->push_back(f3_value);
+                            values_n3->push_back(n3_output);
+                        }
                     }
                 }
             }

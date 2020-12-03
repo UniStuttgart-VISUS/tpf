@@ -564,6 +564,12 @@
                     Introduce pertubation to prevent degenerate cases
                 </Documentation>
             </DoubleVectorProperty>
+            <IntVectorProperty name="HideErrorCubes" command="SetHideErrorCubes" label="Hide error cubes" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Hide error cubes
+                </Documentation>
+            </IntVectorProperty>
 
             <Hints>
                 <ShowInMenu category="Two-Phase Flow" icon=":/Two-Phase Flow/tpf_plic3.png"/>

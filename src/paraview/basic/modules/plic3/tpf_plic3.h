@@ -27,6 +27,9 @@ public:
     vtkGetMacro(Perturbation, double);
     vtkSetMacro(Perturbation, double);
 
+    vtkGetMacro(HideErrorCubes, int);
+    vtkSetMacro(HideErrorCubes, int);
+
 protected:
     tpf_plic3();
     ~tpf_plic3();
@@ -59,4 +62,7 @@ private:
 
     /// Perturbation
     double Perturbation;
+
+    // Hide error
+    int HideErrorCubes;
 };
