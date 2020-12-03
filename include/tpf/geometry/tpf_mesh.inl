@@ -24,11 +24,12 @@ namespace tpf
     namespace geometry
     {
         template <typename floatp_t, typename kernel_t>
-        inline mesh<floatp_t, kernel_t>::mesh() noexcept : valid(true)
+        inline mesh<floatp_t, kernel_t>::mesh(const bool repair) noexcept : perform_repair(repair), valid(true)
         {}
 
         template <typename floatp_t, typename kernel_t>
-        inline mesh<floatp_t, kernel_t>::mesh(const CGAL::Surface_mesh<typename kernel_t::Point_3>& mesh) noexcept : valid(false)
+        inline mesh<floatp_t, kernel_t>::mesh(const CGAL::Surface_mesh<typename kernel_t::Point_3>& mesh, const bool repair) noexcept
+            : perform_repair(repair), valid(false)
         {
             this->_mesh = mesh;
         }
@@ -37,6 +38,7 @@ namespace tpf
         inline mesh<floatp_t, kernel_t>::mesh(const mesh<floatp_t, kernel_t>& copy) noexcept
         {
             this->_mesh = copy._mesh;
+            this->perform_repair = copy.perform_repair;
             this->valid = copy.valid;
         }
 
@@ -46,6 +48,7 @@ namespace tpf
             geometric_object<floatp_t>::operator=(mesh);
 
             this->_mesh = mesh;
+            this->perform_repair = false;
             this->valid = false;
 
             return *this;
@@ -57,6 +60,7 @@ namespace tpf
             geometric_object<floatp_t>::operator=(copy);
 
             this->_mesh = copy._mesh;
+            this->perform_repair = copy.perform_repair;
             this->valid = copy.valid;
 
             return *this;
@@ -318,7 +322,7 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         inline void mesh<floatp_t, kernel_t>::repair() const
         {
-            if (!this->valid)
+            if (!this->valid && this->perform_repair)
             {
                 CGAL::Polygon_mesh_processing::remove_isolated_vertices(const_cast<CGAL::Surface_mesh<typename kernel_t::Point_3>&>(this->_mesh));
                 CGAL::Polygon_mesh_processing::stitch_borders(const_cast<CGAL::Surface_mesh<typename kernel_t::Point_3>&>(this->_mesh));
