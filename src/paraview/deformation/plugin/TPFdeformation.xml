@@ -371,7 +371,7 @@
                 </Documentation>
             </IntVectorProperty>
             <DoubleVectorProperty name="ShaftTipRatio" command="SetShaftTipRatio" label="Shaft-tip-ratio" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
-                <DoubleRangeDomain name="volume_range" min="0.01" max="0.99" />
+                <DoubleRangeDomain name="volume_range" min="0.02" max="0.98" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
                 </Hints>
@@ -419,7 +419,7 @@
                 </Documentation>
             </DoubleVectorProperty>
             <DoubleVectorProperty name="BendingStripSize" command="SetBendingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
-                <DoubleRangeDomain name="strip_range" min="0.0" max="0.5" />
+                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
                 </Hints>
@@ -427,7 +427,7 @@
                     Thickness of the strips indicating the eigenvector directions
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="BendingDiscResolution" command="SetBendingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="16" panel_visibility="advanced">
+            <IntVectorProperty name="BendingDiscResolution" command="SetBendingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
                 </Hints>
@@ -435,7 +435,7 @@
                     Resolution around the disc (circle)
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="PolynomialResolution" command="SetPolynomialResolution" label="Polynomial resolution" number_of_elements="1" default_values="20" panel_visibility="advanced">
+            <IntVectorProperty name="PolynomialResolution" command="SetPolynomialResolution" label="Polynomial resolution" number_of_elements="1" default_values="10" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
                 </Hints>

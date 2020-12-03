@@ -158,23 +158,38 @@ namespace tpf
             /// Create a velocity glyph, based at the origin and pointing in x-direction with length 1
             /// </summary>
             /// <param name="resolution">Resolution of the arrow, i.e., number of subdivisions</param>
-            /// <param name="shaft_tip_ratio">Ratio of the shaft, e.g., a value 0.7 creates an arrow with shaft length 0.7 and tip length 0.3</param>
-            /// <param name="thickness_ratio">Thickness, e.g., a value of 0.1 creates a shaft with radius 0.1 and a tip with radius 0.2</param>
+            /// <param name="shaft_length">Ratio of the shaft, e.g., a value 0.7 creates an arrow with shaft length 0.7 and tip length 0.3</param>
+            /// <param name="shaft_thickness">Thickness, e.g., a value of 0.1 creates a shaft with radius 0.1 and a tip with radius 0.2</param>
             /// <returns>Template velocity glyph</returns>
-            velocity_glyph_t create_velocity_glyph_template(std::size_t resolution, float_t shaft_tip_ratio, float_t thickness_ratio) const;
+            velocity_glyph_t create_velocity_glyph_template(std::size_t resolution, float_t shaft_length, float_t shaft_thickness) const;
 
             /// <summary>
             /// "Instantiate" velocity glyphs at each interface position
             /// </summary>
             /// <param name="glyph_template">Template to instantiate</param>
+            /// <param name="average_cell_size">Average cell size of the data</param>
             /// <param name="arrow_size">Type of scaling</param>
             /// <param name="arrow_scalar">Scaling factor</param>
             /// <param name="arrow_fixed_scalar">Scaling factor for fixed direction (thickness for fixed_thickness; all for fixed_size)</param>
-            void instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template,
+            void instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template, float_t average_cell_size,
                 interface_deformation_glyph_aux::arrow_size_t arrow_size, float_t arrow_scalar, float_t arrow_fixed_scalar);
 
-            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polygonal_resolution, float_t strip_size) const;
+            /// <summary>
+            /// Create a bending glyph (disc), its center being the origin and extending in the x,y-plane with radius 1
+            /// </summary>
+            /// <param name="circle_resolution">Resolution of the circle (angle)</param>
+            /// <param name="polygonal_resolution">Resolution along the radius</param>
+            /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
+            /// <returns>Template bending glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip]</returns>
+            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polygonal_resolution, float_t strip_width) const;
 
+            /// <summary>
+            /// "Instantiate" bending glyphs at each interface position
+            /// </summary>
+            /// <param name="glyph_template">Template to instantiate</param>
+            /// <param name="average_cell_size">Average cell size of the data</param>
+            /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
+            /// <param name="scalar">Scalar to modify the bending</param>
             void instantiate_bending_glyph(const bending_glyph_t&glyph_template, float_t average_cell_size, float_t size_scalar, float_t scalar);
 
             /// Volume of fluid

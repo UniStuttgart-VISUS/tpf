@@ -21,6 +21,8 @@
 #include "vtkRectilinearGrid.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
+#include "vtkPolyDataNormals.h"
+
 #include <functional>
 #include <optional>
 #include <stdexcept>
@@ -135,6 +137,13 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             tpf::vtk::set_polydata(output_velocity_glyphs, velocity_glyphs,
                 tpf::data::data_information<float_t, 1, 1>{ "Velocity Magnitude", tpf::data::topology_t::OBJECT_DATA });
 
+            auto normal_filter = vtkPolyDataNormals::New();
+            normal_filter->SetInputDataObject(output_velocity_glyphs);
+            normal_filter->SetFeatureAngle(180.0);
+            normal_filter->Update();
+
+            output_velocity_glyphs->ShallowCopy(normal_filter->GetOutput());
+
             output->SetBlock(index, output_velocity_glyphs);
             output->GetMetaData(index)->Set(vtkCompositeDataSet::NAME(), "velocity");
 
@@ -148,6 +157,8 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             tpf::vtk::set_polydata(output_stretching_glyphs, stretching_glyphs,
                 tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA });
 
+            // TODO: set normals
+
             output->SetBlock(index, output_stretching_glyphs);
             output->GetMetaData(index)->Set(vtkCompositeDataSet::NAME(), "stretching");
 
@@ -160,6 +171,13 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
 
             tpf::vtk::set_polydata(output_bending_glyphs, bending_glyphs,
                 tpf::data::data_information<float_t, 1, 1>{ "Bending", tpf::data::topology_t::OBJECT_DATA });
+
+            auto normal_filter = vtkPolyDataNormals::New();
+            normal_filter->SetInputDataObject(output_bending_glyphs);
+            normal_filter->SetFeatureAngle(180.0);
+            normal_filter->Update();
+
+            output_bending_glyphs->ShallowCopy(normal_filter->GetOutput());
 
             output->SetBlock(index, output_bending_glyphs);
             output->GetMetaData(index)->Set(vtkCompositeDataSet::NAME(), "bending");

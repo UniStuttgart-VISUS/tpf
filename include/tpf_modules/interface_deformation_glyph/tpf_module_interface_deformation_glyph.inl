@@ -127,7 +127,7 @@ namespace tpf
             if (this->velocity_glyph && this->velocities != nullptr)
             {
                 instantiate_velocity_glyphs(create_velocity_glyph_template(this->arrow_resolution, this->arrow_ratio, this->arrow_thickness),
-                    this->arrow_size, this->arrow_scalar, this->arrow_fixed_scalar);
+                    average_cell_size, this->arrow_size, this->arrow_scalar, this->arrow_fixed_scalar);
             }
 
             // Create stretching glyph
@@ -152,13 +152,18 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline auto interface_deformation_glyph<float_t>::create_velocity_glyph_template(const std::size_t resolution,
-            const float_t shaft_tip_ratio, const float_t thickness_ratio) const -> velocity_glyph_t
+        inline auto interface_deformation_glyph<float_t>::create_velocity_glyph_template(std::size_t resolution,
+            float_t shaft_length, float_t shaft_thickness) const -> velocity_glyph_t
         {
-            const auto shaft_thickness = thickness_ratio;
-            const auto tip_thickness = static_cast<float_t>(2.0) * thickness_ratio;
+            // Clamp parameter values
+            resolution = std::max(resolution, static_cast<std::size_t>(3));
+            shaft_thickness = std::clamp(shaft_thickness, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+            shaft_length = std::clamp(shaft_length, static_cast<float_t>(0.02), static_cast<float_t>(0.98));
+
+            const auto tip_thickness = static_cast<float_t>(2.0) * shaft_thickness;
 
             const auto increment = static_cast<float_t>((2.0 * math::pi<float_t>) / resolution);
+            const auto offset = 0.01;
 
             // Create arrow glyph...
             velocity_glyph_t arrow_glyph = std::make_shared<geometry::mesh<float_t>>();
@@ -166,18 +171,24 @@ namespace tpf
             {
                 // ... shaft
                 {
-                    std::vector<CGAL::SM_Vertex_index> origin_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> origin_1_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> origin_2_indices(resolution);
                     std::vector<CGAL::SM_Vertex_index> target_indices(resolution);
 
                     const auto cap_center = arrow_glyph->add_point(geometry::point<float_t>(0.0, 0.0, 0.0));
 
-                    origin_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                    origin_1_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        0.0,
+                        shaft_thickness * std::cos(static_cast<float_t>(0.0)),
+                        shaft_thickness * std::sin(static_cast<float_t>(0.0))));
+
+                    origin_2_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
                         0.0,
                         shaft_thickness * std::cos(static_cast<float_t>(0.0)),
                         shaft_thickness * std::sin(static_cast<float_t>(0.0))));
 
                     target_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
-                        shaft_tip_ratio,
+                        shaft_length,
                         shaft_thickness * std::cos(static_cast<float_t>(0.0)),
                         shaft_thickness * std::sin(static_cast<float_t>(0.0))));
 
@@ -185,51 +196,91 @@ namespace tpf
                     {
                         const auto angle = i * increment;
 
-                        origin_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                        origin_1_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            0.0,
+                            shaft_thickness * std::cos(angle),
+                            shaft_thickness * std::sin(angle)));
+
+                        origin_2_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
                             0.0,
                             shaft_thickness * std::cos(angle),
                             shaft_thickness * std::sin(angle)));
 
                         target_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
-                            shaft_tip_ratio,
+                            shaft_length,
                             shaft_thickness * std::cos(angle),
                             shaft_thickness * std::sin(angle)));
 
-                        arrow_glyph->add_face(cap_center, origin_indices[i - 1], origin_indices[i]);
-                        arrow_glyph->add_face({ origin_indices[i - 1], target_indices[i - 1], target_indices[i], origin_indices[i] });
+                        arrow_glyph->add_face(cap_center, origin_1_indices[i - 1], origin_1_indices[i]);
+                        arrow_glyph->add_face({ origin_2_indices[i - 1], target_indices[i - 1], target_indices[i], origin_2_indices[i] });
                     }
 
-                    arrow_glyph->add_face(cap_center, origin_indices.back(), origin_indices.front());
-                    arrow_glyph->add_face({ origin_indices.back(), target_indices.back(), target_indices.front(), origin_indices.front() });
+                    arrow_glyph->add_face(cap_center, origin_1_indices.back(), origin_1_indices.front());
+                    arrow_glyph->add_face({ origin_2_indices.back(), target_indices.back(), target_indices.front(), origin_2_indices.front() });
                 }
 
                 // ... tip
                 {
-                    std::vector<CGAL::SM_Vertex_index> indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> origin_1_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> origin_2_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> target_1_indices(resolution);
+                    std::vector<CGAL::SM_Vertex_index> target_2_indices(resolution);
 
                     const auto tip_center = arrow_glyph->add_point(geometry::point<float_t>(1.0, 0.0, 0.0));
-                    const auto tip_cap_center = arrow_glyph->add_point(geometry::point<float_t>(shaft_tip_ratio, 0.0, 0.0));
+                    const auto tip_cap_center = arrow_glyph->add_point(geometry::point<float_t>(shaft_length, 0.0, 0.0));
 
-                    indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
-                        shaft_tip_ratio,
+                    origin_1_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        shaft_length,
                         tip_thickness * std::cos(static_cast<float_t>(0.0)),
                         tip_thickness * std::sin(static_cast<float_t>(0.0))));
+
+                    origin_2_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        shaft_length,
+                        tip_thickness * std::cos(static_cast<float_t>(0.0)),
+                        tip_thickness * std::sin(static_cast<float_t>(0.0))));
+
+                    target_1_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        1.0 - offset,
+                        tip_thickness * (offset / (1.0 - shaft_length)) * std::cos(static_cast<float_t>(0.0)),
+                        tip_thickness * (offset / (1.0 - shaft_length)) * std::sin(static_cast<float_t>(0.0))));
+
+                    target_2_indices[0] = arrow_glyph->add_point(geometry::point<float_t>(
+                        1.0 - offset,
+                        tip_thickness * (offset / (1.0 - shaft_length)) * std::cos(static_cast<float_t>(0.0)),
+                        tip_thickness * (offset / (1.0 - shaft_length)) * std::sin(static_cast<float_t>(0.0))));
 
                     for (std::size_t i = 1; i < resolution; ++i)
                     {
                         const auto angle = i * increment;
 
-                        indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
-                            shaft_tip_ratio,
+                        origin_1_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            shaft_length,
                             tip_thickness * std::cos(angle),
                             tip_thickness * std::sin(angle)));
 
-                        arrow_glyph->add_face(tip_cap_center, indices[i - 1], indices[i]);
-                        arrow_glyph->add_face(tip_center, indices[i], indices[i - 1]);
+                        origin_2_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            shaft_length,
+                            tip_thickness * std::cos(angle),
+                            tip_thickness * std::sin(angle)));
+
+                        target_1_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            1.0 - offset,
+                            tip_thickness * (offset / (1.0 - shaft_length)) * std::cos(angle),
+                            tip_thickness * (offset / (1.0 - shaft_length)) * std::sin(angle)));
+
+                        target_2_indices[i] = arrow_glyph->add_point(geometry::point<float_t>(
+                            1.0 - offset,
+                            tip_thickness * (offset / (1.0 - shaft_length)) * std::cos(angle),
+                            tip_thickness * (offset / (1.0 - shaft_length)) * std::sin(angle)));
+
+                        arrow_glyph->add_face(tip_cap_center, origin_1_indices[i - 1], origin_1_indices[i]);
+                        arrow_glyph->add_face({ origin_2_indices[i - 1], target_1_indices[i - 1], target_1_indices[i], origin_2_indices[i] });
+                        arrow_glyph->add_face(tip_center, target_2_indices[i], target_2_indices[i - 1]);
                     }
 
-                    arrow_glyph->add_face(tip_cap_center, indices.back(), indices.front());
-                    arrow_glyph->add_face(tip_center, indices.front(), indices.back());
+                    arrow_glyph->add_face(tip_cap_center, origin_1_indices.back(), origin_1_indices.front());
+                    arrow_glyph->add_face({ origin_2_indices.back(), target_1_indices.back(), target_1_indices.front(), origin_2_indices.front() });
+                    arrow_glyph->add_face(tip_center, target_2_indices.front(), target_2_indices.back());
                 }
             }
 
@@ -238,9 +289,14 @@ namespace tpf
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template,
-            const interface_deformation_glyph_aux::arrow_size_t arrow_size, const float_t arrow_scalar,
-            const float_t arrow_fixed_scalar)
+            const float_t average_cell_size, const interface_deformation_glyph_aux::arrow_size_t arrow_size,
+            float_t arrow_scalar, float_t arrow_fixed_scalar)
         {
+            // Clamp parameter values
+            arrow_scalar = std::max(arrow_scalar, static_cast<float_t>(0.00001 * average_cell_size));
+            arrow_fixed_scalar = std::max(arrow_fixed_scalar, static_cast<float_t>(0.00001 * average_cell_size));
+
+            // Get input data
             const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
             const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
             const data::grid<float_t, float_t, 3, 3>& velocities = *this->velocities;
@@ -347,9 +403,14 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(const std::size_t circle_resolution,
-            const std::size_t polygonal_resolution, const float_t strip_size) const -> bending_glyph_t
+        inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(std::size_t circle_resolution,
+            std::size_t polygonal_resolution, float_t strip_size) const -> bending_glyph_t
         {
+            // Clamp parameter values
+            circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
+            polygonal_resolution = std::max(polygonal_resolution, static_cast<std::size_t>(1));
+            strip_size = std::clamp(strip_size, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+
             // Create circle-shape disc on x,y-plane
             glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
@@ -467,8 +528,13 @@ namespace tpf
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_bending_glyph(const bending_glyph_t& glyph_template,
-            const float_t average_cell_size, const float_t size_scalar, const float_t scalar)
+            const float_t average_cell_size, float_t size_scalar, float_t scalar)
         {
+            // Clamp parameter values
+            size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
+            scalar = std::max(scalar, static_cast<float_t>(0.00001 * average_cell_size));
+
+            // Get input data
             const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
             const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
             const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
