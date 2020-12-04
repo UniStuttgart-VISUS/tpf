@@ -77,12 +77,14 @@ namespace tpf
 
             data::polydata<float_t>& plic_interface = *this->plic_interface;
 
+            auto array_coords = std::make_shared<data::array<int, 3>>("coords");
+            auto array_error = std::make_shared<data::array<float_t, 1>>("error");
+            auto array_iterations = std::make_shared<data::array<int, 1>>("iterations");
+
             // Calculate PLIC at all interface cells and store the error
 #ifdef __tpf_debug
             std::size_t interface_cells = 0;
             std::size_t illegal_cells = 0;
-
-            auto error = std::make_shared<data::array<float_t, 1>>("Error");
 #endif
 
             for (auto z = fractions.get_extent()[2].first; z <= fractions.get_extent()[2].second; ++z)
@@ -102,13 +104,9 @@ namespace tpf
                             if (std::get<0>(reconstruction) != nullptr)
                             {
                                 plic_interface.insert(std::get<0>(reconstruction));
-
-#ifdef __tpf_debug
-                                for (std::size_t i = 0; i < std::get<0>(reconstruction)->get_num_cells(); ++i)
-                                {
-                                    error->push_back(std::get<1>(reconstruction));
-                                }
-#endif
+                                array_coords->push_back(coords.cast<int>());
+                                array_error->push_back(std::get<1>(reconstruction));
+                                array_iterations->push_back(std::get<2>(reconstruction));
                             }
 #ifdef __tpf_debug
                             else
@@ -123,9 +121,11 @@ namespace tpf
                 }
             }
 
-#ifdef __tpf_debug
-            plic_interface.add(error, data::topology_t::CELL_DATA);
+            plic_interface.add(array_coords, tpf::data::topology_t::OBJECT_DATA);
+            plic_interface.add(array_error, tpf::data::topology_t::OBJECT_DATA);
+            plic_interface.add(array_iterations, tpf::data::topology_t::OBJECT_DATA);
 
+#ifdef __tpf_debug
             log::info_message(__tpf_info_message("Number of illegal cells: ", illegal_cells, " out of ", interface_cells, " interface cells."));
 #endif
         }

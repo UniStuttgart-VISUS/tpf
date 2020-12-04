@@ -98,11 +98,10 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
         // Set output
         auto output = vtkPolyData::GetData(output_vector);
 
-#ifndef __tpf_debug
-        tpf::vtk::set_polydata(output, plic_interface);
-#else
-        tpf::vtk::set_polydata(output, plic_interface, tpf::data::data_information<float_t, 1>{ "Error", tpf::data::topology_t::CELL_DATA });
-#endif
+        tpf::vtk::set_polydata(output, plic_interface,
+            tpf::data::data_information<int, 3>{ "coords", tpf::data::topology_t::OBJECT_DATA },
+            tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
+            tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
     }
     catch (const std::runtime_error& ex)
     {
