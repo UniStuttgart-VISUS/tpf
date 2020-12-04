@@ -82,10 +82,9 @@ namespace tpf
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::set_algorithm_parameters(const bool velocity_glyph,
             const bool stretching_glyph, const bool bending_glyph, const float_t timestep,
-            const interface_deformation_glyph_aux::arrow_size_t arrow_size, const float_t arrow_scalar,
-            const float_t arrow_fixed_scalar, const int arrow_resolution, const float_t arrow_ratio, const float_t arrow_thickness,
-            const int bending_disc_resolution, const int bending_polygonal_resolution, const float_t bending_strip_size,
-            const float_t bending_size_scalar, const float_t bending_scalar)
+            interface_deformation_glyph_aux::velocity_params_t<float_t> velocity_parameters,
+            interface_deformation_glyph_aux::stretching_params_t<float_t> stretching_parameters,
+            interface_deformation_glyph_aux::bending_params_t<float_t> bending_parameters)
         {
             this->velocity_glyph = velocity_glyph;
             this->stretching_glyph = stretching_glyph;
@@ -93,18 +92,9 @@ namespace tpf
 
             this->timestep = timestep;
 
-            this->arrow_size = arrow_size;
-            this->arrow_scalar = arrow_scalar;
-            this->arrow_fixed_scalar = arrow_fixed_scalar;
-            this->arrow_resolution = arrow_resolution;
-            this->arrow_ratio = arrow_ratio;
-            this->arrow_thickness = arrow_thickness;
-
-            this->bending_disc_resolution = bending_disc_resolution;
-            this->bending_polygonal_resolution = bending_polygonal_resolution;
-            this->bending_strip_size = bending_strip_size;
-            this->bending_size_scalar = bending_size_scalar;
-            this->bending_scalar = bending_scalar;
+            this->velocity_parameters = velocity_parameters;
+            this->stretching_parameters = stretching_parameters;
+            this->bending_parameters = bending_parameters;
         }
 
         template <typename float_t>
@@ -126,28 +116,26 @@ namespace tpf
             // Create velocity glyph
             if (this->velocity_glyph && this->velocities != nullptr)
             {
-                instantiate_velocity_glyphs(create_velocity_glyph_template(this->arrow_resolution, this->arrow_ratio, this->arrow_thickness),
-                    average_cell_size, this->arrow_size, this->arrow_scalar, this->arrow_fixed_scalar);
+                instantiate_velocity_glyphs(create_velocity_glyph_template(
+                    this->velocity_parameters.resolution, this->velocity_parameters.shaft_length, this->velocity_parameters.shaft_thickness),
+                    average_cell_size, this->velocity_parameters.size, this->velocity_parameters.scalar, this->velocity_parameters.fixed_scalar);
             }
 
             // Create stretching glyph
             if (this->stretching_glyph && this->gradients != nullptr && this->stretching_min != nullptr && this->stretching_max != nullptr)
             {
-                // TODO
-
-                // Stretch according to eigenvalues in x,y-direction
-                // Rotate such that the new basis are the eigenvectors and the interface normal
-                //   parameter: average_cell_size
-                //              stretch_min, stretch_max (relative to average_cell_size)
+                instantiate_stretching_glpyh(create_stretching_glyph_template(this->stretching_parameters.disc_resolution,
+                    this->stretching_parameters.hole_radius, this->stretching_parameters.strip_size),
+                    average_cell_size, this->stretching_parameters.size_scalar);
             }
 
             // Create bending glyph
             if (this->bending_glyph && this->gradients != nullptr && this->bending_min != nullptr && this->bending_max != nullptr &&
                 this->bending_direction_min != nullptr && this->bending_direction_max != nullptr)
             {
-                instantiate_bending_glyph(create_bending_glyph_template(this->bending_disc_resolution,
-                    this->bending_polygonal_resolution, this->bending_strip_size),
-                    average_cell_size, this->bending_size_scalar, this->bending_scalar);
+                instantiate_bending_glyph(create_bending_glyph_template(this->bending_parameters.disc_resolution,
+                    this->bending_parameters.polynomial_resolution, this->bending_parameters.strip_size),
+                    average_cell_size, this->bending_parameters.size_scalar, this->bending_parameters.scalar);
             }
         }
 
@@ -403,20 +391,48 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(std::size_t circle_resolution,
-            std::size_t polygonal_resolution, float_t strip_size) const -> bending_glyph_t
+        inline auto interface_deformation_glyph<float_t>::create_stretching_glyph_template(std::size_t circle_resolution,
+            float_t hole_radius, float_t strip_width) const -> stretching_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
-            polygonal_resolution = std::max(polygonal_resolution, static_cast<std::size_t>(1));
-            strip_size = std::clamp(strip_size, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+            hole_radius = std::clamp(hole_radius, static_cast<float_t>(0.1), static_cast<float_t>(0.9));
+            strip_width = std::clamp(strip_width, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+
+            // Idea:
+            // - disc with hole
+            // - only deform outer vertices
+            // - draw circular strip connecting the inner vertices as reference for "no stretching" (assign fixed color)
+            // - draw strips in eigenvector direction between inner and outer vertices (color by respective eigenvalue)
+
+            return std::make_tuple(nullptr, nullptr, nullptr, nullptr);
+        }
+
+        template <typename float_t>
+        inline void interface_deformation_glyph<float_t>::instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template,
+            const float_t average_cell_size, float_t size_scalar)
+        {
+            // Clamp parameter values
+            size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
+
+
+        }
+
+        template <typename float_t>
+        inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(std::size_t circle_resolution,
+            std::size_t polynomial_resolution, float_t strip_width) const -> bending_glyph_t
+        {
+            // Clamp parameter values
+            circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
+            polynomial_resolution = std::max(polynomial_resolution, static_cast<std::size_t>(1));
+            strip_width = std::clamp(strip_width, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
 
             // Create circle-shape disc on x,y-plane
             glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
             {
                 const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
-                const auto polygonal_increment = static_cast<float_t>(1.0 / polygonal_resolution);
+                const auto polygonal_increment = static_cast<float_t>(1.0 / polynomial_resolution);
 
                 // Create inner row
                 std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
@@ -445,11 +461,11 @@ namespace tpf
                 }
 
                 // Create outer rows
-                if (polygonal_resolution > 1)
+                if (polynomial_resolution > 1)
                 {
                     std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
 
-                    for (std::size_t j = 2; j <= polygonal_resolution; ++j)
+                    for (std::size_t j = 2; j <= polynomial_resolution; ++j)
                     {
                         auto radius = j * polygonal_increment;
 
@@ -485,18 +501,18 @@ namespace tpf
                 // Create strip in positive x-direction
                 auto strip = std::make_shared<geometry::mesh<float_t>>();
 
-                const auto increment = static_cast<float_t>((1.0 - strip_size) / polygonal_resolution);
+                const auto increment = static_cast<float_t>((1.0 - strip_width) / polynomial_resolution);
 
-                const auto y_plus = strip_size / static_cast<float_t>(2.0);
-                const auto y_minus = -strip_size / static_cast<float_t>(2.0);
+                const auto y_plus = strip_width / static_cast<float_t>(2.0);
+                const auto y_minus = -strip_width / static_cast<float_t>(2.0);
                 const auto z_offset = static_cast<float_t>(0.02);
 
-                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_size, y_plus, z_offset));
-                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_size, y_minus, z_offset));
+                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_width, y_plus, z_offset));
+                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_width, y_minus, z_offset));
 
-                for (std::size_t i = 1; i <= polygonal_resolution; ++i)
+                for (std::size_t i = 1; i <= polynomial_resolution; ++i)
                 {
-                    const auto x = i * increment + strip_size;
+                    const auto x = i * increment + strip_width;
 
                     const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, z_offset));
                     const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, z_offset));

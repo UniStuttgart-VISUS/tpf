@@ -26,6 +26,63 @@ namespace tpf
             {
                 dynamic, fixed_thickness, fixed_size
             };
+
+            template <typename float_t>
+            struct velocity_params_t
+            {
+                /// Size type
+                arrow_size_t size;
+
+                /// Scalar for scaling of the glyphs
+                float_t scalar;
+
+                /// Scalar for scaling of the glyphs in the fixed direction
+                float_t fixed_scalar;
+
+                /// Resolution
+                int resolution;
+
+                /// Length of the shaft
+                float_t shaft_length;
+
+                /// Thickness of the arrow
+                float_t shaft_thickness;
+            };
+
+            template <typename float_t>
+            struct stretching_params_t
+            {
+                /// Resolution around the disc
+                int disc_resolution;
+
+                /// Radius of the whole within the disc
+                float_t hole_radius;
+
+                /// Thickness of the strip
+                float_t strip_size;
+
+                /// Scalar for scaling the glyphs
+                float_t size_scalar;
+            };
+
+            template <typename float_t>
+            struct bending_params_t
+            {
+                /// Resolution around the disc
+                int disc_resolution;
+
+                /// Resolution along the disc
+                int polynomial_resolution;
+
+                /// Thickness of the strip
+                float_t strip_size;
+
+                /// Scalar for scaling the glyphs
+                float_t size_scalar;
+
+                /// Scalar for scaling the bending values
+                float_t scalar;
+            };
         }
 
         /// <summary>
@@ -46,8 +103,10 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>,
             interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>,
-            interface_parameters<bool, bool, bool, float_t, interface_deformation_glyph_aux::arrow_size_t,
-                float_t, float_t, int, float_t, float_t, int, int, float_t, float_t, float_t>>
+            interface_parameters<bool, bool, bool, float_t,
+                interface_deformation_glyph_aux::velocity_params_t<float_t>,
+                interface_deformation_glyph_aux::stretching_params_t<float_t>,
+                interface_deformation_glyph_aux::bending_params_t<float_t>>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&,
                 const data::grid<float_t, float_t, 3, 3>&,
@@ -61,8 +120,10 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>;
             using output_t = interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<bool, bool, bool, float_t, interface_deformation_glyph_aux::arrow_size_t,
-                float_t, float_t, int, float_t, float_t, int, int, float_t, float_t, float_t>;
+            using parameters_t = interface_parameters<bool, bool, bool, float_t,
+                interface_deformation_glyph_aux::velocity_params_t<float_t>,
+                interface_deformation_glyph_aux::stretching_params_t<float_t>,
+                interface_deformation_glyph_aux::bending_params_t<float_t>>;
 
             using base_t = module_base<input_t, output_t, parameters_t>;
 
@@ -127,21 +188,13 @@ namespace tpf
             /// <param name="stretching_glyph">Create stretching glyphs</param>
             /// <param name="bending_glyph">Create bending glyphs</param>
             /// <param name="timestep">Time step</param>
-            /// <param name="arrow_size">Sizing of arrow glyphs (velocity glyph)</param>
-            /// <param name="arrow_scalar">Scalar for scaling of arrow glyphs (velocity glyph)</param>
-            /// <param name="arrow_fixed_scalar">Scalar for scaling of arrow glyphs in the fixed direction (velocity glyph)</param>
-            /// <param name="arrow_resolution">Resolution of arrow glyphs (velocity glyph)</param>
-            /// <param name="arrow_ratio">Ratio of the shaft of arrow glyphs (velocity glyph)</param>
-            /// <param name="arrow_thickness">Thickness of arrow glyphs (velocity glyph)</param>
-            /// <param name="bending_disc_resolution">Resolution around the disc (bending glyph)</param>
-            /// <param name="bending_polygonal_resolution">Resolution along the disc (bending glyph)</param>
-            /// <param name="bending_strip_size">Thickness of the strip (bending glyph)</param>
-            /// <param name="bending_size_scalar">Scalar for scaling the glyphs (bending glyph)</param>
-            /// <param name="bending_scalar">Scalar for scaling the bending values (bending glyph)</param>
+            /// <param name="velocity_parameters">Parameters for the velocity glyph</param>
+            /// <param name="stretching_parameters">Parameters for the stretching glyph</param>
+            /// <param name="bending_parameters">Parameters for the bending glyph</param>
             virtual void set_algorithm_parameters(bool velocity_glyph, bool stretching_glyph, bool bending_glyph, float_t timestep,
-                interface_deformation_glyph_aux::arrow_size_t arrow_size, float_t arrow_scalar, float_t arrow_fixed_scalar,
-                int arrow_resolution, float_t arrow_ratio, float_t arrow_thickness, int bending_disc_resolution,
-                int bending_polygonal_resolution, float_t bending_strip_size, float_t bending_size_scalar, float_t bending_scalar) override;
+                interface_deformation_glyph_aux::velocity_params_t<float_t> velocity_parameters,
+                interface_deformation_glyph_aux::stretching_params_t<float_t> stretching_parameters,
+                interface_deformation_glyph_aux::bending_params_t<float_t> bending_parameters) override;
 
             /// <summary>
             /// Run module
@@ -151,7 +204,7 @@ namespace tpf
         private:
             using glyph_t = std::shared_ptr<geometry::mesh<float_t>>;
             using velocity_glyph_t = glyph_t;
-
+            using stretching_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t, glyph_t>;
             using bending_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t>;
 
             /// <summary>
@@ -174,14 +227,18 @@ namespace tpf
             void instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template, float_t average_cell_size,
                 interface_deformation_glyph_aux::arrow_size_t arrow_size, float_t arrow_scalar, float_t arrow_fixed_scalar);
 
+            stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t hole_radius, float_t strip_width) const;
+
+            void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar);
+
             /// <summary>
             /// Create a bending glyph (disc), its center being the origin and extending in the x,y-plane with radius 1
             /// </summary>
             /// <param name="circle_resolution">Resolution of the circle (angle)</param>
-            /// <param name="polygonal_resolution">Resolution along the radius</param>
+            /// <param name="polynomial_resolution">Resolution along the radius</param>
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
             /// <returns>Template bending glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip]</returns>
-            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polygonal_resolution, float_t strip_width) const;
+            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polynomial_resolution, float_t strip_width) const;
 
             /// <summary>
             /// "Instantiate" bending glyphs at each interface position
@@ -190,7 +247,7 @@ namespace tpf
             /// <param name="average_cell_size">Average cell size of the data</param>
             /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
             /// <param name="scalar">Scalar to modify the bending</param>
-            void instantiate_bending_glyph(const bending_glyph_t&glyph_template, float_t average_cell_size, float_t size_scalar, float_t scalar);
+            void instantiate_bending_glyph(const bending_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar, float_t scalar);
 
             /// Volume of fluid
             const data::grid<float_t, float_t, 3, 1>* vof;
@@ -229,22 +286,13 @@ namespace tpf
             float_t timestep;
 
             /// Properties of the velocity glyphs
-            interface_deformation_glyph_aux::arrow_size_t arrow_size;
-            float_t arrow_scalar;
-            float_t arrow_fixed_scalar;
-            int arrow_resolution;
-            float_t arrow_ratio;
-            float_t arrow_thickness;
-
-            /// Properties of the bending glyph
-            int bending_disc_resolution;
-            int bending_polygonal_resolution;
-            float_t bending_strip_size;
-            float_t bending_size_scalar;
-            float_t bending_scalar;
+            interface_deformation_glyph_aux::velocity_params_t<float_t> velocity_parameters;
 
             /// Properties of the stretching glyph
-            
+            interface_deformation_glyph_aux::stretching_params_t<float_t> stretching_parameters;
+
+            /// Properties of the bending glyph
+            interface_deformation_glyph_aux::bending_params_t<float_t> bending_parameters;
         };
     }
 }

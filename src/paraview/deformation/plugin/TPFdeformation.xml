@@ -395,6 +395,40 @@
                     Create a disc glyph to visualize the stretching
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.25">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Scale of the disc glyph
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.7" panel_visibility="advanced">
+                <DoubleRangeDomain name="strip_range" min="0.1" max="0.9" />
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Radius of the hole within the disc's center
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingStripSize" command="SetStretchingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
+                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Thickness of the strips indicating the eigenvector directions
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="StretchingDiscResolution" command="SetStretchingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Resolution around the disc (circle)
+                </Documentation>
+            </IntVectorProperty>
 
             <IntVectorProperty name="BendingGlyph" command="SetBendingGlyph" label="Create bending glyph" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
@@ -457,6 +491,9 @@
 
             <PropertyGroup label="Stretching glyph">
                 <Property name="StretchingGlyph" />
+                <Property name="StretchingSizeScalar" />
+                <Property name="StretchingStripSize" />
+                <Property name="StretchingDiscResolution" />
             </PropertyGroup>
 
             <PropertyGroup label="Bending glyph">
@@ -467,6 +504,22 @@
                 <Property name="BendingDiscResolution" />
                 <Property name="PolynomialResolution" />
             </PropertyGroup>
+
+            <OutputPort name="Velocity Glyph" index="0" id="velocity">
+                <Documentation>
+                    Glyph indicating velocity
+                </Documentation>
+            </OutputPort>
+            <OutputPort name="Stretching Glyph" index="1" id="stretching">
+                <Documentation>
+                    Glyph indicating interface stretching
+                </Documentation>
+            </OutputPort>
+            <OutputPort name="Bending Glyph" index="2" id="bending">
+                <Documentation>
+                    Glyph indicating interface bending
+                </Documentation>
+            </OutputPort>
 
             <Hints>
                 <ShowInMenu category="Two-Phase Flow"/>

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "vtkMultiBlockDataSetAlgorithm.h"
+#include "vtkAlgorithm.h"
 
-class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAlgorithm
+class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
 {
     public:
         static tpf_interface_deformation_glyph* New();
-        vtkTypeMacro(tpf_interface_deformation_glyph, vtkMultiBlockDataSetAlgorithm);
+        vtkTypeMacro(tpf_interface_deformation_glyph, vtkAlgorithm);
 
         vtkSetMacro(VelocityGlyph, int);
         vtkGetMacro(VelocityGlyph, int);
@@ -38,6 +38,18 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAl
         vtkSetMacro(ArrowThickness, float);
         vtkGetMacro(ArrowThickness, float);
 
+        vtkSetMacro(StretchingDiscResolution, int);
+        vtkGetMacro(StretchingDiscResolution, int);
+
+        vtkSetMacro(StretchingHoleRadius, float);
+        vtkGetMacro(StretchingHoleRadius, float);
+
+        vtkSetMacro(StretchingStripSize, float);
+        vtkGetMacro(StretchingStripSize, float);
+
+        vtkSetMacro(StretchingSizeScalar, float);
+        vtkGetMacro(StretchingSizeScalar, float);
+
         vtkSetMacro(BendingDiscResolution, int);
         vtkGetMacro(BendingDiscResolution, int);
 
@@ -57,11 +69,15 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAl
         tpf_interface_deformation_glyph();
         ~tpf_interface_deformation_glyph();
 
-        int FillInputPortInformation(int, vtkInformation*);
+        virtual int FillInputPortInformation(int, vtkInformation*) override;
+        virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-        int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+        virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
 
-        int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+        virtual int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
 
     private:
         tpf_interface_deformation_glyph(const tpf_interface_deformation_glyph&);
@@ -79,6 +95,10 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkMultiBlockDataSetAl
         /// Properties of the velocity glyph
         int ArrowResolution, ArrowSize;
         float ArrowScalar, ArrowFixedScalar, ShaftTipRatio, ArrowThickness;
+
+        /// Properties of the stretching glyph
+        int StretchingDiscResolution;
+        float StretchingHoleRadius, StretchingStripSize, StretchingSizeScalar;
 
         /// Properties of the bending glyph
         int BendingDiscResolution, PolynomialResolution;
