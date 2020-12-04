@@ -99,14 +99,14 @@ namespace tpf
                             auto reconstruction = reconstruct_interface(fractions(coords), gradients(coords),
                                 fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->error_margin, this->num_iterations, this->perturbation);
 
-                            if (reconstruction.first != nullptr)
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
-                                plic_interface.insert(reconstruction.first);
+                                plic_interface.insert(std::get<0>(reconstruction));
 
 #ifdef __tpf_debug
-                                for (std::size_t i = 0; i < reconstruction.first->get_num_cells(); ++i)
+                                for (std::size_t i = 0; i < std::get<0>(reconstruction)->get_num_cells(); ++i)
                                 {
-                                    error->push_back(reconstruction.second);
+                                    error->push_back(std::get<1>(reconstruction));
                                 }
 #endif
                             }
@@ -131,7 +131,7 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> plic<float_t>::reconstruct_interface(const float_t vof,
+        inline std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> plic<float_t>::reconstruct_interface(const float_t vof,
             const Eigen::Matrix<float_t, 3, 1>& gradient, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
             const Eigen::Matrix<float_t, 3, 1>& cell_size, const float_t error_margin, const std::size_t num_iterations,
             float_t perturbation)
@@ -180,6 +180,7 @@ namespace tpf
             // Perform binary search
             std::shared_ptr<geometry::polygon<float_t>> plic = nullptr;
             float_t error = static_cast<float_t>(0.0);
+            std::size_t iterations = 0;
 
             for (std::size_t i = 0; i < num_iterations; ++i)
             {
@@ -246,7 +247,9 @@ namespace tpf
                 iso_value = (max_val + min_val) / 2.0;
 
                 // Create PLIC on last iteration
-                if ((error = std::abs(volume - vof)) < error_margin || i == num_iterations - 1)
+                error = std::abs(volume - vof);
+                iterations = i + 1;
+                if (error < error_margin || i == num_iterations - 1)
                 {
                     if (intersections.size() >= 3)
                     {
@@ -270,7 +273,7 @@ namespace tpf
                 }
             }
 
-            return std::make_pair(plic, error);
+            return std::make_tuple(plic, error, iterations);
         }
     }
 }

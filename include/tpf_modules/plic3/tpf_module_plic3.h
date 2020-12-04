@@ -110,7 +110,7 @@ namespace tpf
 
             bool has_non_zero_neighbor(const data::grid<float_t, float_t, 3, 1>& f, const data::coords3_t& coords, float_t epsilon) const;
 
-            static std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
+            static std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
                 float_t vof,
                 const Eigen::Matrix<float_t, 3, 1>& norm,
                 const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,

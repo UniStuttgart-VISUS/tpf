@@ -96,7 +96,7 @@ namespace tpf
             /// <param name="num_iterations">Number of iterations</param>
             /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
             /// <returns>PLIC interface</returns>
-            static std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> reconstruct_interface(float_t vof,
+            static std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> reconstruct_interface(float_t vof,
                 const Eigen::Matrix<float_t, 3, 1>& gradient, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
                 const Eigen::Matrix<float_t, 3, 1>& cell_size, float_t error_margin, std::size_t num_iterations,
                 float_t perturbation = static_cast<float_t>(0.00001L));
