@@ -80,6 +80,7 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& f_norm_3ph = *this->f_norm_3ph;
 
             data::polydata<float_t>& plic3_interface = *this->plic3_interface;
+            auto array_coords = std::make_shared<data::array<int, 3>>("coords");
             auto types = std::make_shared<data::array<int, 1>>("type");
             auto gradients_f = std::make_shared<data::array<float_t, 3>>("grad");
             auto gradients_f3 = std::make_shared<data::array<float_t, 3>>("grad3");
@@ -228,6 +229,7 @@ namespace tpf
                             {
                                 // Add extra polygon, therefore directly add to lists and not set done=true
                                 plic3_interface.insert(f3_reconstruction.first);
+                                array_coords->push_back(coords.cast<int>());
                                 types->push_back(polygon_t::SOLID_MIX);
                                 gradients_f->push_back(grad);
                                 gradients_f3->push_back(grad3);
@@ -287,6 +289,7 @@ namespace tpf
                             done = true;
                         }
                         if (done) {
+                            array_coords->push_back(coords.cast<int>());
                             types->push_back(type);
                             gradients_f->push_back(grad);
                             gradients_f3->push_back(grad3);
@@ -298,6 +301,7 @@ namespace tpf
                 }
             }
 
+            plic3_interface.add(array_coords, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(types, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(gradients_f, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(gradients_f3, tpf::data::topology_t::OBJECT_DATA);

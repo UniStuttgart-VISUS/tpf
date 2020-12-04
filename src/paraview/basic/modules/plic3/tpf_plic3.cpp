@@ -73,6 +73,7 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         auto output = vtkPolyData::GetData(output_vector);
 
         tpf::vtk::set_polydata(output, plic3_interface,
+                tpf::data::data_information<int, 3>{ "coords", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<int, 1>{ "type", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 3>{ "grad", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 3>{ "grad3", tpf::data::topology_t::OBJECT_DATA },
