@@ -14,6 +14,7 @@
 #include "tpf/math/tpf_vector.h"
 
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -125,8 +126,8 @@ namespace tpf
             if (this->stretching_glyph && this->gradients != nullptr && this->stretching_min != nullptr && this->stretching_max != nullptr)
             {
                 instantiate_stretching_glpyh(create_stretching_glyph_template(this->stretching_parameters.disc_resolution,
-                    this->stretching_parameters.hole_radius, this->stretching_parameters.strip_size),
-                    average_cell_size, this->stretching_parameters.size_scalar);
+                    this->stretching_parameters.hole_radius, this->stretching_parameters.strip_size, this->stretching_parameters.z_offset),
+                    average_cell_size, this->stretching_parameters.size_scalar, this->stretching_parameters.exponent);
             }
 
             // Create bending glyph
@@ -134,7 +135,7 @@ namespace tpf
                 this->bending_direction_min != nullptr && this->bending_direction_max != nullptr)
             {
                 instantiate_bending_glyph(create_bending_glyph_template(this->bending_parameters.disc_resolution,
-                    this->bending_parameters.polynomial_resolution, this->bending_parameters.strip_size),
+                    this->bending_parameters.polynomial_resolution, this->bending_parameters.strip_size, this->bending_parameters.z_offset),
                     average_cell_size, this->bending_parameters.size_scalar, this->bending_parameters.scalar);
             }
         }
@@ -272,7 +273,14 @@ namespace tpf
                 }
             }
 
-            return arrow_glyph;
+            // Create second arrow glyph
+            const math::transformer<float, 3> trafo(
+                Eigen::Matrix<float_t, 3, 1>(-1.0, 0.0, 0.0),
+                Eigen::Matrix<float_t, 3, 1>(1.0, 0.0, 0.0),
+                Eigen::Matrix<float_t, 3, 1>(0.0, 1.0, 0.0),
+                Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0));
+
+            return arrow_glyph->merge(*std::static_pointer_cast<geometry::mesh<float_t>>(arrow_glyph->clone(trafo)));
         }
 
         template <typename float_t>
@@ -392,47 +400,272 @@ namespace tpf
 
         template <typename float_t>
         inline auto interface_deformation_glyph<float_t>::create_stretching_glyph_template(std::size_t circle_resolution,
-            float_t hole_radius, float_t strip_width) const -> stretching_glyph_t
+            float_t hole_radius, float_t strip_width, float_t z_offset) const -> stretching_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
             hole_radius = std::clamp(hole_radius, static_cast<float_t>(0.1), static_cast<float_t>(0.9));
             strip_width = std::clamp(strip_width, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+            z_offset = std::max(z_offset, static_cast<float_t>(0.0));
 
-            // Idea:
-            // - disc with hole
-            // - only deform outer vertices
-            // - draw circular strip connecting the inner vertices as reference for "no stretching" (assign fixed color)
-            // - draw strips in eigenvector direction between inner and outer vertices (color by respective eigenvalue)
+            // Create circle-shape disc on x,y-plane
+            glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
-            return std::make_tuple(nullptr, nullptr, nullptr, nullptr);
+            {
+                const std::size_t radial_resolution = 2;
+
+                const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+                const auto radial_increment = static_cast<float_t>(1.0 - hole_radius) / radial_resolution;
+
+                const auto offset = static_cast<float_t>(0.5 * (hole_radius - 1.0));
+                const auto offset_square = offset * offset;
+                const auto z_bending = -static_cast<float_t>(0.5 * z_offset);
+
+                auto bending_func = [&offset, &offset_square, &z_bending](const float_t x) {
+                    return z_bending * std::pow(x - offset, static_cast<float_t>(2.0)) / offset_square;
+                };
+
+                // Create rows
+                std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
+                std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
+
+                previous_indices[0] = disc->add_point(geometry::point<float_t>(
+                    hole_radius * std::cos(static_cast<float_t>(0.0)),
+                    hole_radius * std::sin(static_cast<float_t>(0.0)),
+                    bending_func(hole_radius)));
+
+                for (std::size_t i = 1; i < circle_resolution; ++i)
+                {
+                    const auto angle = i * circle_increment;
+
+                    previous_indices[i] = disc->add_point(geometry::point<float_t>(
+                        hole_radius * std::cos(angle),
+                        hole_radius * std::sin(angle),
+                        bending_func(hole_radius)));
+                }
+
+                for (std::size_t j = 1; j <= radial_resolution; ++j)
+                {
+                    const auto radius = hole_radius + j * radial_increment;
+
+                    current_indices[0] = disc->add_point(geometry::point<float_t>(
+                        radius * std::cos(static_cast<float_t>(0.0)),
+                        radius * std::sin(static_cast<float_t>(0.0)),
+                        bending_func(radius)));
+
+                    for (std::size_t i = 1; i < circle_resolution; ++i)
+                    {
+                        const auto angle = i * circle_increment;
+
+                        current_indices[i] = disc->add_point(geometry::point<float_t>(
+                            radius * std::cos(angle),
+                            radius * std::sin(angle),
+                            bending_func(radius)));
+
+                        disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
+                    }
+
+                    disc->add_face({ previous_indices.back(), current_indices.back(), current_indices.front(), previous_indices.front() });
+
+                    std::swap(current_indices, previous_indices);
+                }
+            }
+
+            // Create strips in x- and y-direction, respectively
+            glyph_t min_strip;
+            glyph_t max_strip;
+
+            {
+                // Create strip in positive x-direction
+                auto strip = std::make_shared<geometry::mesh<float_t>>();
+
+                const auto y_plus = strip_width / static_cast<float_t>(2.0);
+                const auto y_minus = -strip_width / static_cast<float_t>(2.0);
+
+                const auto index_prev_1 = strip->add_point(geometry::point<float_t>(hole_radius, y_plus, z_offset));
+                const auto index_prev_2 = strip->add_point(geometry::point<float_t>(hole_radius, y_minus, z_offset));
+                const auto index_1 = strip->add_point(geometry::point<float_t>(1.0, y_plus, z_offset));
+                const auto index_2 = strip->add_point(geometry::point<float_t>(1.0, y_minus, z_offset));
+
+                strip->add_face({ index_prev_1, index_prev_2, index_2, index_1 });
+
+                // Copy strip for negative x-direction, and both y-directions
+                const Eigen::Matrix<float_t, 3, 1> origin(0.0, 0.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> x_axis(1.0, 0.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> y_axis(0.0, 1.0, 0.0);
+                const Eigen::Matrix<float_t, 3, 1> z_axis(0.0, 0.0, 1.0);
+
+                math::transformer<float_t, 3> x_neg(origin, -x_axis, -y_axis, z_axis);
+                math::transformer<float_t, 3> y_pos(origin, y_axis, -x_axis, z_axis);
+                math::transformer<float_t, 3> y_neg(origin, -y_axis, x_axis, z_axis);
+
+                min_strip = strip->merge(*std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(x_neg)));
+                max_strip = std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(y_pos))
+                    ->merge(*std::static_pointer_cast<geometry::mesh<float_t>>(strip->clone(y_neg)));
+            }
+
+            // Create a circle as reference
+            glyph_t reference_strip = std::make_shared<geometry::mesh<float_t>>();
+
+            {
+                const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+
+                const auto center_radius = static_cast<float_t>(0.5 * (1.0 + hole_radius));
+                const auto inner_radius = center_radius - static_cast<float_t>(0.5) * strip_width;
+                const auto outer_radius = center_radius + static_cast<float_t>(0.5) * strip_width;
+
+                // Create rows
+                std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
+                std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
+
+                previous_indices[0] = reference_strip->add_point(geometry::point<float_t>(
+                    inner_radius * std::cos(static_cast<float_t>(0.0)),
+                    inner_radius * std::sin(static_cast<float_t>(0.0)),
+                    static_cast<float_t>(0.5) * z_offset));
+                current_indices[0] = reference_strip->add_point(geometry::point<float_t>(
+                    outer_radius * std::cos(static_cast<float_t>(0.0)),
+                    outer_radius * std::sin(static_cast<float_t>(0.0)),
+                    static_cast<float_t>(0.5) * z_offset));
+
+                for (std::size_t i = 1; i < circle_resolution; ++i)
+                {
+                    const auto angle = i * circle_increment;
+
+                    previous_indices[i] = reference_strip->add_point(geometry::point<float_t>(
+                        inner_radius * std::cos(angle),
+                        inner_radius * std::sin(angle),
+                        static_cast<float_t>(0.5) * z_offset));
+                    current_indices[i] = reference_strip->add_point(geometry::point<float_t>(
+                        outer_radius * std::cos(angle),
+                        outer_radius * std::sin(angle),
+                        static_cast<float_t>(0.5) * z_offset));
+
+                    reference_strip->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
+                }
+
+                reference_strip->add_face({ previous_indices.back(), current_indices.back(), current_indices.front(), previous_indices.front() });
+            }
+
+            return std::make_tuple(disc, min_strip, max_strip, reference_strip);
         }
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template,
-            const float_t average_cell_size, float_t size_scalar)
+            const float_t average_cell_size, float_t size_scalar, float_t exponent)
         {
             // Clamp parameter values
             size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
+            exponent = std::max(exponent, static_cast<float_t>(0.0));
 
+            // Get input data
+            const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
+            const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
+            const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
+            const data::grid<float_t, float_t, 3, 3>& stretching_direction_min = *this->stretching_min;
+            const data::grid<float_t, float_t, 3, 3>& stretching_direction_max = *this->stretching_max;
 
+            // Iterate over all interface cells
+            std::size_t num_interface_cells = 0;
+
+            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+            {
+                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
+                {
+                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
+                    {
+                        const data::coords3_t coords(x, y, z);
+
+                        if (vof(coords) > 0 && vof(coords) < 1)
+                        {
+                            // Get necessary information
+                            const auto origin = positions(coords);
+                            const auto normal = -gradients(coords).normalized();
+                            const auto stretching_min = stretching_direction_min(coords);
+                            const auto stretching_max = stretching_direction_max(coords);
+
+                            // Rotate into basis defined by the interface normal and the eigenvectors
+                            const math::transformer<float_t, 3> translation_and_rotation(origin,
+                                stretching_min.normalized(), stretching_max.normalized(), normal);
+
+                            // Scale
+                            Eigen::Matrix<float_t, 4, 4> scale_matrix, reference_scale_matrix;
+                            scale_matrix.setIdentity();
+                            reference_scale_matrix.setIdentity();
+
+                            scale_matrix(0, 0) = size_scalar * average_cell_size * std::pow(stretching_min.norm(), exponent);
+                            scale_matrix(1, 1) = size_scalar * average_cell_size * std::pow(stretching_max.norm(), exponent);
+                            scale_matrix(2, 2) = size_scalar * average_cell_size;
+
+                            reference_scale_matrix(0, 0) = size_scalar * average_cell_size;
+                            reference_scale_matrix(1, 1) = size_scalar * average_cell_size;
+                            reference_scale_matrix(2, 2) = size_scalar * average_cell_size;
+
+                            // Create object matrix
+                            math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
+                            math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
+
+                            // Instantiate glyph
+                            this->stretching_glyphs->insert(std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>{
+                                std::get<0>(glyph_template)->clone(trafo),
+                                std::get<1>(glyph_template)->clone(trafo),
+                                std::get<2>(glyph_template)->clone(trafo) });
+
+                            this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo_ref));
+
+                            ++num_interface_cells;
+                        }
+                    }
+                }
+            }
+
+            // Create data array
+            auto stretching = std::make_shared<data::array<float_t>>("Stretching");
+            stretching->reserve(num_interface_cells * 4);
+
+            if (num_interface_cells != 0)
+            {
+                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+                {
+                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
+                    {
+                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
+                        {
+                            const data::coords3_t coords(x, y, z);
+
+                            if (vof(coords) > 0 && vof(coords) < 1)
+                            {
+                                const auto min = stretching_direction_min(coords).norm();
+                                const auto max = stretching_direction_max(coords).norm();
+
+                                stretching->push_back(min * max);
+                                stretching->push_back(min);
+                                stretching->push_back(max);
+                                stretching->push_back(std::numeric_limits<float_t>::quiet_NaN());
+                            }
+                        }
+                    }
+                }
+            }
+
+            this->stretching_glyphs->add(stretching, data::topology_t::OBJECT_DATA);
         }
 
         template <typename float_t>
         inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(std::size_t circle_resolution,
-            std::size_t polynomial_resolution, float_t strip_width) const -> bending_glyph_t
+            std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const -> bending_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
             polynomial_resolution = std::max(polynomial_resolution, static_cast<std::size_t>(1));
             strip_width = std::clamp(strip_width, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+            z_offset = std::max(z_offset, static_cast<float_t>(0.0));
 
             // Create circle-shape disc on x,y-plane
             glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
             {
                 const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
-                const auto polygonal_increment = static_cast<float_t>(1.0 / polynomial_resolution);
+                const auto polynomial_increment = static_cast<float_t>(1.0 / polynomial_resolution);
 
                 // Create inner row
                 std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
@@ -441,18 +674,18 @@ namespace tpf
                     const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, 0.0));
 
                     previous_indices[0] = disc->add_point(geometry::point<float_t>(
-                        polygonal_increment * std::cos(static_cast<float_t>(0.0)),
-                        polygonal_increment * std::sin(static_cast<float_t>(0.0)),
-                        0.0));
+                        polynomial_increment * std::cos(static_cast<float_t>(0.0)),
+                        polynomial_increment * std::sin(static_cast<float_t>(0.0)),
+                        z_offset));
 
                     for (std::size_t i = 1; i < circle_resolution; ++i)
                     {
                         const auto angle = i * circle_increment;
 
                         previous_indices[i] = disc->add_point(geometry::point<float_t>(
-                            polygonal_increment * std::cos(angle),
-                            polygonal_increment * std::sin(angle),
-                            0.0));
+                            polynomial_increment * std::cos(angle),
+                            polynomial_increment * std::sin(angle),
+                            z_offset));
 
                         disc->add_face(center, previous_indices[i - 1], previous_indices[i]);
                     }
@@ -467,12 +700,12 @@ namespace tpf
 
                     for (std::size_t j = 2; j <= polynomial_resolution; ++j)
                     {
-                        auto radius = j * polygonal_increment;
+                        auto radius = j * polynomial_increment;
 
                         current_indices[0] = disc->add_point(geometry::point<float_t>(
                             radius * std::cos(static_cast<float_t>(0.0)),
                             radius * std::sin(static_cast<float_t>(0.0)),
-                            0.0));
+                            z_offset));
 
                         for (std::size_t i = 1; i < circle_resolution; ++i)
                         {
@@ -481,7 +714,7 @@ namespace tpf
                             current_indices[i] = disc->add_point(geometry::point<float_t>(
                                 radius * std::cos(angle),
                                 radius * std::sin(angle),
-                                0.0));
+                                z_offset));
 
                             disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
                         }
@@ -505,17 +738,16 @@ namespace tpf
 
                 const auto y_plus = strip_width / static_cast<float_t>(2.0);
                 const auto y_minus = -strip_width / static_cast<float_t>(2.0);
-                const auto z_offset = static_cast<float_t>(0.02);
 
-                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_width, y_plus, z_offset));
-                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_width, y_minus, z_offset));
+                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_width, y_plus, 2.0 * z_offset));
+                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_width, y_minus, 2.0 * z_offset));
 
                 for (std::size_t i = 1; i <= polynomial_resolution; ++i)
                 {
                     const auto x = i * increment + strip_width;
 
-                    const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, z_offset));
-                    const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, z_offset));
+                    const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, 2.0 * z_offset));
+                    const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, 2.0 * z_offset));
 
                     strip->add_face({ index_prev_1, index_prev_2, index_2, index_1 });
 
@@ -618,7 +850,7 @@ namespace tpf
 
                                 Eigen::Matrix<float_t, 4, 1> bent_vector;
                                 bent_vector << rotated_vector[0], rotated_vector[1],
-                                    scalar * (polynomial[0] * rotated_vector[0] * rotated_vector[1] + polynomial[1] * rotated_vector[0] * rotated_vector[0]
+                                    rotated_vector[2] + scalar * (polynomial[0] * rotated_vector[0] * rotated_vector[1] + polynomial[1] * rotated_vector[0] * rotated_vector[0]
                                         + polynomial[2] * rotated_vector[1] * rotated_vector[1]) + rotated_vector[2],
                                     rotated_vector[3];
 

@@ -63,6 +63,12 @@ namespace tpf
 
                 /// Scalar for scaling the glyphs
                 float_t size_scalar;
+
+                /// Exponent for increasing the stretching effect
+                float_t exponent;
+
+                /// z-offset for preventing z-fighting
+                float_t z_offset;
             };
 
             template <typename float_t>
@@ -82,6 +88,9 @@ namespace tpf
 
                 /// Scalar for scaling the bending values
                 float_t scalar;
+
+                /// z-offset for preventing z-fighting
+                float_t z_offset;
             };
         }
 
@@ -227,9 +236,24 @@ namespace tpf
             void instantiate_velocity_glyphs(const velocity_glyph_t& glyph_template, float_t average_cell_size,
                 interface_deformation_glyph_aux::arrow_size_t arrow_size, float_t arrow_scalar, float_t arrow_fixed_scalar);
 
-            stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t hole_radius, float_t strip_width) const;
+            /// <summary>
+            /// Create a stretching glyph (disc with hole), its center being the origin and extending in the x,y-plane with radius 1
+            /// </summary>
+            /// <param name="circle_resolution">Resolution of the circle (angle)</param>
+            /// <param name="hole_radius">Radius of the inner hole</param>
+            /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
+            /// <param name="z_offset">z-offset to prevent z-fighting</param>
+            /// <returns></returns>
+            stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t hole_radius, float_t strip_width, float_t z_offset) const;
 
-            void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar);
+            /// <summary>
+            /// "Instantiate" stretching glyphs at each interface position
+            /// </summary>
+            /// <param name="glyph_template">Template to instantiate</param>
+            /// <param name="average_cell_size">Average cell size of the data</param>
+            /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
+            /// <param name="exponent">Exponent used for scaling the stretching factor</param>
+            void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar, float_t exponent);
 
             /// <summary>
             /// Create a bending glyph (disc), its center being the origin and extending in the x,y-plane with radius 1
@@ -237,8 +261,9 @@ namespace tpf
             /// <param name="circle_resolution">Resolution of the circle (angle)</param>
             /// <param name="polynomial_resolution">Resolution along the radius</param>
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
+            /// <param name="z_offset">z-offset to prevent z-fighting</param>
             /// <returns>Template bending glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip]</returns>
-            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polynomial_resolution, float_t strip_width) const;
+            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const;
 
             /// <summary>
             /// "Instantiate" bending glyphs at each interface position

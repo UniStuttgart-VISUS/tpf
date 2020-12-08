@@ -395,7 +395,15 @@
                     Create a disc glyph to visualize the stretching
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.25">
+            <DoubleVectorProperty name="StretchingExponent" command="SetStretchingExponent" label="Exponent" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Exponent for increasing the deformation caused by the stretching
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.5">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
@@ -403,7 +411,7 @@
                     Scale of the disc glyph
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.7" panel_visibility="advanced">
+            <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
                 <DoubleRangeDomain name="strip_range" min="0.1" max="0.9" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
@@ -429,6 +437,14 @@
                     Resolution around the disc (circle)
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="StretchingZOffset" command="SetStretchingZOffset" label="z-offset" number_of_elements="1" default_values="0.001" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Offset for the strips in z-direction to prevent z-fighting
+                </Documentation>
+            </DoubleVectorProperty>
 
             <IntVectorProperty name="BendingGlyph" command="SetBendingGlyph" label="Create bending glyph" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
@@ -477,6 +493,14 @@
                     Resolution along the disc (radius)
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="BendingZOffset" command="SetBendingZOffset" label="z-offset" number_of_elements="1" default_values="0.02" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Offset for the strips in z-direction to prevent z-fighting
+                </Documentation>
+            </DoubleVectorProperty>
 
             <PropertyGroup label="Velocity glyph">
                 <Property name="VelocityGlyph" />
@@ -491,9 +515,12 @@
 
             <PropertyGroup label="Stretching glyph">
                 <Property name="StretchingGlyph" />
+                <Property name="StretchingExponent" />
                 <Property name="StretchingSizeScalar" />
+                <Property name="StretchingHoleRadius" />
                 <Property name="StretchingStripSize" />
                 <Property name="StretchingDiscResolution" />
+                <Property name="StretchingZOffset" />
             </PropertyGroup>
 
             <PropertyGroup label="Bending glyph">
@@ -503,6 +530,7 @@
                 <Property name="BendingStripSize" />
                 <Property name="BendingDiscResolution" />
                 <Property name="PolynomialResolution" />
+                <Property name="BendingZOffset" />
             </PropertyGroup>
 
             <OutputPort name="Velocity Glyph" index="0" id="velocity">

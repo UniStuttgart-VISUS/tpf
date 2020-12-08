@@ -50,6 +50,12 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(StretchingSizeScalar, float);
         vtkGetMacro(StretchingSizeScalar, float);
 
+        vtkSetMacro(StretchingExponent, float);
+        vtkGetMacro(StretchingExponent, float);
+
+        vtkSetMacro(StretchingZOffset, float);
+        vtkGetMacro(StretchingZOffset, float);
+
         vtkSetMacro(BendingDiscResolution, int);
         vtkGetMacro(BendingDiscResolution, int);
 
@@ -64,6 +70,9 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
 
         vtkSetMacro(BendingScalar, float);
         vtkGetMacro(BendingScalar, float);
+
+        vtkSetMacro(BendingZOffset, float);
+        vtkGetMacro(BendingZOffset, float);
 
     protected:
         tpf_interface_deformation_glyph();
@@ -98,9 +107,9 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
 
         /// Properties of the stretching glyph
         int StretchingDiscResolution;
-        float StretchingHoleRadius, StretchingStripSize, StretchingSizeScalar;
+        float StretchingHoleRadius, StretchingStripSize, StretchingSizeScalar, StretchingExponent, StretchingZOffset;
 
         /// Properties of the bending glyph
         int BendingDiscResolution, PolynomialResolution;
-        float BendingStripSize, BendingSizeScalar, BendingScalar;
+        float BendingStripSize, BendingSizeScalar, BendingScalar, BendingZOffset;
 };

@@ -197,6 +197,8 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         stretching_parameters.hole_radius = this->StretchingHoleRadius;
         stretching_parameters.strip_size = this->StretchingStripSize;
         stretching_parameters.size_scalar = this->StretchingSizeScalar;
+        stretching_parameters.exponent = this->StretchingExponent;
+        stretching_parameters.z_offset = this->StretchingZOffset;
 
         tpf::modules::interface_deformation_glyph_aux::bending_params_t<float_t> bending_parameters;
         bending_parameters.disc_resolution = this->BendingDiscResolution;
@@ -204,6 +206,7 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         bending_parameters.strip_size = this->BendingStripSize;
         bending_parameters.size_scalar = this->BendingSizeScalar;
         bending_parameters.scalar = this->BendingScalar;
+        bending_parameters.z_offset = this->BendingZOffset;
 
         // Run interface gradient module
         tpf::modules::interface_deformation_glyph<float_t> interface_deformation_glyph;
