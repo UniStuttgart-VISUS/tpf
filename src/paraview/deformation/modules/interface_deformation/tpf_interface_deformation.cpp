@@ -167,7 +167,7 @@ int tpf_interface_deformation::RequestData(vtkInformation*, vtkInformationVector
             interface_gradient_module.set_output(gradients);
 
             fluid_position_module.set_input(vof, gradients);
-            fluid_position_module.set_parameters(tpf::modules::fluid_position_aux::position_t::CELL_CENTER);
+            fluid_position_module.set_parameters(tpf::modules::fluid_position_aux::position_t::INTERFACE);
             fluid_position_module.set_output(positions, position_points);
 
             const auto velocity = tpf::vtk::get_grid<float_t, float_t, 3, 3>(input, tpf::data::topology_t::CELL_DATA, GetInputArrayToProcess(1, input));
