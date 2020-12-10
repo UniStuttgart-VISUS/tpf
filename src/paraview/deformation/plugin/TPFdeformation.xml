@@ -438,6 +438,9 @@
             </DoubleVectorProperty>
             <IntVectorProperty name="StretchingShowStrips" command="SetStretchingShowStrips" label="Show strips" number_of_elements="1" default_values="1">
                 <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
                 <Documentation>
                     Show strips indicating the eigenvector directions
                 </Documentation>
@@ -458,6 +461,9 @@
             </DoubleVectorProperty>
             <IntVectorProperty name="StretchingShowReference" command="SetStretchingShowReference" label="Show reference circle" number_of_elements="1" default_values="1">
                 <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
                 <Documentation>
                     Show reference circle indicating no stretching
                 </Documentation>
@@ -532,6 +538,9 @@
                 </Documentation>
             </IntVectorProperty>
             <IntVectorProperty name="BendingShowStrips" command="SetBendingShowStrips" label="Show strips" number_of_elements="1" default_values="1">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
                 <BooleanDomain name="bool"/>
                 <Documentation>
                     Show strips indicating the eigenvector directions
