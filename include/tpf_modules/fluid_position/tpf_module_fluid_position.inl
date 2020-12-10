@@ -172,7 +172,7 @@ namespace tpf
             }
 
             // Calculate centroid
-            return geometry::polygon<float_t>(intersection_points, plic.second, true).calculate_centroid();
+            return geometry::polygon<float_t>(intersection_points, normal, true).calculate_centroid();
         }
 
         template <typename float_t>
