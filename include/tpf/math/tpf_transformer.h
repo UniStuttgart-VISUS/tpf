@@ -109,9 +109,9 @@ namespace tpf
             transformer& operator*=(const transformer& other);
 
             /// <summary>
-            /// Answer if this transformer stores a unit matrix
+            /// Answer if this transformer would not alter the input
             /// </summary>
-            /// <returns>Does this transformer store a unit matrix?</returns>
+            /// <returns>True if the transformer does not alter the input; false otherwise</returns>
             bool is_unit() const;
 
             /// <summary>
@@ -198,6 +198,7 @@ namespace tpf
 
             /// Pre-processing function
             std::function<Eigen::Matrix<floatp_t, 4, 1>(const Eigen::Matrix<floatp_t, 4, 1>&)> preprocessing;
+            bool is_default_function;
         };
     }
 }

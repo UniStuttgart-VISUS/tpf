@@ -53,6 +53,7 @@ namespace tpf
         {
             this->trafo = copy.trafo;
             this->preprocessing = copy.preprocessing;
+            this->is_default_function = copy.is_default_function;
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
@@ -60,6 +61,7 @@ namespace tpf
         {
             this->trafo = std::move(move.trafo);
             this->preprocessing = move.preprocessing;
+            this->is_default_function = move.is_default_function;
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
@@ -67,6 +69,7 @@ namespace tpf
         {
             this->trafo = copy.trafo;
             this->preprocessing = copy.preprocessing;
+            this->is_default_function = copy.is_default_function;
 
             return *this;
         }
@@ -76,6 +79,7 @@ namespace tpf
         {
             this->trafo = std::move(move.trafo);
             this->preprocessing = move.preprocessing;
+            this->is_default_function = move.is_default_function;
 
             return *this;
         }
@@ -103,7 +107,7 @@ namespace tpf
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
         inline bool transformer<floatp_t, dimension, homogeneous>::is_unit() const
         {
-            return this->trafo == unit().trafo;
+            return (this->trafo == unit().trafo) && this->is_default_function;
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
@@ -111,6 +115,7 @@ namespace tpf
             const Eigen::Matrix<floatp_t, 4, 1>&)> func)
         {
             this->preprocessing = func;
+            this->is_default_function = false;
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
@@ -334,6 +339,7 @@ namespace tpf
         inline void transformer<floatp_t, dimension, homogeneous>::set_default_preprocessing() noexcept
         {
             this->preprocessing = [](const Eigen::Matrix<floatp_t, 4, 1>& vector) { return vector; };
+            this->is_default_function = true;
         }
     }
 }
