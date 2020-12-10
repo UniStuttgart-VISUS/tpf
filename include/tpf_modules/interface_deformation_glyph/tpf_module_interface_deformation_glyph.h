@@ -55,17 +55,25 @@ namespace tpf
                 /// Resolution around the disc
                 int disc_resolution;
 
+                /// Disc bending for pseudo-3D effect
+                float_t disc_bending;
+
                 /// Radius of the whole within the disc
                 float_t hole_radius;
-
-                /// Thickness of the strip
-                float_t strip_size;
 
                 /// Scalar for scaling the glyphs
                 float_t size_scalar;
 
                 /// Exponent for increasing the stretching effect
                 float_t exponent;
+
+                /// Thickness of the strip
+                bool show_strip;
+                float_t strip_size;
+
+                /// Thickness of the reference circle
+                bool show_reference;
+                float_t reference_size;
 
                 /// z-offset for preventing z-fighting
                 float_t z_offset;
@@ -81,6 +89,7 @@ namespace tpf
                 int polynomial_resolution;
 
                 /// Thickness of the strip
+                bool show_strip;
                 float_t strip_size;
 
                 /// Scalar for scaling the glyphs
@@ -240,11 +249,14 @@ namespace tpf
             /// Create a stretching glyph (disc with hole), its center being the origin and extending in the x,y-plane with radius 1
             /// </summary>
             /// <param name="circle_resolution">Resolution of the circle (angle)</param>
+            /// <param name="bending">Disc bending for pseudo-3D effect</param>
             /// <param name="hole_radius">Radius of the inner hole</param>
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
+            /// <param name="reference_width">Width of the reference circle</param>
             /// <param name="z_offset">z-offset to prevent z-fighting</param>
-            /// <returns></returns>
-            stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t hole_radius, float_t strip_width, float_t z_offset) const;
+            /// <returns>Template stretching glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip, reference circle]</returns>
+            stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t bending, float_t hole_radius,
+                float_t strip_width, float_t reference_width, float_t z_offset) const;
 
             /// <summary>
             /// "Instantiate" stretching glyphs at each interface position
@@ -253,7 +265,10 @@ namespace tpf
             /// <param name="average_cell_size">Average cell size of the data</param>
             /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
             /// <param name="exponent">Exponent used for scaling the stretching factor</param>
-            void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar, float_t exponent);
+            /// <param name="show_strips">Show strips indicating the major eigenvectors</param>
+            /// <param name="show_reference">Show reference circle</param>
+            void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size,
+                float_t size_scalar, float_t exponent, bool show_strips, bool show_reference);
 
             /// <summary>
             /// Create a bending glyph (disc), its center being the origin and extending in the x,y-plane with radius 1
@@ -263,7 +278,8 @@ namespace tpf
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
             /// <param name="z_offset">z-offset to prevent z-fighting</param>
             /// <returns>Template bending glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip]</returns>
-            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution, std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const;
+            bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution,
+                std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const;
 
             /// <summary>
             /// "Instantiate" bending glyphs at each interface position
@@ -272,7 +288,9 @@ namespace tpf
             /// <param name="average_cell_size">Average cell size of the data</param>
             /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
             /// <param name="scalar">Scalar to modify the bending</param>
-            void instantiate_bending_glyph(const bending_glyph_t& glyph_template, float_t average_cell_size, float_t size_scalar, float_t scalar);
+            /// <param name="show_strips">Show strips indicating the major eigenvectors</param>
+            void instantiate_bending_glyph(const bending_glyph_t& glyph_template,
+                float_t average_cell_size, float_t size_scalar, float_t scalar, bool show_strips);
 
             /// Volume of fluid
             const data::grid<float_t, float_t, 3, 1>* vof;

@@ -38,14 +38,26 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(ArrowThickness, float);
         vtkGetMacro(ArrowThickness, float);
 
+        vtkSetMacro(StretchingShowStrips, int);
+        vtkGetMacro(StretchingShowStrips, int);
+
+        vtkSetMacro(StretchingShowReference, int);
+        vtkGetMacro(StretchingShowReference, int);
+
         vtkSetMacro(StretchingDiscResolution, int);
         vtkGetMacro(StretchingDiscResolution, int);
+
+        vtkSetMacro(StretchingDiscBending, float);
+        vtkGetMacro(StretchingDiscBending, float);
 
         vtkSetMacro(StretchingHoleRadius, float);
         vtkGetMacro(StretchingHoleRadius, float);
 
         vtkSetMacro(StretchingStripSize, float);
         vtkGetMacro(StretchingStripSize, float);
+
+        vtkSetMacro(StretchingReferenceSize, float);
+        vtkGetMacro(StretchingReferenceSize, float);
 
         vtkSetMacro(StretchingSizeScalar, float);
         vtkGetMacro(StretchingSizeScalar, float);
@@ -55,6 +67,9 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
 
         vtkSetMacro(StretchingZOffset, float);
         vtkGetMacro(StretchingZOffset, float);
+
+        vtkSetMacro(BendingShowStrips, int);
+        vtkGetMacro(BendingShowStrips, int);
 
         vtkSetMacro(BendingDiscResolution, int);
         vtkGetMacro(BendingDiscResolution, int);
@@ -106,10 +121,11 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         float ArrowScalar, ArrowFixedScalar, ShaftTipRatio, ArrowThickness;
 
         /// Properties of the stretching glyph
-        int StretchingDiscResolution;
-        float StretchingHoleRadius, StretchingStripSize, StretchingSizeScalar, StretchingExponent, StretchingZOffset;
+        int StretchingShowStrips, StretchingShowReference, StretchingDiscResolution;
+        float StretchingHoleRadius, StretchingStripSize, StretchingReferenceSize,
+            StretchingSizeScalar, StretchingExponent, StretchingZOffset, StretchingDiscBending;
 
         /// Properties of the bending glyph
-        int BendingDiscResolution, PolynomialResolution;
+        int BendingShowStrips, BendingDiscResolution, PolynomialResolution;
         float BendingStripSize, BendingSizeScalar, BendingScalar, BendingZOffset;
 };

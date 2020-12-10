@@ -371,7 +371,7 @@
                 </Documentation>
             </IntVectorProperty>
             <DoubleVectorProperty name="ShaftTipRatio" command="SetShaftTipRatio" label="Shaft-tip-ratio" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
-                <DoubleRangeDomain name="volume_range" min="0.02" max="0.98" />
+                <DoubleRangeDomain name="shaft_range" min="0.02" max="0.98" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="VelocityGlyph" value="1" />
                 </Hints>
@@ -412,21 +412,12 @@
                 </Documentation>
             </DoubleVectorProperty>
             <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
-                <DoubleRangeDomain name="strip_range" min="0.1" max="0.9" />
+                <DoubleRangeDomain name="hole_range" min="0.1" max="0.9" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
                 <Documentation>
                     Radius of the hole within the disc's center
-                </Documentation>
-            </DoubleVectorProperty>
-            <DoubleVectorProperty name="StretchingStripSize" command="SetStretchingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
-                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
-                <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
-                </Hints>
-                <Documentation>
-                    Thickness of the strips indicating the eigenvector directions
                 </Documentation>
             </DoubleVectorProperty>
             <IntVectorProperty name="StretchingDiscResolution" command="SetStretchingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
@@ -437,12 +428,68 @@
                     Resolution around the disc (circle)
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="StretchingZOffset" command="SetStretchingZOffset" label="z-offset" number_of_elements="1" default_values="0.001" panel_visibility="advanced">
+            <DoubleVectorProperty name="StretchingDiscBending" command="SetStretchingDiscBending" label="Disc bending" number_of_elements="1" default_values="0.05" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
                 <Documentation>
-                    Offset for the strips in z-direction to prevent z-fighting
+                    Bending for pseudo-3D effect
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="StretchingShowStrips" command="SetStretchingShowStrips" label="Show strips" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Show strips indicating the eigenvector directions
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="StretchingStripSize" command="SetStretchingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
+                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingShowStrips" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Thickness of the strips indicating the eigenvector directions
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="StretchingShowReference" command="SetStretchingShowReference" label="Show reference circle" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Show reference circle indicating no stretching
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="StretchingReferenceSize" command="SetStretchingReferenceSize" label="Reference circle size" number_of_elements="1" default_values="0.02" panel_visibility="advanced">
+                <DoubleRangeDomain name="ref_range" min="0.001" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingShowReference" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Thickness of the reference circle indicating no stretching
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingZOffset" command="SetStretchingZOffset" label="z-offset" number_of_elements="1" default_values="0.002" panel_visibility="advanced">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                            <Expression type="or">
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingShowStrips" value="1" />
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingShowReference" value="1" />
+                            </Expression>
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Offset for the strips and the reference circle in z-direction to prevent z-fighting
                 </Documentation>
             </DoubleVectorProperty>
 
@@ -468,15 +515,6 @@
                     Scale of the disc glyph
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="BendingStripSize" command="SetBendingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
-                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
-                <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
-                </Hints>
-                <Documentation>
-                    Thickness of the strips indicating the eigenvector directions
-                </Documentation>
-            </DoubleVectorProperty>
             <IntVectorProperty name="BendingDiscResolution" command="SetBendingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
@@ -493,9 +531,34 @@
                     Resolution along the disc (radius)
                 </Documentation>
             </IntVectorProperty>
+            <IntVectorProperty name="BendingShowStrips" command="SetBendingShowStrips" label="Show strips" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Show strips indicating the eigenvector directions
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="BendingStripSize" command="SetBendingStripSize" label="Strip size" number_of_elements="1" default_values="0.1" panel_visibility="advanced">
+                <DoubleRangeDomain name="strip_range" min="0.01" max="0.5" />
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingShowStrips" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Thickness of the strips indicating the eigenvector directions
+                </Documentation>
+            </DoubleVectorProperty>
             <DoubleVectorProperty name="BendingZOffset" command="SetBendingZOffset" label="z-offset" number_of_elements="1" default_values="0.02" panel_visibility="advanced">
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingShowStrips" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
                     Offset for the strips in z-direction to prevent z-fighting
@@ -518,8 +581,12 @@
                 <Property name="StretchingExponent" />
                 <Property name="StretchingSizeScalar" />
                 <Property name="StretchingHoleRadius" />
-                <Property name="StretchingStripSize" />
                 <Property name="StretchingDiscResolution" />
+                <Property name="StretchingDiscBending" />
+                <Property name="StretchingShowStrips" />
+                <Property name="StretchingStripSize" />
+                <Property name="StretchingShowReference" />
+                <Property name="StretchingReferenceSize" />
                 <Property name="StretchingZOffset" />
             </PropertyGroup>
 
@@ -527,9 +594,10 @@
                 <Property name="BendingGlyph" />
                 <Property name="BendingScalar" />
                 <Property name="BendingSizeScalar" />
-                <Property name="BendingStripSize" />
                 <Property name="BendingDiscResolution" />
                 <Property name="PolynomialResolution" />
+                <Property name="BendingShowStrips" />
+                <Property name="BendingStripSize" />
                 <Property name="BendingZOffset" />
             </PropertyGroup>
 

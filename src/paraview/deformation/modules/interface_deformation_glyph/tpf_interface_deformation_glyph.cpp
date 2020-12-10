@@ -194,8 +194,12 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
 
         tpf::modules::interface_deformation_glyph_aux::stretching_params_t<float_t> stretching_parameters;
         stretching_parameters.disc_resolution = this->StretchingDiscResolution;
+        stretching_parameters.disc_bending = this->StretchingDiscBending;
         stretching_parameters.hole_radius = this->StretchingHoleRadius;
+        stretching_parameters.show_strip = this->StretchingShowStrips;
         stretching_parameters.strip_size = this->StretchingStripSize;
+        stretching_parameters.show_reference = this->StretchingShowReference;
+        stretching_parameters.reference_size = this->StretchingReferenceSize;
         stretching_parameters.size_scalar = this->StretchingSizeScalar;
         stretching_parameters.exponent = this->StretchingExponent;
         stretching_parameters.z_offset = this->StretchingZOffset;
@@ -203,6 +207,7 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         tpf::modules::interface_deformation_glyph_aux::bending_params_t<float_t> bending_parameters;
         bending_parameters.disc_resolution = this->BendingDiscResolution;
         bending_parameters.polynomial_resolution = this->PolynomialResolution;
+        bending_parameters.show_strip = this->BendingShowStrips;
         bending_parameters.strip_size = this->BendingStripSize;
         bending_parameters.size_scalar = this->BendingSizeScalar;
         bending_parameters.scalar = this->BendingScalar;

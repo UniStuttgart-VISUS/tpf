@@ -126,8 +126,10 @@ namespace tpf
             if (this->stretching_glyph && this->gradients != nullptr && this->stretching_min != nullptr && this->stretching_max != nullptr)
             {
                 instantiate_stretching_glpyh(create_stretching_glyph_template(this->stretching_parameters.disc_resolution,
-                    this->stretching_parameters.hole_radius, this->stretching_parameters.strip_size, this->stretching_parameters.z_offset),
-                    average_cell_size, this->stretching_parameters.size_scalar, this->stretching_parameters.exponent);
+                    this->stretching_parameters.disc_bending, this->stretching_parameters.hole_radius,
+                    this->stretching_parameters.strip_size, this->stretching_parameters.reference_size,
+                    this->stretching_parameters.z_offset), average_cell_size, this->stretching_parameters.size_scalar,
+                    this->stretching_parameters.exponent, this->stretching_parameters.show_strip, this->stretching_parameters.show_reference);
             }
 
             // Create bending glyph
@@ -136,7 +138,7 @@ namespace tpf
             {
                 instantiate_bending_glyph(create_bending_glyph_template(this->bending_parameters.disc_resolution,
                     this->bending_parameters.polynomial_resolution, this->bending_parameters.strip_size, this->bending_parameters.z_offset),
-                    average_cell_size, this->bending_parameters.size_scalar, this->bending_parameters.scalar);
+                    average_cell_size, this->bending_parameters.size_scalar, this->bending_parameters.scalar, this->bending_parameters.show_strip);
             }
         }
 
@@ -399,32 +401,35 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline auto interface_deformation_glyph<float_t>::create_stretching_glyph_template(std::size_t circle_resolution,
-            float_t hole_radius, float_t strip_width, float_t z_offset) const -> stretching_glyph_t
+        inline auto interface_deformation_glyph<float_t>::create_stretching_glyph_template(std::size_t circle_resolution, float_t bending,
+            float_t hole_radius, float_t strip_width, float_t reference_width, float_t z_offset) const -> stretching_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
+            bending = std::max(bending, static_cast<float_t>(0.0));
             hole_radius = std::clamp(hole_radius, static_cast<float_t>(0.1), static_cast<float_t>(0.9));
             strip_width = std::clamp(strip_width, static_cast<float_t>(0.01), static_cast<float_t>(0.5));
+            reference_width = std::clamp(reference_width, static_cast<float_t>(0.001), static_cast<float_t>(0.5));
             z_offset = std::max(z_offset, static_cast<float_t>(0.0));
+
+            // General variables
+            const std::size_t radial_resolution = 10;
+
+            const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+            const auto radial_increment = static_cast<float_t>(1.0 - hole_radius) / radial_resolution;
+
+            const auto disc_width = static_cast<float_t>(1.0 - hole_radius);
+            const auto center_line_offset = static_cast<float_t>(0.5 * (1.0 + hole_radius));
+            const auto denominator = static_cast<float_t>(std::pow(0.5 * disc_width, 2.0));
+
+            auto bending_func = [&center_line_offset, &denominator, &bending](const float_t x) {
+                return -bending * std::pow(x - center_line_offset, static_cast<float_t>(2.0)) / denominator;
+            };
 
             // Create circle-shape disc on x,y-plane
             glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
 
             {
-                const std::size_t radial_resolution = 2;
-
-                const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
-                const auto radial_increment = static_cast<float_t>(1.0 - hole_radius) / radial_resolution;
-
-                const auto offset = static_cast<float_t>(0.5 * (hole_radius - 1.0));
-                const auto offset_square = offset * offset;
-                const auto z_bending = -static_cast<float_t>(0.5 * z_offset);
-
-                auto bending_func = [&offset, &offset_square, &z_bending](const float_t x) {
-                    return z_bending * std::pow(x - offset, static_cast<float_t>(2.0)) / offset_square;
-                };
-
                 // Create rows
                 std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
                 std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
@@ -482,12 +487,38 @@ namespace tpf
                 const auto y_plus = strip_width / static_cast<float_t>(2.0);
                 const auto y_minus = -strip_width / static_cast<float_t>(2.0);
 
-                const auto index_prev_1 = strip->add_point(geometry::point<float_t>(hole_radius, y_plus, z_offset));
-                const auto index_prev_2 = strip->add_point(geometry::point<float_t>(hole_radius, y_minus, z_offset));
-                const auto index_1 = strip->add_point(geometry::point<float_t>(1.0, y_plus, z_offset));
-                const auto index_2 = strip->add_point(geometry::point<float_t>(1.0, y_minus, z_offset));
+                // Create rows
+                std::array<CGAL::SM_Vertex_index, 2> previous_indices;
+                std::array<CGAL::SM_Vertex_index, 2> current_indices;
 
-                strip->add_face({ index_prev_1, index_prev_2, index_2, index_1 });
+                previous_indices[0] = strip->add_point(geometry::point<float_t>(
+                    hole_radius,
+                    y_plus,
+                    z_offset + bending_func(hole_radius)));
+
+                previous_indices[1] = strip->add_point(geometry::point<float_t>(
+                    hole_radius,
+                    y_minus,
+                    z_offset + bending_func(hole_radius)));
+
+                for (std::size_t j = 1; j <= radial_resolution; ++j)
+                {
+                    const auto radius = hole_radius + j * radial_increment;
+
+                    current_indices[0] = strip->add_point(geometry::point<float_t>(
+                        radius,
+                        y_plus,
+                        z_offset + bending_func(radius)));
+
+                    current_indices[1] = strip->add_point(geometry::point<float_t>(
+                        radius,
+                        y_minus,
+                        z_offset + bending_func(radius)));
+
+                    strip->add_face({ previous_indices[1], current_indices[1], current_indices[0], previous_indices[0] });
+
+                    std::swap(current_indices, previous_indices);
+                }
 
                 // Copy strip for negative x-direction, and both y-directions
                 const Eigen::Matrix<float_t, 3, 1> origin(0.0, 0.0, 0.0);
@@ -505,53 +536,36 @@ namespace tpf
             }
 
             // Create a circle as reference
-            glyph_t reference_strip = std::make_shared<geometry::mesh<float_t>>();
+            glyph_t reference;
 
             {
-                const auto circle_increment = static_cast<float_t>((2.0 * math::pi<float_t>) / circle_resolution);
+                // Function to create the reference as a slim copy of the disc
+                const auto ratio = reference_width / disc_width;
+                const auto offset = z_offset + ratio * bending;
 
-                const auto center_radius = static_cast<float_t>(0.5 * (1.0 + hole_radius));
-                const auto inner_radius = center_radius - static_cast<float_t>(0.5) * strip_width;
-                const auto outer_radius = center_radius + static_cast<float_t>(0.5) * strip_width;
-
-                // Create rows
-                std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
-                std::vector<CGAL::SM_Vertex_index> current_indices(circle_resolution);
-
-                previous_indices[0] = reference_strip->add_point(geometry::point<float_t>(
-                    inner_radius * std::cos(static_cast<float_t>(0.0)),
-                    inner_radius * std::sin(static_cast<float_t>(0.0)),
-                    static_cast<float_t>(0.5) * z_offset));
-                current_indices[0] = reference_strip->add_point(geometry::point<float_t>(
-                    outer_radius * std::cos(static_cast<float_t>(0.0)),
-                    outer_radius * std::sin(static_cast<float_t>(0.0)),
-                    static_cast<float_t>(0.5) * z_offset));
-
-                for (std::size_t i = 1; i < circle_resolution; ++i)
+                auto slimmify = [&center_line_offset, &ratio, &offset](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
                 {
-                    const auto angle = i * circle_increment;
+                    const auto center_line_vector = center_line_offset * vector.head<2>().normalized();
+                    const auto vector_xy = center_line_vector + ratio * (vector.head<2>() - center_line_vector);
 
-                    previous_indices[i] = reference_strip->add_point(geometry::point<float_t>(
-                        inner_radius * std::cos(angle),
-                        inner_radius * std::sin(angle),
-                        static_cast<float_t>(0.5) * z_offset));
-                    current_indices[i] = reference_strip->add_point(geometry::point<float_t>(
-                        outer_radius * std::cos(angle),
-                        outer_radius * std::sin(angle),
-                        static_cast<float_t>(0.5) * z_offset));
+                    Eigen::Matrix<float_t, 4, 1> slim_vector;
+                    slim_vector << vector_xy, offset + ratio * vector[2], 1.0;
 
-                    reference_strip->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
-                }
+                    return slim_vector;
+                };
 
-                reference_strip->add_face({ previous_indices.back(), current_indices.back(), current_indices.front(), previous_indices.front() });
+                math::transformer<float_t, 3> trafo;
+                trafo.set_preprocessing(slimmify);
+
+                reference = std::static_pointer_cast<geometry::mesh<float_t>>(disc->clone(trafo));
             }
 
-            return std::make_tuple(disc, min_strip, max_strip, reference_strip);
+            return std::make_tuple(disc, min_strip, max_strip, reference);
         }
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template,
-            const float_t average_cell_size, float_t size_scalar, float_t exponent)
+            const float_t average_cell_size, float_t size_scalar, float_t exponent, const bool show_strips, const bool show_reference)
         {
             // Clamp parameter values
             size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
@@ -605,12 +619,19 @@ namespace tpf
                             math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
 
                             // Instantiate glyph
-                            this->stretching_glyphs->insert(std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>{
-                                std::get<0>(glyph_template)->clone(trafo),
-                                std::get<1>(glyph_template)->clone(trafo),
-                                std::get<2>(glyph_template)->clone(trafo) });
+                            this->stretching_glyphs->insert(std::get<0>(glyph_template)->clone(trafo));
 
-                            this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo_ref));
+                            if (show_strips)
+                            {
+                                this->stretching_glyphs->insert(std::get<1>(glyph_template)->clone(trafo));
+                                this->stretching_glyphs->insert(std::get<2>(glyph_template)->clone(trafo));
+                            }
+
+                            if (show_reference)
+                            {
+                                this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo_ref));
+                                this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo));
+                            }
 
                             ++num_interface_cells;
                         }
@@ -620,7 +641,7 @@ namespace tpf
 
             // Create data array
             auto stretching = std::make_shared<data::array<float_t>>("Stretching");
-            stretching->reserve(num_interface_cells * 4);
+            stretching->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0) + (show_reference ? 2 : 0)));
 
             if (num_interface_cells != 0)
             {
@@ -638,9 +659,18 @@ namespace tpf
                                 const auto max = stretching_direction_max(coords).norm();
 
                                 stretching->push_back(min * max);
-                                stretching->push_back(min);
-                                stretching->push_back(max);
-                                stretching->push_back(std::numeric_limits<float_t>::quiet_NaN());
+
+                                if (show_strips)
+                                {
+                                    stretching->push_back(min);
+                                    stretching->push_back(max);
+                                }
+
+                                if (show_reference)
+                                {
+                                    stretching->push_back(std::numeric_limits<float_t>::quiet_NaN());
+                                    stretching->push_back(std::numeric_limits<float_t>::infinity());
+                                }
                             }
                         }
                     }
@@ -776,7 +806,7 @@ namespace tpf
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_bending_glyph(const bending_glyph_t& glyph_template,
-            const float_t average_cell_size, float_t size_scalar, float_t scalar)
+            const float_t average_cell_size, float_t size_scalar, float_t scalar, const bool show_strips)
         {
             // Clamp parameter values
             size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
@@ -862,10 +892,13 @@ namespace tpf
                             trafo.set_preprocessing(bend);
 
                             // Instantiate glyph
-                            this->bending_glyphs->insert(std::vector<std::shared_ptr<geometry::geometric_object<float_t>>>{
-                                std::get<0>(glyph_template)->clone(trafo),
-                                std::get<1>(glyph_template)->clone(trafo),
-                                std::get<2>(glyph_template)->clone(trafo) });
+                            this->bending_glyphs->insert(std::get<0>(glyph_template)->clone(trafo));
+
+                            if (show_strips)
+                            {
+                                this->bending_glyphs->insert(std::get<1>(glyph_template)->clone(trafo));
+                                this->bending_glyphs->insert(std::get<2>(glyph_template)->clone(trafo));
+                            }
 
                             ++num_interface_cells;
                         }
@@ -875,7 +908,7 @@ namespace tpf
 
             // Create data array
             auto bending = std::make_shared<data::array<float_t>>("Bending");
-            bending->reserve(num_interface_cells * 3);
+            bending->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0)));
 
             if (num_interface_cells != 0)
             {
@@ -893,8 +926,12 @@ namespace tpf
                                 const auto max = bending_max(coords);
 
                                 bending->push_back((min + max) / 2.0);
-                                bending->push_back(min);
-                                bending->push_back(max);
+
+                                if (show_strips)
+                                {
+                                    bending->push_back(min);
+                                    bending->push_back(max);
+                                }
                             }
                         }
                     }
