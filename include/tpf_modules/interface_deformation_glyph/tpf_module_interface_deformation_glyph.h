@@ -52,20 +52,23 @@ namespace tpf
             template <typename float_t>
             struct stretching_params_t
             {
+                /// Exponent for increasing the stretching effect
+                float_t exponent;
+
+                /// Scalar for scaling the glyphs
+                float_t size_scalar;
+
+                /// Radius of the whole within the disc
+                float_t hole_radius;
+
+                /// Offset in normal direction
+                float_t offset;
+
                 /// Resolution around the disc
                 int disc_resolution;
 
                 /// Disc bending for pseudo-3D effect
                 float_t disc_bending;
-
-                /// Radius of the whole within the disc
-                float_t hole_radius;
-
-                /// Scalar for scaling the glyphs
-                float_t size_scalar;
-
-                /// Exponent for increasing the stretching effect
-                float_t exponent;
 
                 /// Thickness of the strip
                 bool show_strip;
@@ -75,13 +78,22 @@ namespace tpf
                 bool show_reference;
                 float_t reference_size;
 
-                /// z-offset for preventing z-fighting
+                /// z-offset of the strips and the reference circle to prevent z-fighting
                 float_t z_offset;
             };
 
             template <typename float_t>
             struct bending_params_t
             {
+                /// Scalar for scaling the bending values
+                float_t scalar;
+
+                /// Scalar for scaling the glyphs
+                float_t size_scalar;
+
+                /// Offset in normal direction
+                float_t offset;
+
                 /// Resolution around the disc
                 int disc_resolution;
 
@@ -92,13 +104,7 @@ namespace tpf
                 bool show_strip;
                 float_t strip_size;
 
-                /// Scalar for scaling the glyphs
-                float_t size_scalar;
-
-                /// Scalar for scaling the bending values
-                float_t scalar;
-
-                /// z-offset for preventing z-fighting
+                /// z-offset of the strips to prevent z-fighting
                 float_t z_offset;
             };
         }
@@ -251,12 +257,13 @@ namespace tpf
             /// <param name="circle_resolution">Resolution of the circle (angle)</param>
             /// <param name="bending">Disc bending for pseudo-3D effect</param>
             /// <param name="hole_radius">Radius of the inner hole</param>
+            /// <param name="offset">Offset in z-direction</param>
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
             /// <param name="reference_width">Width of the reference circle</param>
-            /// <param name="z_offset">z-offset to prevent z-fighting</param>
+            /// <param name="z_offset">Offset of the strips to prevent z-fighting</param>
             /// <returns>Template stretching glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip, reference circle]</returns>
             stretching_glyph_t create_stretching_glyph_template(std::size_t circle_resolution, float_t bending, float_t hole_radius,
-                float_t strip_width, float_t reference_width, float_t z_offset) const;
+                float_t offset, float_t strip_width, float_t reference_width, float_t z_offset) const;
 
             /// <summary>
             /// "Instantiate" stretching glyphs at each interface position
@@ -275,11 +282,12 @@ namespace tpf
             /// </summary>
             /// <param name="circle_resolution">Resolution of the circle (angle)</param>
             /// <param name="polynomial_resolution">Resolution along the radius</param>
+            /// <param name="offset">Offset in z-direction</param>
             /// <param name="strip_width">Width of the strip indicating the major eigenvectors</param>
-            /// <param name="z_offset">z-offset to prevent z-fighting</param>
+            /// <param name="z_offset">Offset of the strips and reference circle to prevent z-fighting</param>
             /// <returns>Template bending glyph [disc, minimum eigenvalue strip, maximum eigenvalue strip]</returns>
             bending_glyph_t create_bending_glyph_template(std::size_t circle_resolution,
-                std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const;
+                std::size_t polynomial_resolution, float_t offset, float_t strip_width, float_t z_offset) const;
 
             /// <summary>
             /// "Instantiate" bending glyphs at each interface position

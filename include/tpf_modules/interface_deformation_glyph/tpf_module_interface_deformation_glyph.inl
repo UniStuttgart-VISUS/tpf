@@ -127,7 +127,7 @@ namespace tpf
             {
                 instantiate_stretching_glpyh(create_stretching_glyph_template(this->stretching_parameters.disc_resolution,
                     this->stretching_parameters.disc_bending, this->stretching_parameters.hole_radius,
-                    this->stretching_parameters.strip_size, this->stretching_parameters.reference_size,
+                    this->stretching_parameters.offset, this->stretching_parameters.strip_size, this->stretching_parameters.reference_size,
                     this->stretching_parameters.z_offset), average_cell_size, this->stretching_parameters.size_scalar,
                     this->stretching_parameters.exponent, this->stretching_parameters.show_strip, this->stretching_parameters.show_reference);
             }
@@ -137,8 +137,9 @@ namespace tpf
                 this->bending_direction_min != nullptr && this->bending_direction_max != nullptr)
             {
                 instantiate_bending_glyph(create_bending_glyph_template(this->bending_parameters.disc_resolution,
-                    this->bending_parameters.polynomial_resolution, this->bending_parameters.strip_size, this->bending_parameters.z_offset),
-                    average_cell_size, this->bending_parameters.size_scalar, this->bending_parameters.scalar, this->bending_parameters.show_strip);
+                    this->bending_parameters.polynomial_resolution, this->bending_parameters.offset,
+                    this->bending_parameters.strip_size, this->bending_parameters.z_offset), average_cell_size,
+                    this->bending_parameters.size_scalar, this->bending_parameters.scalar, this->bending_parameters.show_strip);
             }
         }
 
@@ -402,7 +403,7 @@ namespace tpf
 
         template <typename float_t>
         inline auto interface_deformation_glyph<float_t>::create_stretching_glyph_template(std::size_t circle_resolution, float_t bending,
-            float_t hole_radius, float_t strip_width, float_t reference_width, float_t z_offset) const -> stretching_glyph_t
+            float_t hole_radius, const float_t offset, float_t strip_width, float_t reference_width, float_t z_offset) const -> stretching_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
@@ -423,7 +424,7 @@ namespace tpf
             const auto denominator = static_cast<float_t>(std::pow(0.5 * disc_width, 2.0));
 
             auto bending_func = [&center_line_offset, &denominator, &bending](const float_t x) {
-                return -bending * std::pow(x - center_line_offset, static_cast<float_t>(2.0)) / denominator;
+                return bending * (static_cast<float_t>(1.0) - std::pow(x - center_line_offset, static_cast<float_t>(2.0)) / denominator);
             };
 
             // Create circle-shape disc on x,y-plane
@@ -437,7 +438,7 @@ namespace tpf
                 previous_indices[0] = disc->add_point(geometry::point<float_t>(
                     hole_radius * std::cos(static_cast<float_t>(0.0)),
                     hole_radius * std::sin(static_cast<float_t>(0.0)),
-                    bending_func(hole_radius)));
+                    offset + bending_func(hole_radius)));
 
                 for (std::size_t i = 1; i < circle_resolution; ++i)
                 {
@@ -446,7 +447,7 @@ namespace tpf
                     previous_indices[i] = disc->add_point(geometry::point<float_t>(
                         hole_radius * std::cos(angle),
                         hole_radius * std::sin(angle),
-                        bending_func(hole_radius)));
+                        offset + bending_func(hole_radius)));
                 }
 
                 for (std::size_t j = 1; j <= radial_resolution; ++j)
@@ -456,7 +457,7 @@ namespace tpf
                     current_indices[0] = disc->add_point(geometry::point<float_t>(
                         radius * std::cos(static_cast<float_t>(0.0)),
                         radius * std::sin(static_cast<float_t>(0.0)),
-                        bending_func(radius)));
+                        offset + bending_func(radius)));
 
                     for (std::size_t i = 1; i < circle_resolution; ++i)
                     {
@@ -465,7 +466,7 @@ namespace tpf
                         current_indices[i] = disc->add_point(geometry::point<float_t>(
                             radius * std::cos(angle),
                             radius * std::sin(angle),
-                            bending_func(radius)));
+                            offset + bending_func(radius)));
 
                         disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
                     }
@@ -494,12 +495,12 @@ namespace tpf
                 previous_indices[0] = strip->add_point(geometry::point<float_t>(
                     hole_radius,
                     y_plus,
-                    z_offset + bending_func(hole_radius)));
+                    offset + z_offset + bending_func(hole_radius)));
 
                 previous_indices[1] = strip->add_point(geometry::point<float_t>(
                     hole_radius,
                     y_minus,
-                    z_offset + bending_func(hole_radius)));
+                    offset + z_offset + bending_func(hole_radius)));
 
                 for (std::size_t j = 1; j <= radial_resolution; ++j)
                 {
@@ -508,12 +509,12 @@ namespace tpf
                     current_indices[0] = strip->add_point(geometry::point<float_t>(
                         radius,
                         y_plus,
-                        z_offset + bending_func(radius)));
+                        offset + z_offset + bending_func(radius)));
 
                     current_indices[1] = strip->add_point(geometry::point<float_t>(
                         radius,
                         y_minus,
-                        z_offset + bending_func(radius)));
+                        offset + z_offset + bending_func(radius)));
 
                     strip->add_face({ previous_indices[1], current_indices[1], current_indices[0], previous_indices[0] });
 
@@ -682,7 +683,7 @@ namespace tpf
 
         template <typename float_t>
         inline auto interface_deformation_glyph<float_t>::create_bending_glyph_template(std::size_t circle_resolution,
-            std::size_t polynomial_resolution, float_t strip_width, float_t z_offset) const -> bending_glyph_t
+            std::size_t polynomial_resolution, const float_t offset, float_t strip_width, float_t z_offset) const -> bending_glyph_t
         {
             // Clamp parameter values
             circle_resolution = std::max(circle_resolution, static_cast<std::size_t>(8));
@@ -701,12 +702,12 @@ namespace tpf
                 std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
 
                 {
-                    const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, 0.0));
+                    const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, offset));
 
                     previous_indices[0] = disc->add_point(geometry::point<float_t>(
                         polynomial_increment * std::cos(static_cast<float_t>(0.0)),
                         polynomial_increment * std::sin(static_cast<float_t>(0.0)),
-                        z_offset));
+                        offset + z_offset));
 
                     for (std::size_t i = 1; i < circle_resolution; ++i)
                     {
@@ -715,7 +716,7 @@ namespace tpf
                         previous_indices[i] = disc->add_point(geometry::point<float_t>(
                             polynomial_increment * std::cos(angle),
                             polynomial_increment * std::sin(angle),
-                            z_offset));
+                            offset + z_offset));
 
                         disc->add_face(center, previous_indices[i - 1], previous_indices[i]);
                     }
@@ -735,7 +736,7 @@ namespace tpf
                         current_indices[0] = disc->add_point(geometry::point<float_t>(
                             radius * std::cos(static_cast<float_t>(0.0)),
                             radius * std::sin(static_cast<float_t>(0.0)),
-                            z_offset));
+                            offset + z_offset));
 
                         for (std::size_t i = 1; i < circle_resolution; ++i)
                         {
@@ -744,7 +745,7 @@ namespace tpf
                             current_indices[i] = disc->add_point(geometry::point<float_t>(
                                 radius * std::cos(angle),
                                 radius * std::sin(angle),
-                                z_offset));
+                                offset + z_offset));
 
                             disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
                         }
@@ -769,15 +770,15 @@ namespace tpf
                 const auto y_plus = strip_width / static_cast<float_t>(2.0);
                 const auto y_minus = -strip_width / static_cast<float_t>(2.0);
 
-                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_width, y_plus, 2.0 * z_offset));
-                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_width, y_minus, 2.0 * z_offset));
+                auto index_prev_1 = strip->add_point(geometry::point<float_t>(strip_width, y_plus, offset + 2.0 * z_offset));
+                auto index_prev_2 = strip->add_point(geometry::point<float_t>(strip_width, y_minus, offset + 2.0 * z_offset));
 
                 for (std::size_t i = 1; i <= polynomial_resolution; ++i)
                 {
                     const auto x = i * increment + strip_width;
 
-                    const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, 2.0 * z_offset));
-                    const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, 2.0 * z_offset));
+                    const auto index_1 = strip->add_point(geometry::point<float_t>(x, y_plus, offset + 2.0 * z_offset));
+                    const auto index_2 = strip->add_point(geometry::point<float_t>(x, y_minus, offset + 2.0 * z_offset));
 
                     strip->add_face({ index_prev_1, index_prev_2, index_2, index_1 });
 

@@ -403,7 +403,7 @@
                     Exponent for increasing the deformation caused by the stretching
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.5">
+            <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.4">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
@@ -411,13 +411,21 @@
                     Scale of the disc glyph
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.5" panel_visibility="advanced">
+            <DoubleVectorProperty name="StretchingHoleRadius" command="SetStretchingHoleRadius" label="Hole radius" number_of_elements="1" default_values="0.7">
                 <DoubleRangeDomain name="hole_range" min="0.1" max="0.9" />
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
                 <Documentation>
                     Radius of the hole within the disc's center
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingOffset" command="SetStretchingOffset" label="Offset" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Offset from the interface position along the normal.
                 </Documentation>
             </DoubleVectorProperty>
             <IntVectorProperty name="StretchingDiscResolution" command="SetStretchingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
@@ -513,12 +521,20 @@
                     Scale the curvature values to create more or less bent discs
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="BendingSizeScalar" command="SetBendingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.25">
+            <DoubleVectorProperty name="BendingSizeScalar" command="SetBendingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.15">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
                 </Hints>
                 <Documentation>
                     Scale of the disc glyph
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="BendingOffset" command="SetBendingOffset" label="Offset" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="BendingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Offset from the interface position along the normal.
                 </Documentation>
             </DoubleVectorProperty>
             <IntVectorProperty name="BendingDiscResolution" command="SetBendingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
@@ -560,7 +576,7 @@
                     Thickness of the strips indicating the eigenvector directions
                 </Documentation>
             </DoubleVectorProperty>
-            <DoubleVectorProperty name="BendingZOffset" command="SetBendingZOffset" label="z-offset" number_of_elements="1" default_values="0.02" panel_visibility="advanced">
+            <DoubleVectorProperty name="BendingZOffset" command="SetBendingZOffset" label="z-offset" number_of_elements="1" default_values="0.005" panel_visibility="advanced">
                 <Hints>
                     <PropertyWidgetDecorator type="CompositeDecorator">
                         <Expression type="and">
@@ -590,6 +606,7 @@
                 <Property name="StretchingExponent" />
                 <Property name="StretchingSizeScalar" />
                 <Property name="StretchingHoleRadius" />
+                <Property name="StretchingOffset" />
                 <Property name="StretchingDiscResolution" />
                 <Property name="StretchingDiscBending" />
                 <Property name="StretchingShowStrips" />
@@ -603,6 +620,7 @@
                 <Property name="BendingGlyph" />
                 <Property name="BendingScalar" />
                 <Property name="BendingSizeScalar" />
+                <Property name="BendingOffset" />
                 <Property name="BendingDiscResolution" />
                 <Property name="PolynomialResolution" />
                 <Property name="BendingShowStrips" />

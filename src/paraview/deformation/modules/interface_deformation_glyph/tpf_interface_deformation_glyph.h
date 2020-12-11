@@ -11,12 +11,6 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(VelocityGlyph, int);
         vtkGetMacro(VelocityGlyph, int);
 
-        vtkSetMacro(StretchingGlyph, int);
-        vtkGetMacro(StretchingGlyph, int);
-
-        vtkSetMacro(BendingGlyph, int);
-        vtkGetMacro(BendingGlyph, int);
-
         vtkSetMacro(ArrowSize, int);
         vtkGetMacro(ArrowSize, int);
 
@@ -38,11 +32,20 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(ArrowThickness, float);
         vtkGetMacro(ArrowThickness, float);
 
-        vtkSetMacro(StretchingShowStrips, int);
-        vtkGetMacro(StretchingShowStrips, int);
+        vtkSetMacro(StretchingGlyph, int);
+        vtkGetMacro(StretchingGlyph, int);
 
-        vtkSetMacro(StretchingShowReference, int);
-        vtkGetMacro(StretchingShowReference, int);
+        vtkSetMacro(StretchingExponent, float);
+        vtkGetMacro(StretchingExponent, float);
+
+        vtkSetMacro(StretchingSizeScalar, float);
+        vtkGetMacro(StretchingSizeScalar, float);
+
+        vtkSetMacro(StretchingHoleRadius, float);
+        vtkGetMacro(StretchingHoleRadius, float);
+
+        vtkSetMacro(StretchingOffset, float);
+        vtkGetMacro(StretchingOffset, float);
 
         vtkSetMacro(StretchingDiscResolution, int);
         vtkGetMacro(StretchingDiscResolution, int);
@@ -50,26 +53,32 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(StretchingDiscBending, float);
         vtkGetMacro(StretchingDiscBending, float);
 
-        vtkSetMacro(StretchingHoleRadius, float);
-        vtkGetMacro(StretchingHoleRadius, float);
+        vtkSetMacro(StretchingShowStrips, int);
+        vtkGetMacro(StretchingShowStrips, int);
 
         vtkSetMacro(StretchingStripSize, float);
         vtkGetMacro(StretchingStripSize, float);
 
+        vtkSetMacro(StretchingShowReference, int);
+        vtkGetMacro(StretchingShowReference, int);
+
         vtkSetMacro(StretchingReferenceSize, float);
         vtkGetMacro(StretchingReferenceSize, float);
-
-        vtkSetMacro(StretchingSizeScalar, float);
-        vtkGetMacro(StretchingSizeScalar, float);
-
-        vtkSetMacro(StretchingExponent, float);
-        vtkGetMacro(StretchingExponent, float);
 
         vtkSetMacro(StretchingZOffset, float);
         vtkGetMacro(StretchingZOffset, float);
 
-        vtkSetMacro(BendingShowStrips, int);
-        vtkGetMacro(BendingShowStrips, int);
+        vtkSetMacro(BendingGlyph, int);
+        vtkGetMacro(BendingGlyph, int);
+
+        vtkSetMacro(BendingScalar, float);
+        vtkGetMacro(BendingScalar, float);
+
+        vtkSetMacro(BendingSizeScalar, float);
+        vtkGetMacro(BendingSizeScalar, float);
+
+        vtkSetMacro(BendingOffset, float);
+        vtkGetMacro(BendingOffset, float);
 
         vtkSetMacro(BendingDiscResolution, int);
         vtkGetMacro(BendingDiscResolution, int);
@@ -77,14 +86,11 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         vtkSetMacro(PolynomialResolution, int);
         vtkGetMacro(PolynomialResolution, int);
 
+        vtkSetMacro(BendingShowStrips, int);
+        vtkGetMacro(BendingShowStrips, int);
+
         vtkSetMacro(BendingStripSize, float);
         vtkGetMacro(BendingStripSize, float);
-
-        vtkSetMacro(BendingSizeScalar, float);
-        vtkGetMacro(BendingSizeScalar, float);
-
-        vtkSetMacro(BendingScalar, float);
-        vtkGetMacro(BendingScalar, float);
 
         vtkSetMacro(BendingZOffset, float);
         vtkGetMacro(BendingZOffset, float);
@@ -110,22 +116,44 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         /// Floating point type
         using float_t = float;
 
-        /// Selection of output
-        int VelocityGlyph, StretchingGlyph, BendingGlyph;
-
-        /// Custom time step
-        float Timestep;
-
         /// Properties of the velocity glyph
-        int ArrowResolution, ArrowSize;
-        float ArrowScalar, ArrowFixedScalar, ShaftTipRatio, ArrowThickness;
+        int VelocityGlyph;
+
+        int ArrowSize;
+        float ArrowScalar;
+        float ArrowFixedScalar;
+        float Timestep;
+        int ArrowResolution;
+        float ShaftTipRatio;
+        float ArrowThickness;
 
         /// Properties of the stretching glyph
-        int StretchingShowStrips, StretchingShowReference, StretchingDiscResolution;
-        float StretchingHoleRadius, StretchingStripSize, StretchingReferenceSize,
-            StretchingSizeScalar, StretchingExponent, StretchingZOffset, StretchingDiscBending;
+        int StretchingGlyph;
+
+        float StretchingExponent;
+        float StretchingSizeScalar;
+        float StretchingHoleRadius;
+        float StretchingOffset;
+        int StretchingDiscResolution;
+        float StretchingDiscBending;
+
+        int StretchingShowStrips;
+        float StretchingStripSize;
+
+        int StretchingShowReference;
+        float StretchingReferenceSize;
+        float StretchingZOffset;
 
         /// Properties of the bending glyph
-        int BendingShowStrips, BendingDiscResolution, PolynomialResolution;
-        float BendingStripSize, BendingSizeScalar, BendingScalar, BendingZOffset;
+        int BendingGlyph;
+
+        float BendingScalar;
+        float BendingSizeScalar;
+        float BendingOffset;
+        int BendingDiscResolution;
+        int PolynomialResolution;
+
+        int BendingShowStrips;
+        float BendingStripSize;
+        float BendingZOffset;
 };
