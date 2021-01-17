@@ -63,27 +63,27 @@ namespace tpf
 
         template <typename float_t, typename point_t>
         inline void flow_field<float_t, point_t>::set_algorithm_parameters(const flow_field_aux::method_t method, const std::size_t num_advections,
-            const float_t timestep, const Eigen::Matrix<float_t, 3, 3>& domain_rotation, const std::size_t seed_offset, const std::size_t seed_size)
+            const float_t timestep, const Eigen::Matrix<float_t, 3, 3>& domain_rotation)
         {
             this->method = method;
             this->num_advections = num_advections;
             this->timestep = timestep;
             this->domain_rotation = domain_rotation;
-            this->seed_offset = seed_offset;
-            this->seed_size = seed_size;
         }
 
         template <typename float_t, typename point_t>
         inline void flow_field<float_t, point_t>::run_algorithm()
         {
             // Get seed
-            std::vector<tpf::geometry::point<float_t>> seed_points;
-            seed_points.reserve(this->seed_size);
+            const auto& seed_geometry = this->seed->get_geometry();
 
-            for (std::size_t seed_index = this->seed_offset; seed_index < this->seed_offset + this->seed_size; ++seed_index)
-            {
-                seed_points.push_back(static_cast<const tpf::geometry::point<float_t>&>(*this->seed->get_geometry()[seed_index]));
-            }
+            std::vector<tpf::geometry::point<float_t>> seed_points;
+            seed_points.reserve(seed_geometry.size());
+
+            std::transform(seed_geometry.cbegin(), seed_geometry.cend(), std::back_inserter(seed_points), [](std::shared_ptr<geometry::geometric_object<float_t>> point)
+                {
+                    return static_cast<const tpf::geometry::point<float_t>&>(*point);
+                });
 
             flow_field_aux::particle_seed<float_t> particles;
             particles.insert(seed_points.begin(), seed_points.end());
@@ -382,7 +382,7 @@ namespace tpf
                     {
                         lines->insert(std::make_shared<tpf::geometry::line<float_t>>(trace[i], trace[i + 1]));
 
-                        id_advection(index) = static_cast<std::size_t>(i * advection_step);
+                        id_advection(index) = i;
                         id_distribution(index) = static_cast<std::size_t>(i * distribution_step);
 
                         ++index;
@@ -394,7 +394,7 @@ namespace tpf
                     {
                         lines->insert(std::make_shared<tpf::geometry::line<float_t>>(trace[i], trace[i - 1]));
 
-                        id_advection(index) = static_cast<std::size_t>(i * advection_step);
+                        id_advection(index) = i;
                         id_distribution(index) = static_cast<std::size_t>(i * distribution_step);
 
                         ++index;

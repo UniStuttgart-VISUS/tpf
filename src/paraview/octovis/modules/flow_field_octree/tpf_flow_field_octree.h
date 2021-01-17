@@ -25,18 +25,6 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
 
         vtkGetMacro(FrequencyOmega, double);
         vtkSetMacro(FrequencyOmega, double);
-
-        vtkGetMacro(SeedMethod, int);
-        vtkSetMacro(SeedMethod, int);
-
-        vtkGetMacro(SeedOffset, int);
-        vtkSetMacro(SeedOffset, int);
-
-        vtkGetMacro(SeedSize, int);
-        vtkSetMacro(SeedSize, int);
-
-        vtkGetMacro(Isovalue, double);
-        vtkSetMacro(Isovalue, double);
  
     protected:
         tpf_flow_field_octree();
@@ -60,6 +48,4 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         double StreamTimeStep;
         int ForceFixedFrequency;
         double FrequencyOmega;
-        int SeedMethod, SeedOffset, SeedSize;
-        double Isovalue;
 };

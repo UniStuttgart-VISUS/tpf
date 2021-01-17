@@ -61,13 +61,13 @@ namespace tpf
             interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>,
             interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&, const data::polydata<float_t>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&, std::size_t, std::size_t>>
+            interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&>>
         {
         public:
             using callbacks_t = interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>;
             using input_t = interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&, const data::polydata<float_t>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&, std::size_t, std::size_t>;
+            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
 
@@ -115,10 +115,8 @@ namespace tpf
             /// <param name="num_advections">Number of advections</param>
             /// <param name="timestep">Time step</param>
             /// <param name="rotation">Rotation of the domain</param>
-            /// <param name="seed_offset">Offset for first seed point</param>
-            /// <param name="seed_size">Number of seed points</param>
             virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections, float_t timestep,
-                const Eigen::Matrix<float_t, 3, 3>& rotation, std::size_t seed_offset, std::size_t seed_size) override;
+                const Eigen::Matrix<float_t, 3, 3>& rotation) override;
 
             /// <summary>
             /// Run module
@@ -172,9 +170,6 @@ namespace tpf
 
             /// Domain rotation
             Eigen::Matrix<float_t, 3, 3> domain_rotation;
-
-            /// Offset and size of input seed
-            std::size_t seed_offset, seed_size;
 
             /// Callback for requesting next time frame
             flow_field_aux::request_frame_call_back<float_t, point_t>* next_time_frame_callback;

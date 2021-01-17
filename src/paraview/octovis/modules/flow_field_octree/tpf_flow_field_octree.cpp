@@ -115,14 +115,14 @@ namespace
                     in_y_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(2).c_str()));
                     in_z_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(3).c_str()));
 
-                    x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
-                    x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
-                    y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-                    y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
-                    z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
-                    z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
+                    x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(4).c_str()))->GetValue(0);
+                    x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
+                    y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
+                    y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+                    z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+                    z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
 
-                    time = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+                    time = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
 
                     if (this->fixed_frequency)
                     {
@@ -130,10 +130,10 @@ namespace
                     }
                     else
                     {
-                        rotational_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
+                        rotational_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
                     }
 
-                    domain_rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(13).c_str()))->GetValue(0);
+                    domain_rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
                 }
 
 #ifdef __tpf_use_mpi
@@ -262,7 +262,7 @@ namespace
                 if (tpf::mpi::get_instance().get_rank() == 0)
                 {
                     auto in_next_grid = vtkUnstructuredGrid::SafeDownCast(this->velocity_alg->GetOutputDataObject(0));
-                    next_time = FLOAT_TYPE_ARRAY::SafeDownCast(in_next_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+                    next_time = FLOAT_TYPE_ARRAY::SafeDownCast(in_next_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
                 }
 
 #ifdef __tpf_use_mpi
@@ -339,162 +339,11 @@ namespace
     };
 }
 
-/// Create seed points at all the leaves
-template <typename float_t>
-tpf::data::polydata<float_t> seed_at_leaves(const tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>>& octree)
-{
-    const auto nodes = octree.get_leaf_nodes();
-
-    tpf::data::polydata<float_t> seed;
-
-    for (const auto& node : nodes)
-    {
-        seed.insert(std::make_shared<tpf::geometry::point<float_t>>(node->get_value().first->get_center_point()));
-    }
-
-    return seed;
-}
-
-/// Create seed points around the isosurface, defined by the isovalue parameter
-template <typename float_t>
-tpf::data::polydata<float_t> seed_at_isosurface(vtkUnstructuredGrid* in_grid,
-    std::function<std::string(int)> get_array_name, const float_t isovalue)
-{
-    // Get input data
-    vtkIdType num_points;
-
-    ID_TYPE_ARRAY* in_paths;
-    FLOAT_TYPE_ARRAY* in_density;
-
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-
-    if (tpf::mpi::get_instance().get_rank() == 0)
-    {
-        num_points = in_grid->GetPoints()->GetNumberOfPoints();
-
-        in_paths = ID_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(0).c_str()));
-        in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetPointData()->GetArray(get_array_name(4).c_str()));
-
-        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
-        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
-        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
-        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
-        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
-    }
-
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().check_mpi_status())
-    {
-        tpf::mpi::get_instance().broadcast(num_points, 0);
-
-        if (tpf::mpi::get_instance().get_rank() != 0)
-        {
-            in_paths = ID_TYPE_ARRAY::New();
-            in_paths->SetNumberOfComponents(1);
-            in_paths->SetNumberOfTuples(num_points);
-
-            in_density = FLOAT_TYPE_ARRAY::New();
-            in_density->SetNumberOfComponents(1);
-            in_density->SetNumberOfTuples(num_points);
-        }
-
-        MPI_Bcast(in_paths->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-
-        MPI_Bcast(in_density->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-
-        tpf::mpi::get_instance().broadcast(x_min, 0);
-        tpf::mpi::get_instance().broadcast(x_max, 0);
-        tpf::mpi::get_instance().broadcast(y_min, 0);
-        tpf::mpi::get_instance().broadcast(y_max, 0);
-        tpf::mpi::get_instance().broadcast(z_min, 0);
-        tpf::mpi::get_instance().broadcast(z_max, 0);
-    }
-#endif
-
-    // Create octree with root using the bounding box from the data
-    const tpf::geometry::point<float_t> min_point(x_min, y_min, z_min);
-    const tpf::geometry::point<float_t> max_point(x_max, y_max, z_max);
-
-    auto bounding_box = std::make_shared<tpf::geometry::cuboid<float_t>>(min_point, max_point);
-    auto root = std::make_shared<typename tpf::data::octree<float_t, float_t>::node>(std::make_pair(bounding_box, 0.0f));
-
-    tpf::data::octree<float_t, float_t> octree;
-    octree.set_root(root);
-
-    // Add nodes
-    std::vector<std::pair<std::vector<tpf::data::position_t>, float_t>> node_information;
-    node_information.reserve(num_points);
-
-    for (vtkIdType p = 0; p < num_points; ++p)
-    {
-        // Decode path
-        auto path_code = in_paths->GetValue(p);
-
-        std::vector<tpf::data::position_t> path(static_cast<std::size_t>(std::floor(std::log2(path_code) / std::log2(8))), tpf::data::position_t::INVALID);
-        std::size_t index = 0;
-
-        while (path_code != 1)
-        {
-            const auto turn = path_code % 8;
-
-            path[index++] = static_cast<tpf::data::position_t>(((turn & 1) ? 4 : 0) + ((turn & 2) ? 2 : 0) + ((turn & 4) ? 1 : 0));
-
-            path_code /= 8;
-        }
-
-        // Add node information
-        node_information.push_back(std::make_pair(path, static_cast<float_t>(in_density->GetValue(p))));
-    }
-
-    // Delete temporary objects
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().get_rank() != 0)
-    {
-        in_paths->Delete();
-        in_density->Delete();
-    }
-#endif
-
-    octree.insert_nodes(node_information.begin(), node_information.end());
-
-    // Find cells, where own and neighboring isovalues are on opposite sides of the input isovalue
-    const auto leaves = octree.get_leaf_nodes();
-
-    tpf::data::polydata<float_t> seed;
-
-    for (const auto& leaf : leaves)
-    {
-        const auto center_isovalue = leaf->get_value().second - isovalue;
-        const auto center_position = leaf->get_value().first->get_center_point();
-
-        // Check neighbors' side of the isovalue
-        const auto neighbors = octree.get_neighbors(std::static_pointer_cast<typename tpf::data::octree<float_t, float_t>::node>(leaf));
-
-        bool has_positive, has_negative;
-        has_positive = has_negative = false;
-
-        for (const auto& neighbor : neighbors)
-        {
-            has_positive |= (neighbor->get_value().second - isovalue) > 0.0;
-            has_negative |= (neighbor->get_value().second - isovalue) < 0.0;
-        }
-
-        // If isovalue crosses the threshold, add the position to the seed
-        if ((has_positive == has_negative) || (has_positive && center_isovalue < 0.0) || (has_negative && center_isovalue > 0.0))
-        {
-            seed.insert(std::make_shared<tpf::geometry::point<float_t>>(center_position));
-        }
-    }
-
-    return seed;
-}
-
 vtkStandardNewMacro(tpf_flow_field_octree);
 
 tpf_flow_field_octree::tpf_flow_field_octree()
 {
-    this->SetNumberOfInputPorts(1);
+    this->SetNumberOfInputPorts(2);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -509,7 +358,12 @@ int tpf_flow_field_octree::FillInputPortInformation(int port, vtkInformation* in
 
     if (port == 0)
     {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid");
+        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkPointSet");
+        return 1;
+    }
+    if (port == 1)
+    {
+        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkPointSet");
         return 1;
     }
 
@@ -526,7 +380,8 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
     try
     {
         // Get input data and information
-        auto in_octree = vtkUnstructuredGrid::GetData(input_vector[0]);
+        auto in_octree = vtkPointSet::GetData(input_vector[0]);
+        auto in_seed = vtkPolyData::GetData(input_vector[1]);
 
         const auto get_array_name = [this, &in_octree](const int index) -> std::string
         {
@@ -555,42 +410,8 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
 
         const auto initial_rotation = std::get<1>(initial_data);
 
-        // Create initial seed
-        tpf::data::polydata<float_t> seed;
-
-        switch (this->SeedMethod)
-        {
-        case 0:
-            seed = seed_at_leaves(*initial_octree);
-            break;
-        case 1:
-            seed = seed_at_isosurface(in_octree, get_array_name, static_cast<float_t>(this->Isovalue));
-            break;
-        }
-
-        // Set seed offset and size depending on MPI rank
-        std::size_t seed_offset = 0;
-        std::size_t seed_size = seed.get_num_objects();
-
-        if (this->SeedOffset >= 0 && this->SeedSize >= 0)
-        {
-            seed_offset = static_cast<std::size_t>(this->SeedOffset);
-            seed_size = static_cast<std::size_t>(this->SeedSize);
-        }
-
-#ifdef __tpf_use_mpi
-        if (tpf::mpi::get_instance().check_mpi_status())
-        {
-            const auto num_processes = tpf::mpi::get_instance().get_num_processes();
-            const auto rank = tpf::mpi::get_instance().get_rank();
-
-            seed_offset = rank * (seed_size / num_processes);
-            seed_size = std::min((rank + 1) * (seed_size / num_processes), seed_size) - seed_offset;
-        }
-#endif
-
-        tpf::log::info_message(__tpf_info_message("Seed size: ", seed.get_num_objects()), true);
-        tpf::log::info_message(__tpf_info_message("Seed range: [", seed_offset, ", ", (seed_offset + seed_size), ")"));
+        // Get initial seed
+        tpf::data::polydata<float_t> seed = tpf::vtk::get_polydata<float_t>(in_seed);
 
         // Create and run module for computing integration lines
         using flow_t = tpf::modules::flow_field<float_t, tpf::geometry::point<float_t>>;
@@ -602,7 +423,7 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         flow_field.set_output(lines);
 
         flow_field.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method), static_cast<std::size_t>(this->NumAdvections),
-            timestep_delta, initial_rotation, seed_offset, seed_size);
+            timestep_delta, initial_rotation);
 
         flow_field.set_callbacks(&call_back_loader);
 
