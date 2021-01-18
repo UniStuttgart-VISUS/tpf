@@ -17,25 +17,25 @@ namespace tpf
             /// </summary>
             /// <template name="floatp_t">Floating point type</template>
             template <typename floatp_t>
-            class simple_trace : public particle_seed<floatp_t>
+            class stream_trace : public particle_seed<floatp_t>
             {
             public:
                 /// <summary>
                 /// Disallow use of copy constructor
                 /// </summary>
-                simple_trace(const simple_trace&) = delete;
+                stream_trace(const stream_trace&) = delete;
 
                 /// <summary>
                 /// Move constructor
                 /// </summary>
                 /// <param name="move">Source object</param>
-                simple_trace(simple_trace&& move);
+                stream_trace(stream_trace&& move);
 
                 /// <summary>
                 /// Move constructor
                 /// </summary>
                 /// <param name="move">Source particle seed object to create this from</param>
-                simple_trace(particle_seed<floatp_t>&& move);
+                stream_trace(particle_seed<floatp_t>&& move);
 
                 /// <summary>
                 /// Return last particle for a given trace
@@ -50,20 +50,6 @@ namespace tpf
                 /// <param name="index">Index of the seed/trace</param>
                 /// <returns>Last particle point</returns>
                 tpf::geometry::point<floatp_t>& get_last_particle(std::size_t index);
-
-                /// <summary>
-                /// Return particles for a given trace
-                /// </summary>
-                /// <param name="index">Index of the seed/trace</param>
-                /// <returns>Particle points</returns>
-                const std::vector<tpf::geometry::point<floatp_t>>& get_particles(std::size_t index) const;
-
-                /// <summary>
-                /// Return particles for a given trace
-                /// </summary>
-                /// <param name="index">Index of the seed/trace</param>
-                /// <returns>Particle points</returns>
-                std::vector<tpf::geometry::point<floatp_t>>& get_particles(std::size_t index);
 
                 /// <summary>
                 /// Add particle to a given trace
@@ -100,4 +86,4 @@ namespace tpf
     }
 }
 
-#include "tpf_trace.inl"
+#include "tpf_stream_trace.inl"

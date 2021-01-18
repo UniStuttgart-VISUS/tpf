@@ -32,7 +32,6 @@
                 <InputArrayDomain attribute_type="field" name="zmax_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="field" name="omega_array" number_of_components="1" optional="1"/>
-                <InputArrayDomain attribute_type="field" name="theta_array" number_of_components="1"/>
                 <Documentation>
                     Points with ID, velocities, and meta information about the grid and its rotation
                 </Documentation>
@@ -173,16 +172,6 @@
                     Grid rotation given by the angle omega
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Velocity Rotation" label="Velocity rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="theta_array">
-                    <RequiredProperties>
-                        <Property name="Octree" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Documentation>
-                    Velocity vector rotation given by the angle theta
-                </Documentation>
-            </StringVectorProperty>
 
             <IntVectorProperty name="Method" command="SetMethod" label="Method" number_of_elements="1" default_values="0">
                 <EnumerationDomain name="enum">
@@ -249,7 +238,6 @@
                 <Property name="Maximum Z" />
                 <Property name="Time" />
                 <Property name="Grid Rotation" />
-                <Property name="Velocity Rotation" />
             </PropertyGroup>
 
             <PropertyGroup label="Computation">

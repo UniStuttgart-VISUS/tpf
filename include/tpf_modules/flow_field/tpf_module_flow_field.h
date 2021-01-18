@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tpf_particle_seed.h"
-#include "tpf_trace.h"
+#include "tpf_stream_trace.h"
 
 #include "tpf/data/tpf_polydata.h"
 
@@ -32,8 +32,13 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, domain rotation, velocities]</returns>
-                virtual std::tuple<float_t, Eigen::Matrix<float_t, 3, 3>, policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*> operator()() = 0;
+                /// <returns>[Time step delta, velocity, global velocity part, translation, rotation, validity]</returns>
+                virtual std::tuple<float_t,
+                    policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
+                    policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
+                    std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                    std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                    std::function<bool(const point_t&)>> operator()() = 0;
 
                 /// <summary>
                 /// Reset input algorithms to their beginning state
@@ -59,15 +64,23 @@ namespace tpf
         template <typename float_t, typename point_t>
         class flow_field : public module_base<
             interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>,
-            interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&, const data::polydata<float_t>&>,
+            interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&,
+                const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                std::function<bool(const point_t&)>, const data::polydata<float_t>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&>>
+            interface_parameters<flow_field_aux::method_t, std::size_t, float_t>>
         {
         public:
             using callbacks_t = interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>;
-            using input_t = interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&, const data::polydata<float_t>&>;
+            using input_t = interface_input<const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&,
+                const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>&,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                std::function<bool(const point_t&)>, const data::polydata<float_t>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t, float_t, const Eigen::Matrix<float_t, 3, 3>&>;
+            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t, float_t>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
 
@@ -99,8 +112,16 @@ namespace tpf
             /// Set input
             /// </summary>
             /// <param name="velocities">Input velocities</param>
+            /// <param name="global_velocity_parts">Input global velocity parts</param
+            /// <param name="get_translation">Function to get translation at particle position</param>
+            /// <param name="get_rotation_axis">Function to get rotation at particle position</param>
+            /// <param name="is_particle_valid">Function to check the validity of particles</param>
             /// <param name="seed">Input seed</param>
-            virtual void set_algorithm_input(const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>& velocities, const data::polydata<float_t>& seed) override;
+            virtual void set_algorithm_input(const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>& velocities,
+                const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>& global_velocity_parts,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_rotation_axis,
+                std::function<bool(const point_t&)> is_particle_valid, const data::polydata<float_t>& seed) override;
 
             /// <summary>
             /// Set output
@@ -114,9 +135,7 @@ namespace tpf
             /// <param name="method">method_t to use: 0 - streamlines, 1 - streaklines, 2 - pathlines</param>
             /// <param name="num_advections">Number of advections</param>
             /// <param name="timestep">Time step</param>
-            /// <param name="rotation">Rotation of the domain</param>
-            virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections, float_t timestep,
-                const Eigen::Matrix<float_t, 3, 3>& rotation) override;
+            virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections, float_t timestep) override;
 
             /// <summary>
             /// Run module
@@ -148,10 +167,16 @@ namespace tpf
             /// <param name="particles">Particle traces</param>
             /// <param name="num_advections">Number of the current advection step</param>
             /// <param name="inverse">Invert direction of lines</param>
-            void create_lines(const flow_field_aux::simple_trace<float_t>& particles, std::size_t num_advections, bool inverse = false);
+            void create_lines(const flow_field_aux::stream_trace<float_t>& particles, std::size_t num_advections, bool inverse = false);
 
             /// Velocities
             const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>* velocities;
+            const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>* global_velocity_parts;
+
+            /// Callback functions
+            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation;
+            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_rotation_axis;
+            std::function<bool(const point_t&)> is_particle_valid;
 
             /// Seed
             const data::polydata<float_t>* seed;
@@ -167,9 +192,6 @@ namespace tpf
 
             /// Time step
             float_t timestep;
-
-            /// Domain rotation
-            Eigen::Matrix<float_t, 3, 3> domain_rotation;
 
             /// Callback for requesting next time frame
             flow_field_aux::request_frame_call_back<float_t, point_t>* next_time_frame_callback;

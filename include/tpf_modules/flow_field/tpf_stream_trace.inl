@@ -1,4 +1,4 @@
-#include "tpf_trace.h"
+#include "tpf_stream_trace.h"
 
 #include "tpf_particle_seed.h"
 
@@ -15,13 +15,13 @@ namespace tpf
         namespace flow_field_aux
         {
             template <typename floatp_t>
-            inline simple_trace<floatp_t>::simple_trace(simple_trace&& move) : particle_seed<floatp_t>(std::move(move))
+            inline stream_trace<floatp_t>::stream_trace(stream_trace&& move) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles = std::move(move.particles);
             }
 
             template <typename floatp_t>
-            inline simple_trace<floatp_t>::simple_trace(particle_seed<floatp_t>&& move) : particle_seed<floatp_t>(std::move(move))
+            inline stream_trace<floatp_t>::stream_trace(particle_seed<floatp_t>&& move) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles.resize(particle_seed<floatp_t>::seed.size());
 
@@ -32,37 +32,25 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline const tpf::geometry::point<floatp_t>& simple_trace<floatp_t>::get_last_particle(const std::size_t index) const
+            inline const tpf::geometry::point<floatp_t>& stream_trace<floatp_t>::get_last_particle(const std::size_t index) const
             {
                 return this->particles[index].back();
             }
             
             template <typename floatp_t>
-            inline tpf::geometry::point<floatp_t>& simple_trace<floatp_t>::get_last_particle(const std::size_t index)
+            inline tpf::geometry::point<floatp_t>& stream_trace<floatp_t>::get_last_particle(const std::size_t index)
             {
                 return this->particles[index].back();
             }
 
             template <typename floatp_t>
-            inline const std::vector<tpf::geometry::point<floatp_t>>& simple_trace<floatp_t>::get_particles(std::size_t index) const
-            {
-                return this->particles[index];
-            }
-
-            template <typename floatp_t>
-            inline std::vector<tpf::geometry::point<floatp_t>>& simple_trace<floatp_t>::get_particles(std::size_t index)
-            {
-                return this->particles[index];
-            }
-
-            template <typename floatp_t>
-            inline void simple_trace<floatp_t>::add_particle(const std::size_t index, const tpf::geometry::point<floatp_t>& particle)
+            inline void stream_trace<floatp_t>::add_particle(const std::size_t index, const tpf::geometry::point<floatp_t>& particle)
             {
                 this->particles[index].push_back(particle);
             }
 
             template <typename floatp_t>
-            inline std::size_t simple_trace<floatp_t>::get_num_lines() const
+            inline std::size_t stream_trace<floatp_t>::get_num_lines() const
             {
                 std::size_t num_lines = 0;
 
@@ -75,13 +63,13 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline const std::vector<std::vector<tpf::geometry::point<floatp_t>>>& simple_trace<floatp_t>::get_trace() const
+            inline const std::vector<std::vector<tpf::geometry::point<floatp_t>>>& stream_trace<floatp_t>::get_trace() const
             {
                 return this->particles;
             }
 
             template <typename floatp_t>
-            inline std::size_t simple_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles, const std::size_t num_advections)
+            inline std::size_t stream_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles, const std::size_t num_advections)
             {
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;

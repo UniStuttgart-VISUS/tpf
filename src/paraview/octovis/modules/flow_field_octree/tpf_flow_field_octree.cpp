@@ -1,5 +1,7 @@
 #include "tpf_flow_field_octree.h"
 
+#include "tpf_modules/flow_field/tpf_module_flow_field.h"
+
 #include "tpf/data/tpf_octree.h"
 #include "tpf/data/tpf_position.h"
 
@@ -8,9 +10,9 @@
 
 #include "tpf/log/tpf_log.h"
 
-#include "tpf_modules/flow_field/tpf_module_flow_field.h"
-
 #include "tpf/mpi/tpf_mpi.h"
+
+#include "tpf/policies/tpf_interpolatable.h"
 
 #include "tpf/vtk/tpf_data.h"
 #include "tpf/vtk/tpf_polydata.h"
@@ -85,9 +87,14 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, domain rotation, velocities]</returns>
-        virtual std::tuple<float_t, Eigen::Matrix<float_t, 3, 3>,
-            tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*> operator()() override
+        /// <returns>[Time step delta, velocities, global velocity parts, translation, rotation, validity]</returns>
+        virtual std::tuple<
+            float_t,
+            tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
+            tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
+            std::function<bool(const tpf::geometry::point<float_t>&)>> operator()() override
         {
             // Get data
             if (this->timesteps.size() > this->time_offset || this->original_time == this->time_offset)
@@ -100,8 +107,7 @@ namespace
 
                 double x_min, x_max, y_min, y_max, z_min, z_max;
                 double time;
-                double rotational_frequency;
-                double domain_rotation;
+                double rotation;
 
                 if (tpf::mpi::get_instance().get_rank() == 0)
                 {
@@ -126,14 +132,12 @@ namespace
 
                     if (this->fixed_frequency)
                     {
-                        rotational_frequency = *this->fixed_frequency;
+                        rotation = *this->fixed_frequency;
                     }
                     else
                     {
-                        rotational_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+                        rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
                     }
-
-                    domain_rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_grid->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
                 }
 
 #ifdef __tpf_use_mpi
@@ -180,8 +184,7 @@ namespace
 
                     tpf::mpi::get_instance().broadcast(time, 0);
 
-                    tpf::mpi::get_instance().broadcast(rotational_frequency, 0);
-                    tpf::mpi::get_instance().broadcast(domain_rotation, 0);
+                    tpf::mpi::get_instance().broadcast(rotation, 0);
                 }
 #endif
 
@@ -200,12 +203,15 @@ namespace
 
                 auto bounding_box = std::make_shared<tpf::geometry::cuboid<float_t>>(min_point, max_point);
                 auto root = std::make_shared<typename tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>>::node>(std::make_pair(bounding_box, Eigen::Matrix<float_t, 3, 1>()));
+                auto root_global = std::make_shared<typename tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>>::node>(std::make_pair(bounding_box, Eigen::Matrix<float_t, 3, 1>()));
 
                 this->octree.set_root(root);
+                this->octree_global.set_root(root_global);
 
                 // Add nodes
-                std::vector<std::pair<std::vector<tpf::data::position_t>, Eigen::Matrix<float_t, 3, 1>>> node_information;
+                std::vector<std::pair<std::vector<tpf::data::position_t>, Eigen::Matrix<float_t, 3, 1>>> node_information, node_information_global;
                 node_information.reserve(num_points);
+                node_information_global.reserve(num_points);
 
                 for (vtkIdType p = 0; p < num_points; ++p)
                 {
@@ -226,9 +232,14 @@ namespace
 
                     // Add node information
                     node_information.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
-                        static_cast<float_t>(in_x_velocities->GetValue(p) - points->GetPoint(p)[1] * rotational_frequency),
-                        static_cast<float_t>(in_y_velocities->GetValue(p) + points->GetPoint(p)[0] * rotational_frequency),
+                        static_cast<float_t>(in_x_velocities->GetValue(p)),
+                        static_cast<float_t>(in_y_velocities->GetValue(p)),
                         static_cast<float_t>(in_z_velocities->GetValue(p)))));
+
+                    node_information_global.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
+                        static_cast<float_t>(points->GetPoint(p)[1] * rotation),
+                        static_cast<float_t>(-points->GetPoint(p)[0] * rotation),
+                        static_cast<float_t>(0.0))));
                 }
 
                 // Delete temporary objects
@@ -244,6 +255,7 @@ namespace
 #endif
 
                 this->octree.insert_nodes(node_information.begin(), node_information.end());
+                this->octree_global.insert_nodes(node_information_global.begin(), node_information_global.end());
 
                 // Check if next time step is available
                 ++this->time_offset;
@@ -283,14 +295,15 @@ namespace
                     timestep_delta = next_time - time;
                 }
 
-                // Calculate rotation matrix for rotation around the z-axis
-                Eigen::Matrix<float_t, 3, 3> rotation_matrix;
-                rotation_matrix << std::cos(domain_rotation), std::sin(domain_rotation), 0.0,
-                                  -std::sin(domain_rotation), std::cos(domain_rotation), 0.0,
-                                   0.0,                       0.0,                       0.0;
+                // Rotation around the z-axis
+                this->rotation_axis = Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0) * rotation;
 
-                return std::make_tuple(timestep_delta, rotation_matrix,
-                    static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree));
+                return std::make_tuple(timestep_delta,
+                    static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
+                    static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree_global),
+                    [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); },
+                    [this](const tpf::geometry::point<float_t>& position) { return this->rotation_axis; },
+                    [](const tpf::geometry::point<float_t>& position) { return true; });
             }
 
             throw std::exception();
@@ -335,7 +348,10 @@ namespace
         std::optional<float_t> fixed_frequency;
 
         /// Data of current timestep
-        tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree;
+        tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree, octree_global;
+
+        /// Rotation
+        Eigen::Matrix<float_t, 3, 1> rotation_axis;
     };
 }
 
@@ -403,12 +419,14 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
             this->ForceFixedFrequency ? std::make_optional(static_cast<float_t>(this->FrequencyOmega)) : std::nullopt);
 
         auto initial_data = call_back_loader();
-        auto initial_octree = static_cast<tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>>*>(std::get<2>(initial_data));
+        auto initial_octree = std::get<1>(initial_data);
+        auto initial_octree_global = std::get<2>(initial_data);
+        auto initial_get_translation = std::get<3>(initial_data);
+        auto initial_get_rotation_axis = std::get<4>(initial_data);
+        auto initial_is_particle_valid = std::get<5>(initial_data);
 
         const auto timestep_delta = (this->ForceFixedTimeStep || std::get<0>(initial_data) == static_cast<float_t>(0.0))
             ? static_cast<float_t>(this->StreamTimeStep) : std::get<0>(initial_data);
-
-        const auto initial_rotation = std::get<1>(initial_data);
 
         // Get initial seed
         tpf::data::polydata<float_t> seed = tpf::vtk::get_polydata<float_t>(in_seed);
@@ -419,11 +437,12 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         flow_t flow_field;
         tpf::data::polydata<float_t> lines;
 
-        flow_field.set_input(static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>&>(*initial_octree), seed);
+        flow_field.set_input(*initial_octree, *initial_octree_global, initial_get_translation,
+            initial_get_rotation_axis, initial_is_particle_valid, seed);
         flow_field.set_output(lines);
 
-        flow_field.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method), static_cast<std::size_t>(this->NumAdvections),
-            timestep_delta, initial_rotation);
+        flow_field.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
+            static_cast<std::size_t>(this->NumAdvections), timestep_delta);
 
         flow_field.set_callbacks(&call_back_loader);
 
