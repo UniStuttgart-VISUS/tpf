@@ -237,8 +237,8 @@ namespace
                         static_cast<float_t>(in_z_velocities->GetValue(p)))));
 
                     node_information_global.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
-                        static_cast<float_t>(points->GetPoint(p)[1] * rotation),
-                        static_cast<float_t>(-points->GetPoint(p)[0] * rotation),
+                        static_cast<float_t>(-points->GetPoint(p)[1] * rotation),
+                        static_cast<float_t>(points->GetPoint(p)[0] * rotation),
                         static_cast<float_t>(0.0))));
                 }
 
@@ -294,6 +294,8 @@ namespace
                 {
                     timestep_delta = next_time - time;
                 }
+
+                tpf::log::info_message(__tpf_info_message("Initial time step size: ", timestep_delta));
 
                 // Rotation around the z-axis
                 this->rotation_axis = Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0) * rotation;
