@@ -223,23 +223,29 @@ namespace tpf
                 neighbor_paths[neighbor_index].insert(neighbor_paths[neighbor_index].end(), node_path.begin(), node_path.end());
 
                 // Find deepest possible turn
-                for (auto it = neighbor_paths[neighbor_index].rbegin(); it != neighbor_paths[neighbor_index].rend(); ++it)
-                {
-                    const auto possible_position = *it + directions[neighbor_index];
+                std::vector<neighbor_t> problem_cases(neighbor_paths[neighbor_index].size() + 1, directions[neighbor_index]);
+                std::size_t index = 0;
 
-                    if (possible_position != position_t::INVALID)
+                for (auto it = neighbor_paths[neighbor_index].rbegin(); it != neighbor_paths[neighbor_index].rend(); ++it, ++index)
+                {
+                    const auto possible_position = *it + problem_cases[index];
+                    problem_cases[index + 1] = possible_position.second;
+
+                    if (possible_position.first != position_t::INVALID)
                     {
-                        *it = possible_position;
+                        *it = possible_position.first;
 
                         // Adjust all deeper positions
                         if (it != neighbor_paths[neighbor_index].rbegin())
                         {
-                            for (--it; it != neighbor_paths[neighbor_index].rbegin(); --it)
+                            for (--it; it != neighbor_paths[neighbor_index].rbegin(); --it, --index)
                             {
-                                *it = *it - directions[neighbor_index];
+                                *it = ((*it + invert(problem_cases[index])).first +
+                                    static_cast<neighbor_t>(static_cast<int>(problem_cases[index - 1]) - static_cast<int>(problem_cases[index]))).first;
                             }
 
-                            *it = *it - directions[neighbor_index];
+                            *it = ((*it + invert(problem_cases[index])).first +
+                                static_cast<neighbor_t>(static_cast<int>(problem_cases[index - 1]) - static_cast<int>(problem_cases[index]))).first;
                         }
 
                         break;
@@ -308,23 +314,33 @@ namespace tpf
                         neighbor_paths[neighbor_index].insert(neighbor_paths[neighbor_index].end(), used_point_node.second.begin(), used_point_node.second.end());
 
                         // Find deepest possible turn
-                        for (auto it = neighbor_paths[neighbor_index].rbegin(); it != neighbor_paths[neighbor_index].rend(); ++it)
-                        {
-                            const auto possible_position = *it + directions[neighbor_index];
+                        std::vector<neighbor_t> problem_cases(neighbor_paths[neighbor_index].size() + 1, directions[neighbor_index]);
+                        std::size_t index = 0;
 
-                            if (possible_position != position_t::INVALID)
+                        for (auto it = neighbor_paths[neighbor_index].rbegin(); it != neighbor_paths[neighbor_index].rend(); ++it, ++index)
+                        {
+                            const auto possible_position = *it + problem_cases[index];
+                            problem_cases[index + 1] = possible_position.second;
+
+                            if (possible_position.first != position_t::INVALID)
                             {
-                                *it = possible_position;
+                                *it = possible_position.first;
 
                                 // Adjust all deeper positions
                                 if (it != neighbor_paths[neighbor_index].rbegin())
                                 {
-                                    for (--it; it != neighbor_paths[neighbor_index].rbegin(); --it)
+                                    for (--it; it != neighbor_paths[neighbor_index].rbegin(); --it, --index)
                                     {
-                                        *it = *it - directions[neighbor_index];
+                                        *it = ((*it + invert(problem_cases[index])).first +
+                                            static_cast<neighbor_t>(static_cast<int>(problem_cases[index - 1]) - static_cast<int>(problem_cases[index]))).first;
+
+                                        success &= *it != position_t::INVALID;
                                     }
 
-                                    *it = *it - directions[neighbor_index];
+                                    *it = ((*it + invert(problem_cases[index])).first +
+                                        static_cast<neighbor_t>(static_cast<int>(problem_cases[index - 1]) - static_cast<int>(problem_cases[index]))).first;
+
+                                    success &= *it != position_t::INVALID;
                                 }
 
                                 break;
