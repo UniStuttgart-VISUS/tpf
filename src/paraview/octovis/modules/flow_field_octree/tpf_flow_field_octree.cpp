@@ -236,9 +236,12 @@ namespace
                         static_cast<float_t>(in_y_velocities->GetValue(p)),
                         static_cast<float_t>(in_z_velocities->GetValue(p)))));
 
+                    std::array<double, 3> point;
+                    points->GetPoint(p, point.data());
+
                     node_information_global.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
-                        static_cast<float_t>(-points->GetPoint(p)[1] * rotation),
-                        static_cast<float_t>(points->GetPoint(p)[0] * rotation),
+                        static_cast<float_t>(-point[1] * rotation),
+                        static_cast<float_t>(point[0] * rotation),
                         static_cast<float_t>(0.0))));
                 }
 
@@ -293,6 +296,11 @@ namespace
                 else
                 {
                     timestep_delta = next_time - time;
+                }
+
+                if (timestep_delta == 0.0)
+                {
+                    timestep_delta = static_cast<float_t>(1.0);
                 }
 
                 tpf::log::info_message(__tpf_info_message("Initial time step size: ", timestep_delta));
