@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 namespace tpf
 {
     namespace data
@@ -46,28 +48,30 @@ namespace tpf
             BACK = 32,
 
             // Diagonal steps on a 2D plane
-            BOTTOM_LEFT = 5,
-            BOTTOM_RIGHT = 6,
-            TOP_LEFT = 9,
-            TOP_RIGHT = 10,
-            FRONT_LEFT = 17,
-            FRONT_RIGHT = 18,
-            FRONT_BOTTOM = 20,
-            FRONT_TOP = 24,
-            BACK_LEFT = 33,
-            BACK_RIGHT = 34,
-            BACK_BOTTOM = 36,
-            BACK_TOP = 40,
+            BOTTOM_LEFT = BOTTOM + LEFT,
+            BOTTOM_RIGHT = BOTTOM + RIGHT,
+            TOP_LEFT = TOP + LEFT,
+            TOP_RIGHT = TOP + RIGHT,
+
+            FRONT_LEFT = FRONT + LEFT,
+            FRONT_RIGHT = FRONT + RIGHT,
+            BACK_LEFT = BACK + LEFT,
+            BACK_RIGHT = BACK + RIGHT,
+
+            FRONT_BOTTOM = FRONT + BOTTOM,
+            FRONT_TOP = FRONT + TOP,
+            BACK_BOTTOM = BACK + BOTTOM,
+            BACK_TOP = BACK + TOP,
 
             // Diagonal steps in a 3D cube
-            FRONT_BOTTOM_LEFT = 21,
-            FRONT_BOTTOM_RIGHT = 22,
-            FRONT_TOP_LEFT = 25,
-            FRONT_TOP_RIGHT = 26,
-            BACK_BOTTOM_LEFT = 37,
-            BACK_BOTTOM_RIGHT = 38,
-            BACK_TOP_LEFT = 41,
-            BACK_TOP_RIGHT = 42
+            FRONT_BOTTOM_LEFT = FRONT + BOTTOM + LEFT,
+            FRONT_BOTTOM_RIGHT = FRONT + BOTTOM + RIGHT,
+            FRONT_TOP_LEFT = FRONT + TOP + LEFT,
+            FRONT_TOP_RIGHT = FRONT + TOP + RIGHT,
+            BACK_BOTTOM_LEFT = BACK + BOTTOM + LEFT,
+            BACK_BOTTOM_RIGHT = BACK + BOTTOM + RIGHT,
+            BACK_TOP_LEFT = BACK + TOP + LEFT,
+            BACK_TOP_RIGHT = BACK + TOP + RIGHT
         };
 
         /// <summary>
@@ -76,8 +80,8 @@ namespace tpf
         /// <param name="position">Position</param>
         /// <param name="direction">Direction</param>
         /// <returns>New position</returns>
-        position_t operator+(position_t position, neighbor_t direction);
-        position_t operator-(position_t position, neighbor_t direction);
+        std::pair<position_t, neighbor_t> operator+(position_t position, neighbor_t direction);
+        neighbor_t invert(neighbor_t direction);
     }
 }
 

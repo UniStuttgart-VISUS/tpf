@@ -1,11 +1,19 @@
 #include "tpf_position.h"
 
+#include <utility>
+
 namespace tpf
 {
     namespace data
     {
-        inline position_t operator+(const position_t position, const neighbor_t direction)
+        inline std::pair<position_t, neighbor_t> operator+(const position_t position, const neighbor_t direction)
         {
+            if (position == position_t::INVALID)
+            {
+                return std::make_pair(position_t::INVALID, neighbor_t::NONE);
+            }
+
+            neighbor_t problem_case = neighbor_t::NONE;
             position_t new_position = position;
 
             if (static_cast<int>(direction) & static_cast<int>(neighbor_t::LEFT))
@@ -13,7 +21,7 @@ namespace tpf
                 if (position == position_t::FRONT_BOTTOM_LEFT || position == position_t::FRONT_TOP_LEFT ||
                     position == position_t::BACK_BOTTOM_LEFT || position == position_t::BACK_TOP_LEFT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::LEFT));
                 }
                 else
                 {
@@ -25,7 +33,7 @@ namespace tpf
                 if (position == position_t::FRONT_BOTTOM_RIGHT || position == position_t::FRONT_TOP_RIGHT ||
                     position == position_t::BACK_BOTTOM_RIGHT || position == position_t::BACK_TOP_RIGHT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::RIGHT));
                 }
                 else
                 {
@@ -37,7 +45,7 @@ namespace tpf
                 if (position == position_t::FRONT_BOTTOM_LEFT || position == position_t::FRONT_BOTTOM_RIGHT ||
                     position == position_t::BACK_BOTTOM_LEFT || position == position_t::BACK_BOTTOM_RIGHT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::BOTTOM));
                 }
                 else
                 {
@@ -49,7 +57,7 @@ namespace tpf
                 if (position == position_t::FRONT_TOP_LEFT || position == position_t::FRONT_TOP_RIGHT ||
                     position == position_t::BACK_TOP_LEFT || position == position_t::BACK_TOP_RIGHT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::TOP));
                 }
                 else
                 {
@@ -61,7 +69,7 @@ namespace tpf
                 if (position == position_t::FRONT_BOTTOM_LEFT || position == position_t::FRONT_BOTTOM_RIGHT ||
                     position == position_t::FRONT_TOP_LEFT || position == position_t::FRONT_TOP_RIGHT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::FRONT));
                 }
                 else
                 {
@@ -73,7 +81,7 @@ namespace tpf
                 if (position == position_t::BACK_BOTTOM_LEFT || position == position_t::BACK_BOTTOM_RIGHT ||
                     position == position_t::BACK_TOP_LEFT || position == position_t::BACK_TOP_RIGHT)
                 {
-                    return position_t::INVALID;
+                    problem_case = static_cast<neighbor_t>(static_cast<int>(problem_case) | static_cast<int>(neighbor_t::BACK));
                 }
                 else
                 {
@@ -81,10 +89,10 @@ namespace tpf
                 }
             }
 
-            return new_position;
+            return std::make_pair(problem_case == neighbor_t::NONE ? new_position : position_t::INVALID, problem_case);
         }
 
-        inline position_t operator-(const position_t position, neighbor_t direction)
+        inline neighbor_t invert(neighbor_t direction)
         {
             // Get inverse by using xor per direction
             if (static_cast<int>(direction) & (static_cast<int>(neighbor_t::LEFT) | static_cast<int>(neighbor_t::RIGHT)))
@@ -100,8 +108,7 @@ namespace tpf
                 direction = static_cast<neighbor_t>(static_cast<int>(direction) ^ (static_cast<int>(neighbor_t::FRONT) | static_cast<int>(neighbor_t::BACK)));
             }
 
-            // Use + operator with inverse
-            return position + direction;
+            return direction;
         }
     }
 }
