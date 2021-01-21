@@ -45,13 +45,13 @@ namespace tpf
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Module run of '", get_name(), "' failed due to MPI error."));
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 tpf::mpi::get_instance().communicate_error(true);
 
-                throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Module run of '", get_name(), "' failed."));
+                throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Module run of '", get_name(), "' failed: ", ex.what()));
             }
-            catch (const std::exception&)
+            catch (...)
             {
                 tpf::mpi::get_instance().communicate_error(true);
 

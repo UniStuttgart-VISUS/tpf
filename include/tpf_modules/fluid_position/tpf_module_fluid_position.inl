@@ -96,48 +96,59 @@ namespace tpf
                 {
                     for (std::size_t x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        positions_grid(coords).setZero();
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) && fractions(coords) > static_cast<float_t>(0.0L))
+                        try
                         {
-                            if (this->position_type == fluid_position_aux::position_t::CELL_CENTER)
-                            {
-                                positions_grid(coords) = fractions.get_cell_coordinates(coords);
-                                positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
-                            }
-                            else
-                            {
-                                const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
-                                const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+                            const data::coords3_t coords(x, y, z);
 
-                                if (this->position_type == fluid_position_aux::position_t::FLUID_CENTER)
+                            positions_grid(coords).setZero();
+
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) && fractions(coords) > static_cast<float_t>(0.0L))
+                            {
+                                if (this->position_type == fluid_position_aux::position_t::CELL_CENTER)
                                 {
-                                    if (fractions(coords) < static_cast<float_t>(1.0L))
-                                    {
-                                        positions_grid(coords) = calculate_fluid_barycenter(fractions(coords), normal,
-                                            fractions.get_cell_sizes(coords), fractions.get_cell_coordinates(coords));
+                                    positions_grid(coords) = fractions.get_cell_coordinates(coords);
+                                    positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
+                                }
+                                else
+                                {
+                                    const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
+                                    const math::vec3_t<float_t> normal = -gradients(coords).normalized();
 
-                                        positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
-                                    }
-                                    else
+                                    if (this->position_type == fluid_position_aux::position_t::FLUID_CENTER)
                                     {
-                                        positions_grid(coords) = fractions.get_cell_coordinates(coords);
-                                        positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
+                                        if (fractions(coords) < static_cast<float_t>(1.0L))
+                                        {
+                                            positions_grid(coords) = calculate_fluid_barycenter(fractions(coords), normal,
+                                                fractions.get_cell_sizes(coords), fractions.get_cell_coordinates(coords));
+
+                                            positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
+                                        }
+                                        else
+                                        {
+                                            positions_grid(coords) = fractions.get_cell_coordinates(coords);
+                                            positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
+                                        }
+                                    }
+                                    else if (this->position_type == fluid_position_aux::position_t::INTERFACE)
+                                    {
+                                        if (fractions(coords) < static_cast<float_t>(1.0L))
+                                        {
+                                            positions_grid(coords) = calculate_interface_barycenter(fractions(coords), normal,
+                                                fractions.get_cell_sizes(coords), fractions.get_cell_coordinates(coords));
+
+                                            positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
+                                        }
                                     }
                                 }
-                                else if (this->position_type == fluid_position_aux::position_t::INTERFACE)
-                                {
-                                    if (fractions(coords) < static_cast<float_t>(1.0L))
-                                    {
-                                        positions_grid(coords) = calculate_interface_barycenter(fractions(coords), normal,
-                                            fractions.get_cell_sizes(coords), fractions.get_cell_coordinates(coords));
-
-                                        positions_points_thread.push_back(std::make_shared<geometry::point<float_t>>(positions_grid(coords)));
-                                    }
-                                }
                             }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute fluid position for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute fluid position for a cell."));
                         }
                     }
                 }

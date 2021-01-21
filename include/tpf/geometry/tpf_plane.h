@@ -31,7 +31,7 @@ namespace tpf
             /// </summary>
             /// <param name="point">Up point on the plane</param>
             /// <param name="normal">Plane normal</param>
-            plane(const point<floatp_t, kernel_t>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal) noexcept;
+            plane(const point<floatp_t, kernel_t>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal);
 
             /// <summary>
             /// Constructor

@@ -9,11 +9,26 @@ public:
     static tpf_plic3* New();
     vtkTypeMacro(tpf_plic3, vtkPolyDataAlgorithm);
 
-    vtkGetMacro(PlicIterations, int);
-    vtkSetMacro(PlicIterations, int);
+    vtkGetMacro(Epsilon, double);
+    vtkSetMacro(Epsilon, double);
 
-    vtkGetMacro(Plic3Iterations, int);
-    vtkSetMacro(Plic3Iterations, int);
+    vtkGetMacro(ErrorMarginPlic, double);
+    vtkSetMacro(ErrorMarginPlic, double);
+
+    vtkGetMacro(ErrorMarginPlic3, double);
+    vtkSetMacro(ErrorMarginPlic3, double);
+
+    vtkGetMacro(NumIterationsPlic, int);
+    vtkSetMacro(NumIterationsPlic, int);
+
+    vtkGetMacro(NumIterationsPlic3, int);
+    vtkSetMacro(NumIterationsPlic3, int);
+
+    vtkGetMacro(Perturbation, double);
+    vtkSetMacro(Perturbation, double);
+
+    vtkGetMacro(HideErrorCubes, int);
+    vtkSetMacro(HideErrorCubes, int);
 
 protected:
     tpf_plic3();
@@ -30,9 +45,24 @@ private:
     /// Using data types
     using float_t = float;
 
+    /// Epsilon
+    double Epsilon;
+
+    /// Error margin plic
+    double ErrorMarginPlic;
+
+    /// Error margin plic3
+    double ErrorMarginPlic3;
+
     /// Number of iterations for PLIC calculation
-    int PlicIterations;
+    int NumIterationsPlic;
 
     /// Number of iterations for PLIC3 calculation
-    int Plic3Iterations;
+    int NumIterationsPlic3;
+
+    /// Perturbation
+    double Perturbation;
+
+    // Hide error
+    int HideErrorCubes;
 };

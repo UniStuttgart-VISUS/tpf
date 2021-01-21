@@ -96,7 +96,12 @@ namespace tpf
             {
                 if (does_intersect_with(edge, plane))
                 {
-                    intersections.push_back(*intersect_with(edge, plane));
+                    auto intersection = intersect_with(edge, plane);
+
+                    if (intersection)
+                    {
+                        intersections.push_back(*intersection);
+                    }
                 }
             }
 
@@ -124,7 +129,12 @@ namespace tpf
             {
                 if (does_intersect_with(edge, plane))
                 {
-                    intersections.push_back(*intersect_with(edge, plane));
+                    auto intersection = intersect_with(edge, plane);
+
+                    if (intersection)
+                    {
+                        intersections.push_back(*intersection);
+                    }
                 }
             }
 
@@ -216,7 +226,12 @@ namespace tpf
             {
                 if (does_intersect_with(edge, plane))
                 {
-                    intersections.push_back(*intersect_with(edge, plane));
+                    auto intersection = intersect_with(edge, plane);
+
+                    if (intersection)
+                    {
+                        intersections.push_back(*intersection);
+                    }
                 }
             }
 

@@ -440,19 +440,27 @@
                 </Documentation>
             </StringVectorProperty>
             <StringVectorProperty name="Interface Gradient" label="Gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Input Grid" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Interface gradient
                 </Documentation>
             </StringVectorProperty>
 
+            <DoubleVectorProperty name="ErrorMargin" command="SetErrorMargin" label="Error margin" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume
+                </Documentation>
+            </DoubleVectorProperty>
             <IntVectorProperty name="NumIterations" command="SetNumIterations" label="Number of iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
-                    Number of iterations to approximate correct volume
+                    Maximum number of iterations to approximate correct volume
                 </Documentation>
             </IntVectorProperty>
             <DoubleVectorProperty name="Perturbation" command="SetPerturbation" label="Perturbation of vertices" number_of_elements="1" default_values="0.00001" panel_visibility="advanced">
@@ -526,14 +534,40 @@
                 </Documentation>
             </StringVectorProperty>
 
-            <IntVectorProperty name="PlicIterations" command="SetPlicIterations" label="PLIC iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
+            <DoubleVectorProperty name="Epsilon" command="SetEpsilon" label="Epsilon" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Epsilon used to detect if cells are empty or full
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="ErrorMarginPlic" command="SetErrorMarginPlic" label="Error margin PLIC" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume for PLIC (uses PLIC internally)
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="ErrorMarginPlic3" command="SetErrorMarginPlic3" label="Error margin PLIC3" number_of_elements="1" default_values="0.0001" panel_visibility="advanced">
+                <Documentation>
+                    Error margin to approximate correct volume for PLIC3
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="NumIterationsPlic" command="SetNumIterationsPlic" label="Number of iterations PLIC" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
                     Number of iterations to approximate correct volume for PLIC (uses PLIC internally)
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="Plic3Iterations" command="SetPlic3Iterations" label="PLIC3 iterations" number_of_elements="1" default_values="15" panel_visibility="advanced">
+            <IntVectorProperty name="NumIterationsPlic3" command="SetNumIterationsPlic3" label="Number of iterations PLIC3" number_of_elements="1" default_values="15" panel_visibility="advanced">
                 <Documentation>
                     Number of iterations to approximate correct volume for PLIC3
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="Perturbation" command="SetPerturbation" label="Perturbation of vertices" number_of_elements="1" default_values="0.00001" panel_visibility="advanced">
+                <Documentation>
+                    Introduce pertubation to prevent degenerate cases
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="HideErrorCubes" command="SetHideErrorCubes" label="Hide error cubes" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Hide error cubes
                 </Documentation>
             </IntVectorProperty>
 

@@ -101,78 +101,89 @@ namespace tpf
                 {
                     for (std::size_t x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        stretching(coords) = static_cast<float_t>(0.0L);
-                        stretching_prim_dir(coords).setZero();
-                        stretching_sec_dir(coords).setZero();
-                        stretching_absmax_dir(coords).setZero();
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
-                            fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                        try
                         {
-                            // Get position and velocity
-                            std::vector<math::vec3_t<float_t>> vertices;
-                            std::vector<math::vec3_t<float_t>> velocity;
+                            const data::coords3_t coords(x, y, z);
 
-                            vertices.reserve(27);
-                            velocity.reserve(27);
+                            stretching(coords) = static_cast<float_t>(0.0L);
+                            stretching_prim_dir(coords).setZero();
+                            stretching_sec_dir(coords).setZero();
+                            stretching_absmax_dir(coords).setZero();
 
-                            vertices.push_back(positions(coords));
-                            velocity.push_back(velocities(coords));
-
-                            // Get positions and velocities at neighboring locations
-                            for (long long i = -1; i <= 1; i++)
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
+                                fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
-                                for (long long j = -1; j <= 1; j++)
-                                {
-                                    for (long long k = -1; k <= 1; k++)
-                                    {
-                                        const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+                                // Get position and velocity
+                                std::vector<math::vec3_t<float_t>> vertices;
+                                std::vector<math::vec3_t<float_t>> velocity;
 
-                                        if (i != 0 || j != 0 || k != 0)
+                                vertices.reserve(27);
+                                velocity.reserve(27);
+
+                                vertices.push_back(positions(coords));
+                                velocity.push_back(velocities(coords));
+
+                                // Get positions and velocities at neighboring locations
+                                for (long long i = -1; i <= 1; i++)
+                                {
+                                    for (long long j = -1; j <= 1; j++)
+                                    {
+                                        for (long long k = -1; k <= 1; k++)
                                         {
-                                            if (fractions(neighbor_coords) > static_cast<float_t>(0.0L))
+                                            const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+
+                                            if (i != 0 || j != 0 || k != 0)
                                             {
-                                                vertices.push_back(positions(neighbor_coords));
-                                                velocity.push_back(velocities(neighbor_coords));
+                                                if (fractions(neighbor_coords) > static_cast<float_t>(0.0L))
+                                                {
+                                                    vertices.push_back(positions(neighbor_coords));
+                                                    velocity.push_back(velocities(neighbor_coords));
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            // Calculate Jacobian matrix of gradients
-                            const math::mat3_t<float_t> jacobian = math::calculate_jacobian<float_t, float_t, 3>(vertices, velocity);
+                                // Calculate Jacobian matrix of gradients
+                                const math::mat3_t<float_t> jacobian = math::calculate_jacobian<float_t, float_t, 3>(vertices, velocity);
 
-                            // Calculate change in size
-                            if (!jacobian.hasNaN() && !jacobian.isZero())
-                            {
-                                // Calculate change in size and directions
-                                const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+                                // Calculate change in size
+                                if (!jacobian.hasNaN() && !jacobian.isZero())
+                                {
+                                    // Calculate change in size and directions
+                                    const math::vec3_t<float_t> normal = -gradients(coords).normalized();
 
-                                const stretching_info stretch = calculate_stretch(jacobian, normal);
+                                    const stretching_info stretch = calculate_stretch(jacobian, normal);
 
-                                stretching(coords) = stretch.stretching;
-                                stretching_prim_dir(coords) = stretch.primary_direction;
-                                stretching_sec_dir(coords) = stretch.secondary_direction;
-                                stretching_absmax_dir(coords) = (std::abs(std::log2(stretch.primary_direction.norm()))
+                                    stretching(coords) = stretch.stretching;
+                                    stretching_prim_dir(coords) = stretch.primary_direction;
+                                    stretching_sec_dir(coords) = stretch.secondary_direction;
+                                    stretching_absmax_dir(coords) = (std::abs(std::log2(stretch.primary_direction.norm()))
                                         > std::abs(std::log2(stretch.secondary_direction.norm())))
-                                    ? stretch.primary_direction : stretch.secondary_direction;
-                            }
-                            else
-                            {
-                                // Set dummy values
-                                const math::vec3_t<float_t> normal = -gradients(coords).normalized();
-                                const auto directions = math::orthonormal(normal);
+                                        ? stretch.primary_direction : stretch.secondary_direction;
+                                }
+                                else
+                                {
+                                    // Set dummy values
+                                    const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+                                    const auto directions = math::orthonormal(normal);
 
-                                stretching(coords) = static_cast<float_t>(1.0L);
-                                stretching_prim_dir(coords) = directions.first;
-                                stretching_sec_dir(coords) = directions.second;
-                                stretching_absmax_dir(coords) = directions.first;
+                                    stretching(coords) = static_cast<float_t>(1.0L);
+                                    stretching_prim_dir(coords) = directions.first;
+                                    stretching_sec_dir(coords) = directions.second;
+                                    stretching_absmax_dir(coords) = directions.first;
 
-                                good_case_local = false;
+                                    good_case_local = false;
+                                }
                             }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute interface stretching for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute interface stretching for a cell."));
                         }
                     }
                 }

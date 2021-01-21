@@ -30,12 +30,12 @@ namespace tpf
             interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
                 const data::grid<float_t, float_t, 3, 3>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<std::optional<std::size_t>, std::optional<std::size_t>>>
+            interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
                 const data::grid<float_t, float_t, 3, 3>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<std::optional<std::size_t>, std::optional<std::size_t>>;
+            using parameters_t = interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>;
 
             using base_t = module_base<input_t, output_t, parameters_t>;
 
@@ -87,10 +87,15 @@ namespace tpf
             /// <summary>
             /// Set parameter
             /// </summary>
+            /// <param name="epsilon">Epsilon</param>
+            /// <param name="error_margin_plic">Error margin for PLIC</param>
+            /// <param name="error_margin_plic3">Error margin for PLIC3</param>
             /// <param name="num_iterations_plic">Number of iterations for PLIC</param>
             /// <param name="num_iterations_plic3">Number of iterations for PLIC3]</param>
-            virtual void set_algorithm_parameters(std::optional<std::size_t> num_iterations_plic,
-                std::optional<std::size_t> num_iterations_plic3) override;
+            /// <param name="perturbation">Perturbation of vertices to prevent numerical instability</param>
+            virtual void set_algorithm_parameters(float_t epsilon, float_t error_margin_plic, float_t error_margin_plic3,
+                std::size_t num_iterations_plic, std::size_t num_iterations_plic3, std::optional<float_t> perturbation,
+                std::optional<bool> hide_error_cubes) override;
 
             /// <summary>Run module</summary>
             void run_algorithm() override;
@@ -105,11 +110,12 @@ namespace tpf
 
             bool has_non_zero_neighbor(const data::grid<float_t, float_t, 3, 1>& f, const data::coords3_t& coords, float_t epsilon) const;
 
-            static std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
+            static std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
                 float_t vof,
                 const Eigen::Matrix<float_t, 3, 1>& norm,
                 const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
                 const Eigen::Matrix<float_t, 3, 1>& cell_size,
+                float_t error_margin,
                 std::size_t num_iterations,
                 float_t perturbation = static_cast<float_t>(0.00001L));
 
@@ -125,8 +131,26 @@ namespace tpf
             /// PLIC3 interface
             data::polydata<float_t>* plic3_interface;
 
-            std::size_t plic_iterations_ = 15;
-            std::size_t plic3_iterations_ = 15;
+            /// Epsilon
+            float_t epsilon_ = static_cast<float_t>(0.00001L);
+
+            /// Error margin plic
+            float_t error_margin_plic_ = static_cast<float_t>(0.0001L);
+
+            /// Error margin plic3
+            float_t error_margin_plic3_ = static_cast<float_t>(0.0001L);
+
+            /// Number of iterations plic
+            std::size_t num_iterations_plic_ = 15;
+
+            /// Number of iterations plic3
+            std::size_t num_iterations_plic3_ = 15;
+
+            /// Perturbation
+            float_t perturbation_ = static_cast<float_t>(0.00001L);
+
+            /// Hide error cubes
+            bool hide_error_cubes_ = false;
         };
     }
 }

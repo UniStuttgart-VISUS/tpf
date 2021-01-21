@@ -13,6 +13,7 @@
 #include "tpf/mpi/tpf_mpi_grid.h"
 
 #include <cmath>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -104,143 +105,154 @@ namespace tpf
                 {
                     for (std::size_t x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        min_curvature(coords) = static_cast<float_t>(0.0L);
-                        max_curvature(coords) = static_cast<float_t>(0.0L);
-                        absmax_curvature(coords) = static_cast<float_t>(0.0L);
-                        min_curvature_dir(coords).setZero();
-                        max_curvature_dir(coords).setZero();
-                        absmax_curvature_dir(coords).setZero();
-                        polynomial(coords).setZero();
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
-                            fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                        try
                         {
-                            // Get neighbouring barycenters and advect them
-                            std::vector<math::vec3_t<float_t>> points, velocity;
-                            points.reserve(27);
-                            velocity.reserve(27);
+                            const data::coords3_t coords(x, y, z);
 
-                            for (long long k = -2; k <= 2; ++k)
+                            min_curvature(coords) = static_cast<float_t>(0.0L);
+                            max_curvature(coords) = static_cast<float_t>(0.0L);
+                            absmax_curvature(coords) = static_cast<float_t>(0.0L);
+                            min_curvature_dir(coords).setZero();
+                            max_curvature_dir(coords).setZero();
+                            absmax_curvature_dir(coords).setZero();
+                            polynomial(coords).setZero();
+
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
+                                fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
-                                for (long long j = -2; j <= 2; ++j)
-                                {
-                                    for (long long i = -2; i <= 2; ++i)
-                                    {
-                                        const data::coords3_t neighbour_pos = coords + data::coords3_t(i, j, k);
+                                // Get neighbouring barycenters and advect them
+                                std::vector<math::vec3_t<float_t>> points, velocity;
+                                points.reserve(27);
+                                velocity.reserve(27);
 
-                                        if (fractions(neighbour_pos) > static_cast<float_t>(0.0L) && fractions(neighbour_pos) < static_cast<float_t>(1.0L))
+                                for (long long k = -2; k <= 2; ++k)
+                                {
+                                    for (long long j = -2; j <= 2; ++j)
+                                    {
+                                        for (long long i = -2; i <= 2; ++i)
                                         {
-                                            points.push_back(positions(neighbour_pos));
-                                            velocity.push_back(velocities(neighbour_pos));
+                                            const data::coords3_t neighbour_pos = coords + data::coords3_t(i, j, k);
+
+                                            if (fractions(neighbour_pos) > static_cast<float_t>(0.0L) && fractions(neighbour_pos) < static_cast<float_t>(1.0L))
+                                            {
+                                                points.push_back(positions(neighbour_pos));
+                                                velocity.push_back(velocities(neighbour_pos));
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // Get central point and its normal
-                            const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+                                // Get central point and its normal
+                                const math::vec3_t<float_t> normal = -gradients(coords).normalized();
 
-                            const math::vec3_t<float_t> origin = positions(coords);
-                            const math::vec3_t<float_t> origin_velocity = velocities(coords);
+                                const math::vec3_t<float_t> origin = positions(coords);
+                                const math::vec3_t<float_t> origin_velocity = velocities(coords);
 
-                            // Subtract velocity of central point from all others
-                            for (auto& vel : velocity)
-                            {
-                                vel -= origin_velocity;
-                            }
-
-                            // Calculate angular velocity
-                            math::vec3_t<float_t> angular_velocity;
-                            angular_velocity.setZero();
-
-                            for (std::size_t i = 0; i < points.size(); ++i)
-                            {
-                                const math::vec3_t<float_t> dist = points[i] - origin;
-
-                                if (!dist.isZero())
+                                // Subtract velocity of central point from all others
+                                for (auto& vel : velocity)
                                 {
-                                    angular_velocity += dist.cross(velocity[i]) / dist.squaredNorm();
+                                    vel -= origin_velocity;
                                 }
-                            }
 
-                            angular_velocity /= static_cast<float_t>(points.size() - 1);
+                                // Calculate angular velocity
+                                math::vec3_t<float_t> angular_velocity;
+                                angular_velocity.setZero();
 
-                            // Eliminate angular velocity
-                            for (std::size_t i = 0; i < points.size(); ++i)
-                            {
-                                const math::vec3_t<float_t> dist = points[i] - origin;
-
-                                if (!dist.isZero())
+                                for (std::size_t i = 0; i < points.size(); ++i)
                                 {
-                                    velocity[i] -= angular_velocity.cross(dist);
+                                    const math::vec3_t<float_t> dist = points[i] - origin;
+
+                                    if (!dist.isZero())
+                                    {
+                                        angular_velocity += dist.cross(velocity[i]) / dist.squaredNorm();
+                                    }
                                 }
+
+                                angular_velocity /= static_cast<float_t>(points.size() - 1);
+
+                                // Eliminate angular velocity
+                                for (std::size_t i = 0; i < points.size(); ++i)
+                                {
+                                    const math::vec3_t<float_t> dist = points[i] - origin;
+
+                                    if (!dist.isZero())
+                                    {
+                                        velocity[i] -= angular_velocity.cross(dist);
+                                    }
+                                }
+
+                                // Advect with simulation velocity or surface tension
+                                std::vector<math::vec3_t<float_t>> advected_points;
+                                advected_points.reserve(points.size());
+
+                                for (std::size_t i = 0; i < points.size(); ++i)
+                                {
+                                    advected_points.push_back(points[i] + this->timestep * velocity[i]);
+                                }
+
+                                const math::vec3_t<float_t> advected_origin = origin + this->timestep * origin_velocity;
+
+                                // Transform points to 2D
+                                math::transformer<float_t, 3> trafo(origin, normal);
+                                math::transformer<float_t, 3> trafo_advected(advected_origin, normal);
+
+                                for (std::size_t i = 0; i < points.size(); ++i)
+                                {
+                                    trafo.transform_inverse_inplace(points[i]);
+                                    trafo_advected.transform_inverse_inplace(advected_points[i]);
+                                }
+
+                                // Calculate paraboloids
+                                const auto paraboloid = algorithm::least_squares(points.begin(), points.end());
+                                const auto paraboloid_advected = algorithm::least_squares(advected_points.begin(), advected_points.end());
+
+                                const auto difference = paraboloid_advected - paraboloid;
+
+                                // Calculate curvature of difference
+                                auto curvature_difference = calculate_curvature(difference);
+
+                                polynomial(coords) << difference.a_xy, difference.a_xx, difference.a_yy;
+
+                                // Sort curvatures and corresponding direcions
+                                if (curvature_difference.first_curvature > curvature_difference.second_curvature)
+                                {
+                                    auto temp_curv = curvature_difference.first_curvature;
+                                    auto temp_curv_dir = curvature_difference.first_direction;
+
+                                    curvature_difference.first_curvature = curvature_difference.second_curvature;
+                                    curvature_difference.first_direction = curvature_difference.second_direction;
+
+                                    curvature_difference.second_curvature = temp_curv;
+                                    curvature_difference.second_direction = temp_curv_dir;
+                                }
+
+                                // Transform back to 3D
+                                const math::transformer<float_t, 3, 0> trafo_vec(math::vec3_t<float_t>(), normal);
+
+                                math::vec3_t<float_t> curv_dir_1, curv_dir_2;
+                                curv_dir_1 << curvature_difference.first_direction, static_cast<float_t>(0.0L);
+                                curv_dir_2 << curvature_difference.second_direction, static_cast<float_t>(0.0L);
+
+                                trafo_vec.transform_inplace(curv_dir_1);
+                                trafo_vec.transform_inplace(curv_dir_2);
+
+                                // Set output
+                                min_curvature(coords) = curvature_difference.first_curvature;
+                                max_curvature(coords) = curvature_difference.second_curvature;
+                                absmax_curvature(coords) = (std::abs(min_curvature(coords)) > std::abs(max_curvature(coords))) ? min_curvature(coords) : max_curvature(coords);
+
+                                min_curvature_dir(coords) = curv_dir_1;
+                                max_curvature_dir(coords) = curv_dir_2;
+                                absmax_curvature_dir(coords) = (std::abs(min_curvature(coords)) > std::abs(max_curvature(coords))) ? curv_dir_1 : curv_dir_2;
                             }
-
-                            // Advect with simulation velocity or surface tension
-                            std::vector<math::vec3_t<float_t>> advected_points;
-                            advected_points.reserve(points.size());
-
-                            for (std::size_t i = 0; i < points.size(); ++i)
-                            {
-                                advected_points.push_back(points[i] + this->timestep * velocity[i]);
-                            }
-
-                            const math::vec3_t<float_t> advected_origin = origin + this->timestep * origin_velocity;
-
-                            // Transform points to 2D
-                            math::transformer<float_t, 3> trafo(origin, normal);
-                            math::transformer<float_t, 3> trafo_advected(advected_origin, normal);
-
-                            for (std::size_t i = 0; i < points.size(); ++i)
-                            {
-                                trafo.transform_inverse_inplace(points[i]);
-                                trafo_advected.transform_inverse_inplace(advected_points[i]);
-                            }
-
-                            // Calculate paraboloids
-                            const auto paraboloid = algorithm::least_squares(points.begin(), points.end());
-                            const auto paraboloid_advected = algorithm::least_squares(advected_points.begin(), advected_points.end());
-
-                            const auto difference = paraboloid_advected - paraboloid;
-
-                            // Calculate curvature of difference
-                            auto curvature_difference = calculate_curvature(difference);
-
-                            polynomial(coords) << difference.a_xy, difference.a_xx, difference.a_yy;
-
-                            // Sort curvatures and corresponding direcions
-                            if (curvature_difference.first_curvature > curvature_difference.second_curvature)
-                            {
-                                auto temp_curv = curvature_difference.first_curvature;
-                                auto temp_curv_dir = curvature_difference.first_direction;
-
-                                curvature_difference.first_curvature = curvature_difference.second_curvature;
-                                curvature_difference.first_direction = curvature_difference.second_direction;
-
-                                curvature_difference.second_curvature = temp_curv;
-                                curvature_difference.second_direction = temp_curv_dir;
-                            }
-
-                            // Transform back to 3D
-                            const math::transformer<float_t, 3, 0> trafo_vec(math::vec3_t<float_t>(), normal);
-
-                            math::vec3_t<float_t> curv_dir_1, curv_dir_2;
-                            curv_dir_1 << curvature_difference.first_direction, static_cast<float_t>(0.0L);
-                            curv_dir_2 << curvature_difference.second_direction, static_cast<float_t>(0.0L);
-
-                            trafo_vec.transform_inplace(curv_dir_1);
-                            trafo_vec.transform_inplace(curv_dir_2);
-
-                            // Set output
-                            min_curvature(coords) = curvature_difference.first_curvature;
-                            max_curvature(coords) = curvature_difference.second_curvature;
-                            absmax_curvature(coords) = (std::abs(min_curvature(coords)) > std::abs(max_curvature(coords))) ? min_curvature(coords) : max_curvature(coords);
-
-                            min_curvature_dir(coords) = curv_dir_1;
-                            max_curvature_dir(coords) = curv_dir_2;
-                            absmax_curvature_dir(coords) = (std::abs(min_curvature(coords)) > std::abs(max_curvature(coords))) ? curv_dir_1 : curv_dir_2;
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute interface bending for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute interface bending for a cell."));
                         }
                     }
                 }

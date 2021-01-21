@@ -76,14 +76,25 @@ namespace tpf
                 {
                     for (std::size_t x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        surface_tension_force(coords).setZero();
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
-                            fractions(coords) > static_cast<float_t>(0.0) && fractions(coords) < static_cast<float_t>(1.0))
+                        try
                         {
-                            surface_tension_force(coords) = gradients(coords) * curvature(coords) * this->coefficient * this->density * this->timestep;
+                            const data::coords3_t coords(x, y, z);
+
+                            surface_tension_force(coords).setZero();
+
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
+                                fractions(coords) > static_cast<float_t>(0.0) && fractions(coords) < static_cast<float_t>(1.0))
+                            {
+                                surface_tension_force(coords) = gradients(coords) * curvature(coords) * this->coefficient * this->density * this->timestep;
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute surface tension for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute surface tension for a cell."));
                         }
                     }
                 }
