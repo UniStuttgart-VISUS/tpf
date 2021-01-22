@@ -290,6 +290,10 @@ namespace tpf
                 {
                     throw std::runtime_error(__tpf_error_message("Object data topology is not supported on vtk data."));
                 }
+                else if (data_type == data::topology_t::TEXTURE_COORDINATES)
+                {
+                    data->GetPointData()->SetTCoords(temp_array);
+                }
                 else
                 {
                     throw std::runtime_error(__tpf_error_message("Invalid topology type."));
