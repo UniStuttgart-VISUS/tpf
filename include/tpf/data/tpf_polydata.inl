@@ -154,7 +154,7 @@ namespace tpf
         inline std::size_t polydata<point_t>::insert(const std::size_t num_points, const std::size_t num_cells, const polydata_element<value_t, rows, columns>& element)
         {
 #ifdef __tpf_sanity_checks
-            if (element.topology == data::topology_t::POINT_DATA && element.values.size() != num_points)
+            if ((element.topology == data::topology_t::POINT_DATA || element.topology == data::topology_t::TEXTURE_COORDINATES) && element.values.size() != num_points)
             {
                 throw std::runtime_error(__tpf_error_message("Number of entries of the element doesn't match the number of points of the object."));
             }
@@ -168,7 +168,7 @@ namespace tpf
             }
 #endif
 
-            if (element.topology == data::topology_t::POINT_DATA)
+            if (element.topology == data::topology_t::POINT_DATA || element.topology == data::topology_t::TEXTURE_COORDINATES)
             {
 #ifdef __tpf_sanity_checks
                 if (!has_point_data(element.name))
@@ -177,7 +177,7 @@ namespace tpf
                 }
 #endif
 
-                get_point_data_as<value_t, rows, columns>(element.name)->insert_back(element.values);
+                get_point_data_as<value_t, rows, columns>(element.name)->insert_back(element.values.begin(), element.values.end());
             }
             else if (element.topology == data::topology_t::CELL_DATA)
             {
@@ -188,7 +188,7 @@ namespace tpf
                 }
 #endif
 
-                get_cell_data_as<value_t, rows, columns>(element.name)->insert_back(element.values);
+                get_cell_data_as<value_t, rows, columns>(element.name)->insert_back(element.values.begin(), element.values.end());
             }
             else if (element.topology == data::topology_t::OBJECT_DATA)
             {
@@ -210,7 +210,7 @@ namespace tpf
         template <typename point_t>
         inline void polydata<point_t>::add(std::shared_ptr<array_base> array, const topology_t type)
         {
-            if (type == topology_t::POINT_DATA)
+            if (type == topology_t::POINT_DATA || type == topology_t::TEXTURE_COORDINATES)
             {
                 if (array->get_num_elements() != get_num_points())
                 {
@@ -377,7 +377,7 @@ namespace tpf
         inline std::shared_ptr<array<value_t, rows, columns>> polydata<point_t>::create(const std::string& name, const topology_t type)
         {
             std::shared_ptr<array<value_t, rows, columns>> new_array = nullptr;
-            if (type == topology_t::POINT_DATA)
+            if (type == topology_t::POINT_DATA || type == topology_t::TEXTURE_COORDINATES)
             {
                 new_array = std::make_shared<array<value_t, rows, columns>>(name, get_num_points());
             }
@@ -567,7 +567,7 @@ namespace tpf
         {
             std::vector<std::pair<std::shared_ptr<data::array_base>, data::topology_t>> extraction;
 
-            if (element.topology == topology_t::POINT_DATA)
+            if (element.topology == topology_t::POINT_DATA || element.topology == topology_t::TEXTURE_COORDINATES)
             {
                 auto extracted_array = get_point_data(element.name)->extract(indices);
                 extraction.push_back(std::make_pair(extracted_array, topology_t::POINT_DATA));
