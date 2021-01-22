@@ -12,9 +12,12 @@
 #include "tpf/geometry/tpf_geometric_object.h"
 #include "tpf/geometry/tpf_mesh.h"
 
+#include <array>
 #include <memory>
 #include <string>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace tpf
@@ -127,7 +130,9 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>,
-            interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>,
+            interface_output<data::polydata<float_t>&,
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 3>,
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 2>>,
             interface_parameters<bool, bool, bool, float_t,
                 interface_deformation_glyph_aux::velocity_params_t<float_t>,
                 interface_deformation_glyph_aux::stretching_params_t<float_t>,
@@ -144,7 +149,9 @@ namespace tpf
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>,
                 opt_arg<const data::grid<float_t, float_t, 3, 3>>>;
-            using output_t = interface_output<data::polydata<float_t>&, data::polydata<float_t>&, data::polydata<float_t>&>;
+            using output_t = interface_output<data::polydata<float_t>&,
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 3>,
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 2>>;
             using parameters_t = interface_parameters<bool, bool, bool, float_t,
                 interface_deformation_glyph_aux::velocity_params_t<float_t>,
                 interface_deformation_glyph_aux::stretching_params_t<float_t>,
@@ -204,7 +211,8 @@ namespace tpf
             /// <param name="stretching_glyphs">Output stretching glyphs</param>
             /// <param name="bending_glyphs">Output bending glyphs</param>
             virtual void set_algorithm_output(data::polydata<float_t>& velocity_glyphs,
-                data::polydata<float_t>& stretching_glyphs, data::polydata<float_t>& bending_glyphs) override;
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 3> stretching_glyphs,
+                std::array<std::reference_wrapper<data::polydata<float_t>>, 2> bending_glyphs) override;
 
             /// <summary>
             /// Set parameters
@@ -327,8 +335,13 @@ namespace tpf
 
             /// Glyphs
             data::polydata<float_t>* velocity_glyphs;
-            data::polydata<float_t>* stretching_glyphs;
-            data::polydata<float_t>* bending_glyphs;
+
+            data::polydata<float_t>* stretching_glyph_rings;
+            data::polydata<float_t>* stretching_glyph_references;
+            data::polydata<float_t>* stretching_glyph_strips;
+
+            data::polydata<float_t>* bending_glyph_discs;
+            data::polydata<float_t>* bending_glyph_strips;
 
             /// Create glyphs?
             bool velocity_glyph;

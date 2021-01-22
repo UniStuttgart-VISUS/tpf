@@ -66,21 +66,41 @@ int tpf_interface_deformation_glyph::ProcessRequest(vtkInformation* request, vtk
 
 int tpf_interface_deformation_glyph::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
 {
-    auto create_or_get_data_object = [&output_vector, this](int index)
+    // Vector glyph
     {
-        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(index)->Get(vtkDataObject::DATA_OBJECT()));
+        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
 
         if (!output)
         {
             output = vtkPolyData::New();
-            output_vector->GetInformationObject(index)->Set(vtkDataObject::DATA_OBJECT(), output);
-            this->GetOutputPortInformation(index)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+            output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
+            this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
-    };
+    }
 
-    create_or_get_data_object(0);
-    create_or_get_data_object(1);
-    create_or_get_data_object(2);
+    // Stretching glyph
+    {
+        auto output = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
+
+        if (!output)
+        {
+            output = vtkMultiBlockDataSet::New();
+            output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
+            this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+        }
+    }
+    
+    // Bending glyph
+    {
+        auto output = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(2)->Get(vtkDataObject::DATA_OBJECT()));
+
+        if (!output)
+        {
+            output = vtkMultiBlockDataSet::New();
+            output_vector->GetInformationObject(2)->Set(vtkDataObject::DATA_OBJECT(), output);
+            this->GetOutputPortInformation(2)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+        }
+    }
 
     return 1;
 }
@@ -105,12 +125,12 @@ int tpf_interface_deformation_glyph::FillOutputPortInformation(int port, vtkInfo
     }
     else if (port == 1)
     {
-        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkMultiBlockDataSet");
         return 1;
     }
     else if (port == 2)
     {
-        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkMultiBlockDataSet");
         return 1;
     }
 
@@ -181,7 +201,9 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         const float_t time_step = (this->Timestep != 0.0) ? this->Timestep : tpf::vtk::get_timestep_delta<float_t>(input_vector[0]->GetInformationObject(0), input);
 
         // Create output data
-        tpf::data::polydata<float_t> velocity_glyphs, stretching_glyphs, bending_glyphs;
+        tpf::data::polydata<float_t> velocity_glyphs;
+        tpf::data::polydata<float_t> stretching_glyph_rings, stretching_glyph_references, stretching_glyph_strips;
+        tpf::data::polydata<float_t> bending_glyph_discs, bending_glyph_strips;
 
         // Set parameters
         tpf::modules::interface_deformation_glyph_aux::velocity_params_t<float_t> velocity_parameters;
@@ -220,7 +242,9 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
 
         interface_deformation_glyph.set_input(vof, positions, gradients, velocities, stretching_min, stretching_max,
             bending_min, bending_max, bending_direction_min, bending_direction_max, bending_polynomial);
-        interface_deformation_glyph.set_output(velocity_glyphs, stretching_glyphs, bending_glyphs);
+        interface_deformation_glyph.set_output(velocity_glyphs,
+            { stretching_glyph_rings, stretching_glyph_references, stretching_glyph_strips },
+            { bending_glyph_discs, bending_glyph_strips });
         interface_deformation_glyph.set_parameters(velocity_glyph, stretching_glyph, bending_glyph, time_step,
             velocity_parameters, stretching_parameters, bending_parameters);
 
@@ -244,35 +268,94 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
 
         if (stretching_glyph)
         {
-            auto output_stretching_glyphs = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
+            auto output_stretching_glyphs = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
 
-            tpf::vtk::set_polydata(output_stretching_glyphs, stretching_glyphs,
+            auto output_stretching_rings = vtkPolyData::New();
+            auto output_stretching_references = vtkPolyData::New();
+            auto output_stretching_strips = vtkPolyData::New();
+
+            tpf::vtk::set_polydata(output_stretching_rings, stretching_glyph_rings,
                 tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 2, 1>{ "Texture Coordinates", tpf::data::topology_t::TEXTURE_COORDINATES });
 
-            auto normal_filter = vtkPolyDataNormals::New();
-            normal_filter->SetInputDataObject(output_stretching_glyphs);
-            normal_filter->SetFeatureAngle(180.0);
-            normal_filter->Update();
+            tpf::vtk::set_polydata(output_stretching_references, stretching_glyph_references,
+                tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 2, 1>{ "Texture Coordinates", tpf::data::topology_t::TEXTURE_COORDINATES });
 
-            output_stretching_glyphs->ShallowCopy(normal_filter->GetOutput());
+            tpf::vtk::set_polydata(output_stretching_strips, stretching_glyph_strips,
+                tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 2, 1>{ "Texture Coordinates", tpf::data::topology_t::TEXTURE_COORDINATES });
+
+            // Create surface normals
+            auto normal_filter = vtkPolyDataNormals::New();
+
+            {
+                normal_filter->SetInputDataObject(output_stretching_rings);
+                normal_filter->SetFeatureAngle(180.0);
+                normal_filter->Update();
+
+                output_stretching_rings->ShallowCopy(normal_filter->GetOutput());
+            }
+            {
+                normal_filter->SetInputDataObject(output_stretching_references);
+                normal_filter->SetFeatureAngle(180.0);
+                normal_filter->Update();
+
+                output_stretching_references->ShallowCopy(normal_filter->GetOutput());
+            }
+            {
+                normal_filter->SetInputDataObject(output_stretching_strips);
+                normal_filter->SetFeatureAngle(180.0);
+                normal_filter->Update();
+
+                output_stretching_strips->ShallowCopy(normal_filter->GetOutput());
+            }
+
+            // Set multiblock
+            output_stretching_glyphs->SetBlock(0, output_stretching_rings);
+            output_stretching_glyphs->SetBlock(1, output_stretching_references);
+            output_stretching_glyphs->SetBlock(2, output_stretching_strips);
         }
 
         if (bending_glyph)
         {
-            auto output_bending_glyphs = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(2)->Get(vtkDataObject::DATA_OBJECT()));
+            auto output_bending_glyphs = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(2)->Get(vtkDataObject::DATA_OBJECT()));
 
-            tpf::vtk::set_polydata(output_bending_glyphs, bending_glyphs,
+            auto output_bending_discs = vtkPolyData::New();
+            auto output_bending_strips = vtkPolyData::New();
+
+            tpf::vtk::set_polydata(output_bending_discs, bending_glyph_discs,
                 tpf::data::data_information<float_t, 1, 1>{ "Bending", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA });
 
-            auto normal_filter = vtkPolyDataNormals::New();
-            normal_filter->SetInputDataObject(output_bending_glyphs);
-            normal_filter->SetFeatureAngle(180.0);
-            normal_filter->Update();
+            tpf::vtk::set_polydata(output_bending_strips, bending_glyph_strips,
+                tpf::data::data_information<float_t, 1, 1>{ "Bending", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA });
 
-            output_bending_glyphs->ShallowCopy(normal_filter->GetOutput());
+            // Create surface normals
+            auto normal_filter = vtkPolyDataNormals::New();
+
+            {
+                normal_filter->SetInputDataObject(output_bending_discs);
+                normal_filter->SetFeatureAngle(180.0);
+                normal_filter->Update();
+
+                output_bending_discs->ShallowCopy(normal_filter->GetOutput());
+            }
+            {
+                normal_filter->SetInputDataObject(output_bending_strips);
+                normal_filter->SetFeatureAngle(180.0);
+                normal_filter->Update();
+
+                output_bending_strips->ShallowCopy(normal_filter->GetOutput());
+            }
+
+            // Set multiblock
+            output_bending_glyphs->SetBlock(0, output_bending_discs);
+            output_bending_glyphs->SetBlock(1, output_bending_strips);
         }
     }
     catch (const std::runtime_error& ex)
