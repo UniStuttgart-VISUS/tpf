@@ -247,7 +247,9 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             auto output_stretching_glyphs = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
 
             tpf::vtk::set_polydata(output_stretching_glyphs, stretching_glyphs,
-                tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA });
+                tpf::data::data_information<float_t, 1, 1>{ "Stretching", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 2, 1>{ "Texture Coordinates", tpf::data::topology_t::TEXTURE_COORDINATES });
 
             auto normal_filter = vtkPolyDataNormals::New();
             normal_filter->SetInputDataObject(output_stretching_glyphs);
@@ -262,7 +264,8 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
             auto output_bending_glyphs = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(2)->Get(vtkDataObject::DATA_OBJECT()));
 
             tpf::vtk::set_polydata(output_bending_glyphs, bending_glyphs,
-                tpf::data::data_information<float_t, 1, 1>{ "Bending", tpf::data::topology_t::OBJECT_DATA });
+                tpf::data::data_information<float_t, 1, 1>{ "Bending", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1, 1>{ "Relevance", tpf::data::topology_t::OBJECT_DATA });
 
             auto normal_filter = vtkPolyDataNormals::New();
             normal_filter->SetInputDataObject(output_bending_glyphs);

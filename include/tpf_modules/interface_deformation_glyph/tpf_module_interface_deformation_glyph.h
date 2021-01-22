@@ -5,6 +5,7 @@
 #include "tpf/module/tpf_module_interface_output.h"
 #include "tpf/module/tpf_module_interface_parameters.h"
 
+#include "tpf/data/tpf_array.h"
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
 
@@ -227,8 +228,9 @@ namespace tpf
 
         private:
             using glyph_t = std::shared_ptr<geometry::mesh<float_t>>;
+            using glyph_tex_t = std::pair<std::shared_ptr<geometry::mesh<float_t>>, std::shared_ptr<std::vector<Eigen::Matrix<float_t, 2, 1>>>>;
             using velocity_glyph_t = glyph_t;
-            using stretching_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t, glyph_t>;
+            using stretching_glyph_t = std::tuple<glyph_tex_t, glyph_tex_t, glyph_tex_t, glyph_tex_t>;
             using bending_glyph_t = std::tuple<glyph_t, glyph_t, glyph_t>;
 
             /// <summary>

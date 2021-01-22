@@ -1,7 +1,10 @@
 #include "tpf_module_interface_deformation_glyph.h"
 
+#include "tpf/data/tpf_array.h"
+#include "tpf/data/tpf_data_information.h"
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
+#include "tpf/data/tpf_polydata_element.h"
 
 #include "tpf/geometry/tpf_mesh.h"
 #include "tpf/geometry/tpf_point.h"
@@ -429,6 +432,7 @@ namespace tpf
 
             // Create circle-shape disc on x,y-plane
             glyph_t disc = std::make_shared<geometry::mesh<float_t>>();
+            auto disc_tex_coords = std::make_shared<std::vector<Eigen::Matrix<float_t, 2, 1>>>(circle_resolution * (radial_resolution + 1));
 
             {
                 // Create rows
@@ -440,6 +444,10 @@ namespace tpf
                     hole_radius * std::sin(static_cast<float_t>(0.0)),
                     offset + bending_func(hole_radius)));
 
+                (*disc_tex_coords)[previous_indices[0]] <<
+                    (1.0 + hole_radius * std::cos(static_cast<float_t>(0.0))) / 2.0,
+                    (1.0 + hole_radius * std::sin(static_cast<float_t>(0.0))) / 2.0;
+
                 for (std::size_t i = 1; i < circle_resolution; ++i)
                 {
                     const auto angle = i * circle_increment;
@@ -448,6 +456,10 @@ namespace tpf
                         hole_radius * std::cos(angle),
                         hole_radius * std::sin(angle),
                         offset + bending_func(hole_radius)));
+
+                    (*disc_tex_coords)[previous_indices[i]] <<
+                        (1.0 + hole_radius * std::cos(angle)) / 2.0,
+                        (1.0 + hole_radius * std::sin(angle)) / 2.0;
                 }
 
                 for (std::size_t j = 1; j <= radial_resolution; ++j)
@@ -459,6 +471,10 @@ namespace tpf
                         radius * std::sin(static_cast<float_t>(0.0)),
                         offset + bending_func(radius)));
 
+                    (*disc_tex_coords)[current_indices[0]] <<
+                        (1.0 + radius * std::cos(static_cast<float_t>(0.0))) / 2.0,
+                        (1.0 + radius * std::sin(static_cast<float_t>(0.0))) / 2.0;
+
                     for (std::size_t i = 1; i < circle_resolution; ++i)
                     {
                         const auto angle = i * circle_increment;
@@ -467,6 +483,10 @@ namespace tpf
                             radius * std::cos(angle),
                             radius * std::sin(angle),
                             offset + bending_func(radius)));
+
+                        (*disc_tex_coords)[current_indices[i]] <<
+                            (1.0 + radius * std::cos(angle)) / 2.0,
+                            (1.0 + radius * std::sin(angle)) / 2.0;
 
                         disc->add_face({ previous_indices[i - 1], current_indices[i - 1], current_indices[i], previous_indices[i] });
                     }
@@ -480,6 +500,9 @@ namespace tpf
             // Create strips in x- and y-direction, respectively
             glyph_t min_strip;
             glyph_t max_strip;
+
+            auto strip_tex_coords = std::make_shared<std::vector<Eigen::Matrix<float_t, 2, 1>>>(2 * (radial_resolution + 1));
+            std::fill(strip_tex_coords->begin(), strip_tex_coords->end(), Eigen::Matrix<float_t, 2, 1>(0.0, 0.0));
 
             {
                 // Create strip in positive x-direction
@@ -542,15 +565,15 @@ namespace tpf
             {
                 // Function to create the reference as a slim copy of the disc
                 const auto ratio = reference_width / disc_width;
-                const auto offset = z_offset + ratio * bending;
+                const auto circle_offset = offset + z_offset + ratio * bending;
 
-                auto slimmify = [&center_line_offset, &ratio, &offset](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
+                auto slimmify = [&center_line_offset, &ratio, &circle_offset](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
                 {
                     const auto center_line_vector = center_line_offset * vector.head<2>().normalized();
                     const auto vector_xy = center_line_vector + ratio * (vector.head<2>() - center_line_vector);
 
                     Eigen::Matrix<float_t, 4, 1> slim_vector;
-                    slim_vector << vector_xy, offset + ratio * vector[2], 1.0;
+                    slim_vector << vector_xy, circle_offset + ratio * vector[2], 1.0;
 
                     return slim_vector;
                 };
@@ -561,7 +584,11 @@ namespace tpf
                 reference = std::static_pointer_cast<geometry::mesh<float_t>>(disc->clone(trafo));
             }
 
-            return std::make_tuple(disc, min_strip, max_strip, reference);
+            return std::make_tuple(
+                std::make_pair(disc, disc_tex_coords),
+                std::make_pair(min_strip, strip_tex_coords),
+                std::make_pair(max_strip, strip_tex_coords),
+                std::make_pair(reference, disc_tex_coords));
         }
 
         template <typename float_t>
@@ -581,6 +608,8 @@ namespace tpf
 
             // Iterate over all interface cells
             std::size_t num_interface_cells = 0;
+
+            this->stretching_glyphs->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
 
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
@@ -620,18 +649,28 @@ namespace tpf
                             math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
 
                             // Instantiate glyph
-                            this->stretching_glyphs->insert(std::get<0>(glyph_template)->clone(trafo));
+                            this->stretching_glyphs->insert(std::get<0>(glyph_template).first->clone(trafo),
+                                data::polydata_element<float_t, 2>("Texture Coordinates",
+                                    data::topology_t::TEXTURE_COORDINATES, *std::get<0>(glyph_template).second));
 
                             if (show_strips)
                             {
-                                this->stretching_glyphs->insert(std::get<1>(glyph_template)->clone(trafo));
-                                this->stretching_glyphs->insert(std::get<2>(glyph_template)->clone(trafo));
+                                this->stretching_glyphs->insert(std::get<1>(glyph_template).first->clone(trafo),
+                                    data::polydata_element<float_t, 2>("Texture Coordinates",
+                                        data::topology_t::TEXTURE_COORDINATES, *std::get<1>(glyph_template).second));
+                                this->stretching_glyphs->insert(std::get<2>(glyph_template).first->clone(trafo),
+                                    data::polydata_element<float_t, 2>("Texture Coordinates",
+                                        data::topology_t::TEXTURE_COORDINATES, *std::get<2>(glyph_template).second));
                             }
 
                             if (show_reference)
                             {
-                                this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo_ref));
-                                this->stretching_glyphs->insert(std::get<3>(glyph_template)->clone(trafo));
+                                this->stretching_glyphs->insert(std::get<3>(glyph_template).first->clone(trafo_ref),
+                                    data::polydata_element<float_t, 2>("Texture Coordinates",
+                                        data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
+                                this->stretching_glyphs->insert(std::get<3>(glyph_template).first->clone(trafo),
+                                    data::polydata_element<float_t, 2>("Texture Coordinates",
+                                        data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
                             }
 
                             ++num_interface_cells;
@@ -642,7 +681,9 @@ namespace tpf
 
             // Create data array
             auto stretching = std::make_shared<data::array<float_t>>("Stretching");
+            auto relevance = std::make_shared<data::array<float_t>>("Relevance");
             stretching->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0) + (show_reference ? 2 : 0)));
+            relevance->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0) + (show_reference ? 2 : 0)));
 
             if (num_interface_cells != 0)
             {
@@ -659,18 +700,28 @@ namespace tpf
                                 const auto min = stretching_direction_min(coords).norm();
                                 const auto max = stretching_direction_max(coords).norm();
 
-                                stretching->push_back(min * max);
+                                const auto min_abs_exp = (min < 1.0) ? (static_cast<float_t>(1.0) / min) : min;
+                                const auto max_abs_exp = (min < 1.0) ? (static_cast<float_t>(1.0) / min) : min;
+
+                                stretching->push_back(1.0);
+                                relevance->push_back(min_abs_exp * max_abs_exp);
 
                                 if (show_strips)
                                 {
                                     stretching->push_back(min);
                                     stretching->push_back(max);
+
+                                    relevance->push_back(min_abs_exp * max_abs_exp);
+                                    relevance->push_back(min_abs_exp * max_abs_exp);
                                 }
 
                                 if (show_reference)
                                 {
-                                    stretching->push_back(std::numeric_limits<float_t>::quiet_NaN());
                                     stretching->push_back(std::numeric_limits<float_t>::infinity());
+                                    stretching->push_back(std::numeric_limits<float_t>::quiet_NaN());
+
+                                    relevance->push_back(min_abs_exp * max_abs_exp);
+                                    relevance->push_back(min_abs_exp * max_abs_exp);
                                 }
                             }
                         }
@@ -679,6 +730,7 @@ namespace tpf
             }
 
             this->stretching_glyphs->add(stretching, data::topology_t::OBJECT_DATA);
+            this->stretching_glyphs->add(relevance, data::topology_t::OBJECT_DATA);
         }
 
         template <typename float_t>
@@ -909,7 +961,9 @@ namespace tpf
 
             // Create data array
             auto bending = std::make_shared<data::array<float_t>>("Bending");
+            auto relevance = std::make_shared<data::array<float_t>>("Relevance");
             bending->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0)));
+            relevance->reserve(num_interface_cells * (1 + (show_strips ? 2 : 0)));
 
             if (num_interface_cells != 0)
             {
@@ -926,12 +980,16 @@ namespace tpf
                                 const auto min = bending_min(coords);
                                 const auto max = bending_max(coords);
 
-                                bending->push_back((min + max) / 2.0);
+                                bending->push_back(0.0);
+                                relevance->push_back(std::abs(min) + std::abs(max));
 
                                 if (show_strips)
                                 {
                                     bending->push_back(min);
                                     bending->push_back(max);
+
+                                    relevance->push_back(std::abs(min) + std::abs(max));
+                                    relevance->push_back(std::abs(min) + std::abs(max));
                                 }
                             }
                         }
@@ -940,6 +998,7 @@ namespace tpf
             }
 
             this->bending_glyphs->add(bending, data::topology_t::OBJECT_DATA);
+            this->bending_glyphs->add(relevance, data::topology_t::OBJECT_DATA);
         }
     }
 }
