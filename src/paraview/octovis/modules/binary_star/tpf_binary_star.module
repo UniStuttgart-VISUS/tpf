@@ -1,0 +1,8 @@
+NAME
+  TPFoctovis::tpf_binary_star
+LIBRARY_NAME
+  tpf_binary_star
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
