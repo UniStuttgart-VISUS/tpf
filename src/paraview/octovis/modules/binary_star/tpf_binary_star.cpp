@@ -8,6 +8,8 @@
 
 #include "tpf/log/tpf_log.h"
 
+#include "tpf/mpi/tpf_mpi.h"
+
 #include "tpf/vtk/tpf_data.h"
 #include "tpf/vtk/tpf_polydata.h"
 
