@@ -30,6 +30,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -40,7 +41,8 @@
 #include <vector>
 
 template <typename float_t>
-std::tuple<tpf::data::octree<float_t, float_t>, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*>
+std::tuple<tpf::data::octree<float_t, float_t>, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*,
+    FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*>
 load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_array_name)
 {
     // Get input data
@@ -48,8 +50,9 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
 
     ID_TYPE_ARRAY* in_paths = nullptr;
     FLOAT_TYPE_ARRAY* in_density = nullptr;
-    FLOAT_TYPE_ARRAY* in_density_1 = nullptr;
-    FLOAT_TYPE_ARRAY* in_density_2 = nullptr;
+    FLOAT_TYPE_ARRAY* in_density_accretor = nullptr;
+    FLOAT_TYPE_ARRAY* in_density_donor = nullptr;
+    FLOAT_TYPE_ARRAY* in_density_other = nullptr;
     FLOAT_TYPE_ARRAY* in_velocity = nullptr;
     FLOAT_TYPE_ARRAY* in_gravitation = nullptr;
 
@@ -62,17 +65,18 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
         in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
 
         in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
-        in_density_1 = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2).c_str()));
-        in_density_2 = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3).c_str()));
-        in_velocity = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(4).c_str()));
-        in_gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str()));
+        in_density_accretor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2).c_str()));
+        in_density_donor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3).c_str()));
+        in_density_other = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(4).c_str()));
+        in_velocity = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str()));
+        in_gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(6).c_str()));
 
-        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
-        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
-        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
-        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
-        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
+        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
     }
 
 #ifdef __tpf_use_mpi
@@ -90,13 +94,17 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
             in_density->SetNumberOfComponents(1);
             in_density->SetNumberOfTuples(num_points);
 
-            in_density_1 = FLOAT_TYPE_ARRAY::New();
-            in_density_1->SetNumberOfComponents(1);
-            in_density_1->SetNumberOfTuples(num_points);
+            in_density_accretor = FLOAT_TYPE_ARRAY::New();
+            in_density_accretor->SetNumberOfComponents(1);
+            in_density_accretor->SetNumberOfTuples(num_points);
 
-            in_density_2 = FLOAT_TYPE_ARRAY::New();
-            in_density_2->SetNumberOfComponents(1);
-            in_density_2->SetNumberOfTuples(num_points);
+            in_density_donor = FLOAT_TYPE_ARRAY::New();
+            in_density_donor->SetNumberOfComponents(1);
+            in_density_donor->SetNumberOfTuples(num_points);
+
+            in_density_other = FLOAT_TYPE_ARRAY::New();
+            in_density_other->SetNumberOfComponents(1);
+            in_density_other->SetNumberOfTuples(num_points);
 
             in_velocity = FLOAT_TYPE_ARRAY::New();
             in_velocity->SetNumberOfComponents(3);
@@ -110,8 +118,9 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
         MPI_Bcast(in_paths->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
 
         MPI_Bcast(in_density->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_density_1->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_density_2->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+        MPI_Bcast(in_density_accretor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+        MPI_Bcast(in_density_donor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+        MPI_Bcast(in_density_other->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
         MPI_Bcast(in_velocity->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
         MPI_Bcast(in_gravitation->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
 
@@ -166,8 +175,9 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
         in_paths->Delete();
 
         in_density->Delete();
-        in_density_1->Delete();
-        in_density_2->Delete();
+        in_density_accretor->Delete();
+        in_density_donor->Delete();
+        in_density_other->Delete();
         in_velocity->Delete();
         in_gravitation->Delete();
     }
@@ -175,7 +185,7 @@ load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_arra
 
     octree.insert_nodes(node_information.begin(), node_information.end());
 
-    return std::make_tuple(octree, in_density, in_density_1, in_density_2, in_velocity, in_gravitation);
+    return std::make_tuple(octree, in_density, in_density_accretor, in_density_donor, in_density_other, in_velocity, in_gravitation);
 }
 
 vtkStandardNewMacro(tpf_binary_star);
@@ -234,12 +244,21 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
         const auto octree = std::get<0>(data);
 
         auto density = std::get<1>(data);
-        auto density_1 = std::get<2>(data);
-        auto density_2 = std::get<3>(data);
-        auto velocities = std::get<4>(data);
-        auto gravitation = std::get<5>(data);
+        auto density_accretor = std::get<2>(data);
+        auto density_donor = std::get<3>(data);
+        auto density_other = std::get<4>(data);
+        auto velocities = std::get<5>(data);
+        auto gravitation = std::get<6>(data);
 
         const auto num_points = density->GetNumberOfTuples();
+
+        // "Enum" for classification
+        const typename ID_TYPE_ARRAY::ValueType OTHER = 0;
+        const typename ID_TYPE_ARRAY::ValueType ACCRETOR = 1;
+        const typename ID_TYPE_ARRAY::ValueType DONOR = 2;
+
+        const typename ID_TYPE_ARRAY::ValueType ACCRETOR_INDEX = 0;
+        const typename ID_TYPE_ARRAY::ValueType DONOR_INDEX = 1;
 
         // Identify donor and accretor cells from the densities
         auto classification = ID_TYPE_ARRAY::New();
@@ -251,7 +270,22 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
         {
             typename ID_TYPE_ARRAY::ValueType cell_classification;
 
-            // TODO: use density for classification
+            const auto cell_density_accretor = density_accretor->GetValue(p);
+            const auto cell_density_donor = density_donor->GetValue(p);
+            const auto cell_density_other = density_other->GetValue(p);
+
+            if (cell_density_other > cell_density_accretor && cell_density_other > cell_density_donor)
+            {
+                cell_classification = OTHER;
+            }
+            else if (cell_density_accretor > cell_density_donor)
+            {
+                cell_classification = ACCRETOR;
+            }
+            else
+            {
+                cell_classification = DONOR;
+            }
 
             classification->SetValue(p, cell_classification);
         }
@@ -300,12 +334,12 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
             std::array<Eigen::Matrix<float_t, 3, 1>, 2> center;
             std::array<Eigen::Matrix<float_t, 3, 1>, 2> velocity;
 
-            mass[0] = static_cast<float_t>(0.0);
-            mass[1] = static_cast<float_t>(0.0);
-            center[0].fill(0.0);
-            center[1].fill(0.0);
-            velocity[0].fill(0.0);
-            velocity[1].fill(0.0);
+            mass[ACCRETOR_INDEX] = static_cast<float_t>(0.0);
+            mass[DONOR_INDEX] = static_cast<float_t>(0.0);
+            center[ACCRETOR_INDEX].fill(0.0);
+            center[DONOR_INDEX].fill(0.0);
+            velocity[ACCRETOR_INDEX].fill(0.0);
+            velocity[DONOR_INDEX].fill(0.0);
 
             Eigen::Matrix<double, 3, 1> tmp_position, tmp_velocity;
             Eigen::Matrix<float_t, 3, 1> cell_position, cell_velocity;
@@ -324,7 +358,7 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
                 const auto cell_density = density->GetValue(p);
                 const auto cell_volume = octree.find_node(cell_position).first->get_value().first->calculate_volume().get_float_value();
 
-                if (cell_classification != 0)
+                if (cell_classification != OTHER)
                 {
                     mass[cell_classification - 1] += cell_density * cell_volume;
                     center[cell_classification - 1] += cell_position * cell_density * cell_volume;
@@ -333,31 +367,32 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
             }
 
             // Calculate center of mass and its velocity
-            center[0] /= mass[0];
-            center[1] /= mass[1];
+            center[ACCRETOR_INDEX] /= mass[ACCRETOR_INDEX];
+            center[DONOR_INDEX] /= mass[DONOR_INDEX];
 
-            velocity[0] /= mass[0];
-            velocity[1] /= mass[1];
+            velocity[ACCRETOR_INDEX] /= mass[ACCRETOR_INDEX];
+            velocity[DONOR_INDEX] /= mass[DONOR_INDEX];
 
             // Calculate orbital angular frequency
-            const float_t frequency = ((center[0] - center[1]).cross(velocity[0] - velocity[1]) / (center[0] - center[1]).squaredNorm())
+            const float_t frequency = ((center[ACCRETOR_INDEX] - center[DONOR_INDEX])
+                .cross(velocity[ACCRETOR_INDEX] - velocity[DONOR_INDEX]) / (center[ACCRETOR_INDEX] - center[DONOR_INDEX]).squaredNorm())
                 .dot(Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0));
 
             const auto frequency_squared = frequency * frequency;
 
             // Calculate Roche lobe radius
-            const auto orbital_separation = (center[0] - center[1]).norm();
+            const auto orbital_separation = (center[ACCRETOR_INDEX] - center[DONOR_INDEX]).norm();
 
-            const auto ratio_1 = mass[0] / mass[1];
-            const auto ratio_2 = mass[1] / mass[0];
+            const auto ratio_accretor = mass[ACCRETOR_INDEX] / mass[DONOR_INDEX];
+            const auto ratio_donor = mass[DONOR_INDEX] / mass[ACCRETOR_INDEX];
 
-            const auto roche_lobe_radius_1 = orbital_separation * static_cast<float_t>(0.49) * std::pow(ratio_1, static_cast<float_t>(2.0 / 3.0)) /
-                (static_cast<float_t>(0.6) * std::pow(ratio_1, static_cast<float_t>(2.0 / 3.0))
-                    + std::log(static_cast<float_t>(1.0) + std::pow(ratio_1, static_cast<float_t>(1.0 / 3.0))));
+            const auto roche_lobe_radius_accretor = orbital_separation * static_cast<float_t>(0.49) * std::pow(ratio_accretor, static_cast<float_t>(2.0 / 3.0)) /
+                (static_cast<float_t>(0.6) * std::pow(ratio_accretor, static_cast<float_t>(2.0 / 3.0))
+                    + std::log(static_cast<float_t>(1.0) + std::pow(ratio_accretor, static_cast<float_t>(1.0 / 3.0))));
 
-            const auto roche_lobe_radius_2 = orbital_separation * static_cast<float_t>(0.49) * std::pow(ratio_2, static_cast<float_t>(2.0 / 3.0)) /
-                (static_cast<float_t>(0.6) * std::pow(ratio_2, static_cast<float_t>(2.0 / 3.0))
-                    + std::log(static_cast<float_t>(1.0) + std::pow(ratio_2, static_cast<float_t>(1.0 / 3.0))));
+            const auto roche_lobe_radius_donor = orbital_separation * static_cast<float_t>(0.49) * std::pow(ratio_donor, static_cast<float_t>(2.0 / 3.0)) /
+                (static_cast<float_t>(0.6) * std::pow(ratio_donor, static_cast<float_t>(2.0 / 3.0))
+                    + std::log(static_cast<float_t>(1.0) + std::pow(ratio_donor, static_cast<float_t>(1.0 / 3.0))));
 
             // Iterate over cells, compute the acceleration, and classify it
             Eigen::Matrix<double, 3, 1> tmp_gravitation;
@@ -382,38 +417,38 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
                 const Eigen::Matrix<float_t, 3, 1> cell_acceleration = cell_gravitation + cell_radius * frequency_squared;
 
                 // Classification
-                const auto distance_1 = cell_position - center[0];
-                const auto distance_2 = cell_position - center[1];
+                const auto distance_accretor = cell_position - center[ACCRETOR_INDEX];
+                const auto distance_donor = cell_position - center[DONOR_INDEX];
 
-                const float_t cell_classifier_1 = cell_acceleration.dot(distance_1.normalized());
-                const float_t cell_classifier_2 = cell_acceleration.dot(distance_2.normalized());
+                const float_t cell_classifier_accretor = cell_acceleration.dot(distance_accretor.normalized());
+                const float_t cell_classifier_donor = cell_acceleration.dot(distance_donor.normalized());
 
                 typename ID_TYPE_ARRAY::ValueType cell_classification;
 
-                if (distance_1.norm() < 0.25 * roche_lobe_radius_1 ||
-                    std::min(cell_classifier_1, static_cast<float_t>(0.0)) < std::min(cell_classifier_2, static_cast<float_t>(0.0)))
+                if (distance_accretor.norm() < 0.25 * roche_lobe_radius_accretor ||
+                    std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) < std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
                 {
-                    cell_classification = 1;
+                    cell_classification = ACCRETOR;
                 }
-                else if (distance_2.norm() < 0.25 * roche_lobe_radius_2 ||
-                    std::min(cell_classifier_1, static_cast<float_t>(0.0)) > std::min(cell_classifier_2, static_cast<float_t>(0.0)))
+                else if (distance_donor.norm() < 0.25 * roche_lobe_radius_donor ||
+                    std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) > std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
                 {
-                    cell_classification = 2;
+                    cell_classification = DONOR;
                 }
                 else
                 {
-                    cell_classification = 0;
+                    cell_classification = OTHER;
                 }
 
                 // Store properties
-                if (cell_classification != 0)
+                if (cell_classification != OTHER)
                 {
                     center_of_mass->SetTuple3(p, center[cell_classification - 1][0], center[cell_classification - 1][1], center[cell_classification - 1][2]);
                     cluster_velocity->SetTuple3(p, velocity[cell_classification - 1][0], velocity[cell_classification - 1][1], velocity[cell_classification - 1][2]);
                     angular_frequency->SetValue(p, frequency);
                     acceleration->SetTuple3(p, cell_acceleration[0], cell_acceleration[1], cell_acceleration[2]);
-                    classifier->SetValue(p, cell_classification == 1 ? cell_classifier_1 : cell_classifier_2);
-                    roche_lobe->SetValue(p, cell_classification == 1 ? roche_lobe_radius_1 : roche_lobe_radius_2);
+                    classifier->SetValue(p, cell_classification == 1 ? cell_classifier_accretor : cell_classifier_donor);
+                    roche_lobe->SetValue(p, cell_classification == 1 ? roche_lobe_radius_accretor : roche_lobe_radius_donor);
                 }
 
                 classification->SetValue(p, cell_classification);
