@@ -173,6 +173,12 @@
                 </Documentation>
             </StringVectorProperty>
 
+            <IntVectorProperty name="NumIterations" command="SetNumIterations" label="Number of iterations" number_of_elements="1" default_values="5">
+                <Documentation>
+                    Number of iteration steps
+                </Documentation>
+            </IntVectorProperty>
+
             <PropertyGroup label="Point data">
                 <Property name="ID" />
                 <Property name="Density" />
@@ -190,6 +196,10 @@
                 <Property name="Maximum Y" />
                 <Property name="Minimum Z" />
                 <Property name="Maximum Z" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Parameters">
+                <Property name="NumIterations" />
             </PropertyGroup>
 
             <Hints>

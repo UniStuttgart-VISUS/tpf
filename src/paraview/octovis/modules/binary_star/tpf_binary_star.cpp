@@ -329,7 +329,10 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
         roche_lobe->SetNumberOfTuples(num_points);
         roche_lobe->Fill(0.0);
 
-        for (int i = 0; i < 5; ++i)
+        const int value_shift = static_cast<int>(std::floor(std::log(octree.get_root()->get_value().first->calculate_volume().get_float_value())));
+        const float_t value_multiplier = static_cast<float_t>(std::pow(2.0, -value_shift));
+
+        for (int i = 0; i < this->NumIterations; ++i)
         {
             // Sum over mass, position and velocity
             std::array<float_t, 2> mass;
@@ -362,9 +365,12 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
 
                 if (cell_classification != OTHER)
                 {
-                    mass[cell_classification - 1] += cell_density * cell_volume;
-                    center[cell_classification - 1] += cell_position * cell_density * cell_volume;
-                    velocity[cell_classification - 1] += cell_velocity * cell_density * cell_volume;
+                    // Values are too big; make them smaller
+                    const auto cell_mass = (cell_density * cell_volume) * value_multiplier;
+
+                    mass[cell_classification - 1] += cell_mass;
+                    center[cell_classification - 1] += cell_position * cell_mass;
+                    velocity[cell_classification - 1] += cell_velocity * cell_mass;
                 }
             }
 
@@ -374,6 +380,9 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
 
             velocity[ACCRETOR_INDEX] /= mass[ACCRETOR_INDEX];
             velocity[DONOR_INDEX] /= mass[DONOR_INDEX];
+
+            mass[ACCRETOR_INDEX] /= value_multiplier;
+            mass[DONOR_INDEX] /= value_multiplier;
 
             // Calculate orbital angular frequency
             const float_t frequency = ((center[ACCRETOR_INDEX] - center[DONOR_INDEX])
@@ -396,6 +405,23 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
                 (static_cast<float_t>(0.6) * std::pow(ratio_donor, static_cast<float_t>(2.0 / 3.0))
                     + std::log(static_cast<float_t>(1.0) + std::pow(ratio_donor, static_cast<float_t>(1.0 / 3.0))));
 
+            if (i == this->NumIterations - 1)
+            {
+                tpf::log::info_message(__tpf_info_message("Accretor"));
+                tpf::log::info_message(__tpf_info_message("  mass              ", mass[ACCRETOR_INDEX]));
+                tpf::log::info_message(__tpf_info_message("  location          [", center[ACCRETOR_INDEX][0], ", ", center[ACCRETOR_INDEX][1], ", ", center[ACCRETOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  velocity          [", velocity[ACCRETOR_INDEX][0], ", ", velocity[ACCRETOR_INDEX][1], ", ", velocity[ACCRETOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  angular frequency ", frequency));
+                tpf::log::info_message(__tpf_info_message("  Roche lobe radius ", roche_lobe_radius_accretor));
+
+                tpf::log::info_message(__tpf_info_message("Donor"));
+                tpf::log::info_message(__tpf_info_message("  mass              ", mass[DONOR_INDEX]));
+                tpf::log::info_message(__tpf_info_message("  location          [", center[DONOR_INDEX][0], ", ", center[DONOR_INDEX][1], ", ", center[DONOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  velocity          [", velocity[DONOR_INDEX][0], ", ", velocity[DONOR_INDEX][1], ", ", velocity[DONOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  angular frequency ", frequency));
+                tpf::log::info_message(__tpf_info_message("  Roche lobe radius ", roche_lobe_radius_donor));
+            }
+
             // Iterate over cells, compute the acceleration, and classify it
             Eigen::Matrix<double, 3, 1> tmp_gravitation;
             Eigen::Matrix<float_t, 3, 1> cell_radius, cell_gravitation;
@@ -403,8 +429,8 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
             for (vtkIdType p = 0; p < num_points; ++p)
             {
                 in_octree->GetPoint(p, tmp_position.data());
-                cell_radius << static_cast<float_t>(tmp_position[0]),
-                    static_cast<float_t>(tmp_position[1]), 0.0;
+                cell_radius << -static_cast<float_t>(tmp_position[0]),
+                    -static_cast<float_t>(tmp_position[1]), 0.0;
                 cell_position << static_cast<float_t>(tmp_position[0]),
                     static_cast<float_t>(tmp_position[1]), static_cast<float_t>(tmp_position[2]);
 

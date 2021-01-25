@@ -7,7 +7,10 @@ class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
     public:
         static tpf_binary_star* New();
         vtkTypeMacro(tpf_binary_star, vtkPolyDataAlgorithm);
- 
+
+        vtkSetMacro(NumIterations, int);
+        vtkGetMacro(NumIterations, int);
+
     protected:
         tpf_binary_star();
         ~tpf_binary_star();
@@ -24,4 +27,7 @@ class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
 
         /// Using data types
         using float_t = float;
+
+        /// Parameters
+        int NumIterations;
 };
