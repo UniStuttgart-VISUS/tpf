@@ -272,11 +272,13 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
         {
             typename ID_TYPE_ARRAY::ValueType cell_classification;
 
+            const auto cell_density = density->GetValue(p);
             const auto cell_density_accretor = density_accretor->GetValue(p);
             const auto cell_density_donor = density_donor->GetValue(p);
             const auto cell_density_other = density_other->GetValue(p);
 
-            if (cell_density_other > cell_density_accretor && cell_density_other > cell_density_donor)
+            if (cell_density < this->DensityCutoff ||
+                (cell_density_other > cell_density_accretor && cell_density_other > cell_density_donor))
             {
                 cell_classification = OTHER;
             }
@@ -424,48 +426,48 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
 
             // Iterate over cells, compute the acceleration, and classify it
             Eigen::Matrix<double, 3, 1> tmp_gravitation;
-            Eigen::Matrix<float_t, 3, 1> cell_radius, cell_gravitation;
+            Eigen::Matrix<float_t, 3, 1> cell_radius, cell_gravitation, cell_acceleration;
+            float_t cell_classifier_accretor, cell_classifier_donor;
 
             for (vtkIdType p = 0; p < num_points; ++p)
             {
-                in_octree->GetPoint(p, tmp_position.data());
-                cell_radius << -static_cast<float_t>(tmp_position[0]),
-                    -static_cast<float_t>(tmp_position[1]), 0.0;
-                cell_position << static_cast<float_t>(tmp_position[0]),
-                    static_cast<float_t>(tmp_position[1]), static_cast<float_t>(tmp_position[2]);
+                typename ID_TYPE_ARRAY::ValueType cell_classification = OTHER;
 
-                velocities->GetTuple(p, tmp_velocity.data());
-                cell_velocity << static_cast<float_t>(tmp_velocity[0]),
-                    static_cast<float_t>(tmp_velocity[1]), static_cast<float_t>(tmp_velocity[2]);
-
-                gravitation->GetTuple(p, tmp_gravitation.data());
-                cell_gravitation << static_cast<float_t>(tmp_gravitation[0]),
-                    static_cast<float_t>(tmp_gravitation[1]), static_cast<float_t>(tmp_gravitation[2]);
-
-                const Eigen::Matrix<float_t, 3, 1> cell_acceleration = cell_gravitation + cell_radius * frequency_squared;
-
-                // Classification
-                const auto distance_accretor = cell_position - center[ACCRETOR_INDEX];
-                const auto distance_donor = cell_position - center[DONOR_INDEX];
-
-                const float_t cell_classifier_accretor = cell_acceleration.dot(distance_accretor.normalized());
-                const float_t cell_classifier_donor = cell_acceleration.dot(distance_donor.normalized());
-
-                typename ID_TYPE_ARRAY::ValueType cell_classification;
-
-                if (distance_accretor.norm() < 0.25 * roche_lobe_radius_accretor ||
-                    std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) < std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
+                if (density->GetValue(p) > this->DensityCutoff)
                 {
-                    cell_classification = ACCRETOR;
-                }
-                else if (distance_donor.norm() < 0.25 * roche_lobe_radius_donor ||
-                    std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) > std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
-                {
-                    cell_classification = DONOR;
-                }
-                else
-                {
-                    cell_classification = OTHER;
+                    in_octree->GetPoint(p, tmp_position.data());
+                    cell_radius << static_cast<float_t>(tmp_position[0]),
+                        static_cast<float_t>(tmp_position[1]), 0.0;
+                    cell_position << static_cast<float_t>(tmp_position[0]),
+                        static_cast<float_t>(tmp_position[1]), static_cast<float_t>(tmp_position[2]);
+
+                    velocities->GetTuple(p, tmp_velocity.data());
+                    cell_velocity << static_cast<float_t>(tmp_velocity[0]),
+                        static_cast<float_t>(tmp_velocity[1]), static_cast<float_t>(tmp_velocity[2]);
+
+                    gravitation->GetTuple(p, tmp_gravitation.data());
+                    cell_gravitation << static_cast<float_t>(tmp_gravitation[0]),
+                        static_cast<float_t>(tmp_gravitation[1]), static_cast<float_t>(tmp_gravitation[2]);
+
+                    cell_acceleration = cell_gravitation + cell_radius * frequency_squared;
+
+                    // Classification
+                    const auto distance_accretor = cell_position - center[ACCRETOR_INDEX];
+                    const auto distance_donor = cell_position - center[DONOR_INDEX];
+
+                    cell_classifier_accretor = cell_acceleration.dot(distance_accretor.normalized());
+                    cell_classifier_donor = cell_acceleration.dot(distance_donor.normalized());
+
+                    if (distance_accretor.norm() < 0.25 * roche_lobe_radius_accretor ||
+                        std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) < std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
+                    {
+                        cell_classification = ACCRETOR;
+                    }
+                    else if (distance_donor.norm() < 0.25 * roche_lobe_radius_donor ||
+                        std::min(cell_classifier_accretor, static_cast<float_t>(0.0)) > std::min(cell_classifier_donor, static_cast<float_t>(0.0)))
+                    {
+                        cell_classification = DONOR;
+                    }
                 }
 
                 // Store properties

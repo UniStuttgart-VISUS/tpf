@@ -178,6 +178,11 @@
                     Number of iteration steps
                 </Documentation>
             </IntVectorProperty>
+            <DoubleVectorProperty name="DensityCutoff" command="SetDensityCutoff" label="Density cutoff" number_of_elements="1" default_values="1.0">
+                <Documentation>
+                    Cells with a density below this cutoff are discarded as stars
+                </Documentation>
+            </DoubleVectorProperty>
 
             <PropertyGroup label="Point data">
                 <Property name="ID" />
@@ -200,6 +205,7 @@
 
             <PropertyGroup label="Parameters">
                 <Property name="NumIterations" />
+                <Property name="DensityCutoff" />
             </PropertyGroup>
 
             <Hints>

@@ -11,6 +11,9 @@ class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
         vtkSetMacro(NumIterations, int);
         vtkGetMacro(NumIterations, int);
 
+        vtkSetMacro(DensityCutoff, double);
+        vtkGetMacro(DensityCutoff, double);
+
     protected:
         tpf_binary_star();
         ~tpf_binary_star();
@@ -28,6 +31,9 @@ class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
         /// Using data types
         using float_t = float;
 
-        /// Parameters
+        /// Number of iteration steps
         int NumIterations;
+
+        /// Density cutoff for ignoring low-density cells
+        double DensityCutoff;
 };
