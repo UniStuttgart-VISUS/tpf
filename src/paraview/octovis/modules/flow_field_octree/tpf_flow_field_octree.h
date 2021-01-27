@@ -22,12 +22,23 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         vtkGetMacro(StreamTimeStep, double);
         vtkSetMacro(StreamTimeStep, double);
 
+        vtkGetMacro(LocalityMethod, int);
+        vtkSetMacro(LocalityMethod, int);
+
         vtkGetMacro(ForceFixedFrequency, int);
         vtkSetMacro(ForceFixedFrequency, int);
 
         vtkGetMacro(FrequencyOmega, double);
         vtkSetMacro(FrequencyOmega, double);
- 
+
+        enum class locality_method_t
+        {
+            none,
+            rotation,
+            velocity,
+            rigid_body
+        };
+
     protected:
         tpf_flow_field_octree();
         ~tpf_flow_field_octree();
@@ -45,9 +56,11 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         /// Using data types
         using float_t = float;
 
-        /// GUI parameters
+        /// Integration parameters
         int Method, NumAdvections, ForceFixedTimeStep;
         double StreamTimeStep;
-        int ForceFixedFrequency;
+
+        /// Locality parameters
+        int LocalityMethod, ForceFixedFrequency;
         double FrequencyOmega;
 };

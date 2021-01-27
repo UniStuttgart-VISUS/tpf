@@ -254,8 +254,9 @@
                 <InputArrayDomain attribute_type="field" name="ymax_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="zmin_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="zmax_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
-                <InputArrayDomain attribute_type="field" name="omega_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="omega_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="classification_array" number_of_components="1" optional="1"/>
                 <Documentation>
                     Points with ID, velocities, and meta information about the grid and its rotation
                 </Documentation>
@@ -270,6 +271,19 @@
                 </DataTypeDomain>
                 <Documentation>
                     Input seed for stream-, streak and path lines
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Stars" command="SetInputConnection" port_index="2">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPointSet"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
+                <Documentation>
+                    Identified star positions and respective properties
                 </Documentation>
             </InputProperty>
 
@@ -418,33 +432,84 @@
                     Force a fixed time step for streak- and pathline computation
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="StreamTimeStep" command="SetStreamTimeStep" label="Timestep for stream lines" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="StreamTimeStep" command="SetStreamTimeStep" label="Fixed time step" number_of_elements="1" default_values="1.0">
                 <Hints>
-                    <PropertyWidgetDecorator type="CompositeDecorator">
-                        <Expression type="or">
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedTimeStep" value="1" />
-                        </Expression>
-                    </PropertyWidgetDecorator>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedTimeStep" value="1" />
                 </Hints>
                 <Documentation>
                     Time step size for streamline computation; and for streak- and pathline computation in case of a fixed time step
                 </Documentation>
             </DoubleVectorProperty>
+
+            <IntVectorProperty name="LocalityMethod" command="SetLocalityMethod" label="Locality method" number_of_elements="1" default_values="1">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="None"/>
+                    <Entry value="1" text="Rotation around origin"/>
+                    <Entry value="2" text="Star velocity"/>
+                    <Entry value="3" text="Rigid body"/>
+                </EnumerationDomain>
+                <Documentation>
+                    Method for the definition of locality
+                </Documentation>
+            </IntVectorProperty>
             <IntVectorProperty name="ForceFixedFrequency" command="SetForceFixedFrequency" label="Force fixed frequency" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="1" />
+                </Hints>
                 <Documentation>
                     Override the omega rotation given by the dataset
                 </Documentation>
             </IntVectorProperty>
             <DoubleVectorProperty name="FrequencyOmega" command="SetFrequencyOmega" label="Rotational frequency (omega)" number_of_elements="1" default_values="1.0">
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedFrequency" value="1" />
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedFrequency" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
                     Omega rotation when overriding the value given by the dataset
                 </Documentation>
             </DoubleVectorProperty>
+            <StringVectorProperty name="StarClassification" label="Star Classification" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="classification_array">
+                    <RequiredProperties>
+                        <Property name="Octree" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="2" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="3" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Classification of each cell, indicating its corresponding star
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="StarVelocity" label="Star Velocity" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="13">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
+                    <RequiredProperties>
+                        <Property name="Stars" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="2" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="3" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Velocity of the stars at their center of mass
+                </Documentation>
+            </StringVectorProperty>
 
             <PropertyGroup label="Point data">
                 <Property name="ID" />
@@ -469,8 +534,14 @@
                 <Property name="NumAdvections" />
                 <Property name="ForceFixedTimeStep" />
                 <Property name="StreamTimeStep" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Locality">
+                <Property name="LocalityMethod" />
                 <Property name="ForceFixedFrequency" />
                 <Property name="FrequencyOmega" />
+                <Property name="StarClassification" />
+                <Property name="StarVelocity" />
             </PropertyGroup>
 
             <Hints>
