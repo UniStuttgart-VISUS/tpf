@@ -208,6 +208,17 @@
                 <Property name="DensityCutoff" />
             </PropertyGroup>
 
+            <OutputPort name="Octree" index="0" id="octree">
+                <Documentation>
+                    Copy of the input octree, appended with classification and information for each cell.
+                </Documentation>
+            </OutputPort>
+            <OutputPort name="Stars" index="1" id="stars">
+                <Documentation>
+                    Positions of the stars with their properties.
+                </Documentation>
+            </OutputPort>
+
             <Hints>
                 <ShowInMenu category="Two-Phase Flow"/>
             </Hints>

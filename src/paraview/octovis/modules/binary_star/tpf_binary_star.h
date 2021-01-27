@@ -1,12 +1,14 @@
 #pragma once
 
-#include "vtkPolyDataAlgorithm.h"
+#include "vtkAlgorithm.h"
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
 
-class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
+class VTK_EXPORT tpf_binary_star : public vtkAlgorithm
 {
     public:
         static tpf_binary_star* New();
-        vtkTypeMacro(tpf_binary_star, vtkPolyDataAlgorithm);
+        vtkTypeMacro(tpf_binary_star, vtkAlgorithm);
 
         vtkSetMacro(NumIterations, int);
         vtkGetMacro(NumIterations, int);
@@ -18,11 +20,15 @@ class VTK_EXPORT tpf_binary_star : public vtkPolyDataAlgorithm
         tpf_binary_star();
         ~tpf_binary_star();
 
-        int FillInputPortInformation(int, vtkInformation*);
+        virtual int FillInputPortInformation(int, vtkInformation*) override;
+        virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-        int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
-        int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+        virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
+
+        virtual int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
 
     private:
         tpf_binary_star(const tpf_binary_star&);

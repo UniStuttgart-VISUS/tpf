@@ -1,5 +1,6 @@
 #include "tpf_binary_star.h"
 
+#include "tpf/data/tpf_array.h"
 #include "tpf/data/tpf_octree.h"
 #include "tpf/data/tpf_position.h"
 
@@ -195,18 +196,69 @@ vtkStandardNewMacro(tpf_binary_star);
 tpf_binary_star::tpf_binary_star()
 {
     this->SetNumberOfInputPorts(1);
-    this->SetNumberOfOutputPorts(1);
+    this->SetNumberOfOutputPorts(2);
 }
 
 tpf_binary_star::~tpf_binary_star() {}
 
-int tpf_binary_star::FillInputPortInformation(int port, vtkInformation* info)
+int tpf_binary_star::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
-    if (!this->Superclass::FillInputPortInformation(port, info))
+    // Create an output object of the correct type.
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA_OBJECT()))
     {
-        return 0;
+        return this->RequestDataObject(request, input_vector, output_vector);
     }
 
+    // Generate the data
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_INFORMATION()))
+    {
+        return this->RequestInformation(request, input_vector, output_vector);
+    }
+
+    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA()))
+    {
+        return this->RequestData(request, input_vector, output_vector);
+    }
+
+    if (request->Has(vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT()))
+    {
+        return this->RequestUpdateExtent(request, input_vector, output_vector);
+    }
+
+    return this->Superclass::ProcessRequest(request, input_vector, output_vector);
+}
+
+int tpf_binary_star::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
+{
+    // Octree
+    {
+        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
+
+        if (!output)
+        {
+            output = vtkPolyData::New();
+            output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
+            this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+        }
+    }
+
+    // Stars
+    {
+        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
+
+        if (!output)
+        {
+            output = vtkPolyData::New();
+            output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
+            this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+        }
+    }
+
+    return 1;
+}
+
+int tpf_binary_star::FillInputPortInformation(int port, vtkInformation* info)
+{
     if (port == 0)
     {
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkPointSet");
@@ -216,12 +268,33 @@ int tpf_binary_star::FillInputPortInformation(int port, vtkInformation* info)
     return 0;
 }
 
-int tpf_binary_star::RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *)
+int tpf_binary_star::FillOutputPortInformation(int port, vtkInformation* info)
+{
+    if (port == 0)
+    {
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
+        return 1;
+    }
+    else if (port == 1)
+    {
+        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
+        return 1;
+    }
+
+    return 1;
+}
+
+int tpf_binary_star::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*)
 {
     return 1;
 }
 
-int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector **input_vector, vtkInformationVector *output_vector)
+int tpf_binary_star::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
+{
+    return 1;
+}
+
+int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
     try
     {
@@ -239,6 +312,17 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
 
             throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")."));
         };
+
+        // Create stars poly data object
+        tpf::data::polydata<float_t> stars;
+
+        stars.insert(std::make_shared<tpf::geometry::point<float_t>>(0.0, 0.0, 0.0));
+        stars.insert(std::make_shared<tpf::geometry::point<float_t>>(0.0, 0.0, 0.0));
+
+        stars.add(std::make_shared<tpf::data::array<float_t, 3>>("Velocity", 2), tpf::data::topology_t::POINT_DATA);
+        stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Mass", 2), tpf::data::topology_t::POINT_DATA);
+        stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Orbital frequency", 2), tpf::data::topology_t::POINT_DATA);
+        stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Roche lobe radius", 2), tpf::data::topology_t::POINT_DATA);
 
         // Load data
         const auto data = load_data<float_t>(in_octree, get_array_name);
@@ -334,7 +418,7 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
         const int value_shift = static_cast<int>(std::floor(std::log(octree.get_root()->get_value().first->calculate_volume().get_float_value())));
         const float_t value_multiplier = static_cast<float_t>(std::pow(2.0, -value_shift));
 
-        for (int i = 0; i < this->NumIterations; ++i)
+        for (int i = 0; i <= this->NumIterations; ++i)
         {
             // Sum over mass, position and velocity
             std::array<float_t, 2> mass;
@@ -407,8 +491,10 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
                 (static_cast<float_t>(0.6) * std::pow(ratio_donor, static_cast<float_t>(2.0 / 3.0))
                     + std::log(static_cast<float_t>(1.0) + std::pow(ratio_donor, static_cast<float_t>(1.0 / 3.0))));
 
-            if (i == this->NumIterations - 1)
+            if (i == this->NumIterations)
             {
+#if __tpf_detailed
+                // Output information
                 tpf::log::info_message(__tpf_info_message("Accretor"));
                 tpf::log::info_message(__tpf_info_message("  mass              ", mass[ACCRETOR_INDEX]));
                 tpf::log::info_message(__tpf_info_message("  location          [", center[ACCRETOR_INDEX][0], ", ", center[ACCRETOR_INDEX][1], ", ", center[ACCRETOR_INDEX][2], "]"));
@@ -422,6 +508,25 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
                 tpf::log::info_message(__tpf_info_message("  velocity          [", velocity[DONOR_INDEX][0], ", ", velocity[DONOR_INDEX][1], ", ", velocity[DONOR_INDEX][2], "]"));
                 tpf::log::info_message(__tpf_info_message("  angular frequency ", frequency));
                 tpf::log::info_message(__tpf_info_message("  Roche lobe radius ", roche_lobe_radius_donor));
+#endif
+
+                // Set stars
+                *std::static_pointer_cast<tpf::geometry::point<float_t>>(stars.get_object(ACCRETOR_INDEX)) = center[ACCRETOR_INDEX];
+                *std::static_pointer_cast<tpf::geometry::point<float_t>>(stars.get_object(DONOR_INDEX)) = center[DONOR_INDEX];
+
+                stars.template get_point_data_as<float_t, 3, 1>("Velocity")->at(ACCRETOR_INDEX) = velocity[ACCRETOR_INDEX];
+                stars.template get_point_data_as<float_t, 3, 1>("Velocity")->at(DONOR_INDEX) = velocity[DONOR_INDEX];
+
+                stars.template get_point_data_as<float_t, 1, 1>("Mass")->at(ACCRETOR_INDEX) = mass[ACCRETOR_INDEX];
+                stars.template get_point_data_as<float_t, 1, 1>("Mass")->at(DONOR_INDEX) = mass[DONOR_INDEX];
+
+                stars.template get_point_data_as<float_t, 1, 1>("Orbital frequency")->at(ACCRETOR_INDEX) = frequency;
+                stars.template get_point_data_as<float_t, 1, 1>("Orbital frequency")->at(DONOR_INDEX) = frequency;
+
+                stars.template get_point_data_as<float_t, 1, 1>("Roche lobe radius")->at(ACCRETOR_INDEX) = roche_lobe_radius_accretor;
+                stars.template get_point_data_as<float_t, 1, 1>("Roche lobe radius")->at(DONOR_INDEX) = roche_lobe_radius_donor;
+
+                break;
             }
 
             // Iterate over cells, compute the acceleration, and classify it
@@ -485,17 +590,26 @@ int tpf_binary_star::RequestData(vtkInformation *request, vtkInformationVector *
             }
         }
 
-        // Set output
-        auto output = vtkPolyData::GetData(output_vector);
-        output->ShallowCopy(in_octree);
+        // Set output octree
+        auto output_octree = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
+        output_octree->ShallowCopy(in_octree);
 
-        output->GetPointData()->AddArray(center_of_mass);
-        output->GetPointData()->AddArray(cluster_velocity);
-        output->GetPointData()->AddArray(angular_frequency);
-        output->GetPointData()->AddArray(acceleration);
-        output->GetPointData()->AddArray(classifier);
-        output->GetPointData()->AddArray(roche_lobe);
-        output->GetPointData()->AddArray(classification);
+        output_octree->GetPointData()->AddArray(center_of_mass);
+        output_octree->GetPointData()->AddArray(cluster_velocity);
+        output_octree->GetPointData()->AddArray(angular_frequency);
+        output_octree->GetPointData()->AddArray(acceleration);
+        output_octree->GetPointData()->AddArray(classifier);
+        output_octree->GetPointData()->AddArray(roche_lobe);
+        output_octree->GetPointData()->AddArray(classification);
+
+        // Set output stars
+        auto output_stars = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
+
+        tpf::vtk::set_polydata(output_stars, stars,
+            tpf::data::data_information<float_t, 3>{ "Velocity", tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<float_t, 1>{ "Mass", tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<float_t, 1>{ "Orbital frequency", tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<float_t, 1>{ "Roche lobe radius", tpf::data::topology_t::POINT_DATA });
     }
     catch (const std::runtime_error& ex)
     {
