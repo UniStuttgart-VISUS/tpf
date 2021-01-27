@@ -30,6 +30,7 @@
 #include "vtkPointData.h"
 #include "vtkPointSet.h"
 #include "vtkPolyData.h"
+#include "vtkSmartPointer.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
@@ -347,7 +348,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         const typename ID_TYPE_ARRAY::ValueType DONOR_INDEX = 1;
 
         // Identify donor and accretor cells from the densities
-        auto classification = ID_TYPE_ARRAY::New();
+        auto classification = vtkSmartPointer<ID_TYPE_ARRAY>::New();
         classification->SetName("Classification");
         classification->SetNumberOfComponents(1);
         classification->SetNumberOfTuples(num_points);
@@ -379,37 +380,37 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         }
 
         // Compute properties for each star or cell
-        auto center_of_mass = FLOAT_TYPE_ARRAY::New();
+        auto center_of_mass = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         center_of_mass->SetName("Center of mass");
         center_of_mass->SetNumberOfComponents(3);
         center_of_mass->SetNumberOfTuples(num_points);
         center_of_mass->Fill(0.0);
 
-        auto cluster_velocity = FLOAT_TYPE_ARRAY::New();
+        auto cluster_velocity = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         cluster_velocity->SetName("Velocity");
         cluster_velocity->SetNumberOfComponents(3);
         cluster_velocity->SetNumberOfTuples(num_points);
         cluster_velocity->Fill(0.0);
 
-        auto angular_frequency = FLOAT_TYPE_ARRAY::New();
+        auto angular_frequency = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         angular_frequency->SetName("Orbital angular frequency");
         angular_frequency->SetNumberOfComponents(1);
         angular_frequency->SetNumberOfTuples(num_points);
         angular_frequency->Fill(0.0);
 
-        auto acceleration = FLOAT_TYPE_ARRAY::New();
+        auto acceleration = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         acceleration->SetName("Acceleration");
         acceleration->SetNumberOfComponents(3);
         acceleration->SetNumberOfTuples(num_points);
         acceleration->Fill(0.0);
 
-        auto classifier = FLOAT_TYPE_ARRAY::New();
+        auto classifier = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         classifier->SetName("Classifier");
         classifier->SetNumberOfComponents(1);
         classifier->SetNumberOfTuples(num_points);
         classifier->Fill(0.0);
 
-        auto roche_lobe = FLOAT_TYPE_ARRAY::New();
+        auto roche_lobe = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         roche_lobe->SetName("Roche lobe radius");
         roche_lobe->SetNumberOfComponents(1);
         roche_lobe->SetNumberOfTuples(num_points);
@@ -590,6 +591,13 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
             }
         }
 
+        // Create output array
+        auto omega = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
+        omega->SetName("Orbital frequency");
+        omega->SetNumberOfComponents(1);
+        omega->SetNumberOfTuples(1);
+        omega->SetValue(0, stars.template get_point_data_as<float_t, 1, 1>("Orbital frequency")->at(ACCRETOR_INDEX));
+
         // Set output octree
         auto output_octree = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
         output_octree->ShallowCopy(in_octree);
@@ -602,6 +610,8 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         output_octree->GetPointData()->AddArray(roche_lobe);
         output_octree->GetPointData()->AddArray(classification);
 
+        output_octree->GetFieldData()->AddArray(omega);
+
         // Set output stars
         auto output_stars = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
 
@@ -610,6 +620,8 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
             tpf::data::data_information<float_t, 1>{ "Mass", tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ "Orbital frequency", tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ "Roche lobe radius", tpf::data::topology_t::POINT_DATA });
+
+        output_stars->GetFieldData()->AddArray(omega);
     }
     catch (const std::runtime_error& ex)
     {
