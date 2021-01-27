@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vtkPolyDataAlgorithm.h"
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
 
 class VTK_EXPORT tpf_seed_octree : public vtkPolyDataAlgorithm
 {
