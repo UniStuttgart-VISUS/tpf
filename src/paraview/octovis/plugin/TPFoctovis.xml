@@ -20,13 +20,13 @@
                 <DataTypeDomain name="input_type">
                     <DataType value="vtkPointSet"/>
                 </DataTypeDomain>
-                <InputArrayDomain attribute_type="point" name="id_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="density_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="density_accretor_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="density_donor_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="density_other_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
                 <InputArrayDomain attribute_type="point" name="gravitation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="cell_size_array" number_of_components="3"/>
                 <InputArrayDomain attribute_type="field" name="xmin_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="xmax_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="ymin_array" number_of_components="1"/>
@@ -37,17 +37,6 @@
                     Points with ID, densities, velocities, gravitational potential, and meta information about the grid
                 </Documentation>
             </InputProperty>
-
-            <StringVectorProperty name="ID" label="Point ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
-                    <RequiredProperties>
-                        <Property name="Octree" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Documentation>
-                    IDs indicating the point position within the octree
-                </Documentation>
-            </StringVectorProperty>
 
             <StringVectorProperty name="Density" label="Density" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="density_array">
@@ -100,7 +89,6 @@
                     Velocity
                 </Documentation>
             </StringVectorProperty>
-
             <StringVectorProperty name="Gravitation" label="Gravitation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gravitation_array">
                     <RequiredProperties>
@@ -109,6 +97,17 @@
                 </ArrayListDomain>
                 <Documentation>
                     Gravitation
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="CellSize" label="Cell size" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="cell_size_array">
+                    <RequiredProperties>
+                        <Property name="Octree" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Cell sizes
                 </Documentation>
             </StringVectorProperty>
 
@@ -185,13 +184,13 @@
             </DoubleVectorProperty>
 
             <PropertyGroup label="Point data">
-                <Property name="ID" />
                 <Property name="Density" />
                 <Property name="Density Accretor" />
                 <Property name="Density Donor" />
                 <Property name="Density Other" />
                 <Property name="Velocity" />
                 <Property name="Gravitation" />
+                <Property name="CellSize" />
             </PropertyGroup>
 
             <PropertyGroup label="Domain data">

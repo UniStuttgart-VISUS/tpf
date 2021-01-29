@@ -1,10 +1,8 @@
 #include "tpf_binary_star.h"
 
 #include "tpf/data/tpf_array.h"
-#include "tpf/data/tpf_octree.h"
 #include "tpf/data/tpf_position.h"
 
-#include "tpf/geometry/tpf_cuboid.h"
 #include "tpf/geometry/tpf_point.h"
 
 #include "tpf/log/tpf_log.h"
@@ -44,154 +42,6 @@
 #include <utility>
 #include <vector>
 
-template <typename float_t>
-std::tuple<tpf::data::octree<float_t, float_t>, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*,
-    FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*, FLOAT_TYPE_ARRAY*>
-load_data(vtkPointSet* in_octree, const std::function<std::string(int)> get_array_name)
-{
-    // Get input data
-    vtkIdType num_points;
-
-    ID_TYPE_ARRAY* in_paths = nullptr;
-    FLOAT_TYPE_ARRAY* in_density = nullptr;
-    FLOAT_TYPE_ARRAY* in_density_accretor = nullptr;
-    FLOAT_TYPE_ARRAY* in_density_donor = nullptr;
-    FLOAT_TYPE_ARRAY* in_density_other = nullptr;
-    FLOAT_TYPE_ARRAY* in_velocity = nullptr;
-    FLOAT_TYPE_ARRAY* in_gravitation = nullptr;
-
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-
-    if (tpf::mpi::get_instance().get_rank() == 0)
-    {
-        num_points = in_octree->GetPoints()->GetNumberOfPoints();
-
-        in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
-
-        in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
-        in_density_accretor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2).c_str()));
-        in_density_donor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3).c_str()));
-        in_density_other = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(4).c_str()));
-        in_velocity = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str()));
-        in_gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(6).c_str()));
-
-        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
-        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
-        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
-        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
-        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
-    }
-
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().check_mpi_status())
-    {
-        tpf::mpi::get_instance().broadcast(num_points, 0);
-
-        if (tpf::mpi::get_instance().get_rank() != 0)
-        {
-            in_paths = ID_TYPE_ARRAY::New();
-            in_paths->SetNumberOfComponents(1);
-            in_paths->SetNumberOfTuples(num_points);
-
-            in_density = FLOAT_TYPE_ARRAY::New();
-            in_density->SetNumberOfComponents(1);
-            in_density->SetNumberOfTuples(num_points);
-
-            in_density_accretor = FLOAT_TYPE_ARRAY::New();
-            in_density_accretor->SetNumberOfComponents(1);
-            in_density_accretor->SetNumberOfTuples(num_points);
-
-            in_density_donor = FLOAT_TYPE_ARRAY::New();
-            in_density_donor->SetNumberOfComponents(1);
-            in_density_donor->SetNumberOfTuples(num_points);
-
-            in_density_other = FLOAT_TYPE_ARRAY::New();
-            in_density_other->SetNumberOfComponents(1);
-            in_density_other->SetNumberOfTuples(num_points);
-
-            in_velocity = FLOAT_TYPE_ARRAY::New();
-            in_velocity->SetNumberOfComponents(3);
-            in_velocity->SetNumberOfTuples(num_points);
-
-            in_gravitation = FLOAT_TYPE_ARRAY::New();
-            in_gravitation->SetNumberOfComponents(3);
-            in_gravitation->SetNumberOfTuples(num_points);
-        }
-
-        MPI_Bcast(in_paths->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-
-        MPI_Bcast(in_density->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_density_accretor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_density_donor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_density_other->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_velocity->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        MPI_Bcast(in_gravitation->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-
-        tpf::mpi::get_instance().broadcast(x_min, 0);
-        tpf::mpi::get_instance().broadcast(x_max, 0);
-        tpf::mpi::get_instance().broadcast(y_min, 0);
-        tpf::mpi::get_instance().broadcast(y_max, 0);
-        tpf::mpi::get_instance().broadcast(z_min, 0);
-        tpf::mpi::get_instance().broadcast(z_max, 0);
-    }
-#endif
-
-    // Create octree with root using the bounding box from the data
-    const tpf::geometry::point<float_t> min_point(x_min, y_min, z_min);
-    const tpf::geometry::point<float_t> max_point(x_max, y_max, z_max);
-
-    auto bounding_box = std::make_shared<tpf::geometry::cuboid<float_t>>(min_point, max_point);
-    auto root = std::make_shared<typename tpf::data::octree<float_t, float_t>::node>(std::make_pair(bounding_box, 0.0f));
-
-    tpf::data::octree<float_t, float_t> octree;
-    octree.set_root(root);
-
-    // Add nodes
-    std::vector<std::pair<std::vector<tpf::data::position_t>, float_t>> node_information;
-    node_information.reserve(num_points);
-
-    for (vtkIdType p = 0; p < num_points; ++p)
-    {
-        // Decode path
-        auto path_code = in_paths->GetValue(p);
-
-        std::vector<tpf::data::position_t> path(static_cast<std::size_t>(std::floor(std::log2(path_code) / std::log2(8))), tpf::data::position_t::INVALID);
-        std::size_t index = 0;
-
-        while (path_code != 1)
-        {
-            const auto turn = path_code % 8;
-
-            path[index++] = static_cast<tpf::data::position_t>(((turn & 1) ? 4 : 0) + ((turn & 2) ? 2 : 0) + ((turn & 4) ? 1 : 0));
-
-            path_code /= 8;
-        }
-
-        // Add node information
-        node_information.push_back(std::make_pair(path, static_cast<float_t>(in_density->GetValue(p))));
-    }
-
-    // Delete temporary objects
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().get_rank() != 0)
-    {
-        in_paths->Delete();
-
-        in_density->Delete();
-        in_density_accretor->Delete();
-        in_density_donor->Delete();
-        in_density_other->Delete();
-        in_velocity->Delete();
-        in_gravitation->Delete();
-    }
-#endif
-
-    octree.insert_nodes(node_information.begin(), node_information.end());
-
-    return std::make_tuple(octree, in_density, in_density_accretor, in_density_donor, in_density_other, in_velocity, in_gravitation);
-}
-
 vtkStandardNewMacro(tpf_binary_star);
 
 tpf_binary_star::tpf_binary_star()
@@ -200,7 +50,7 @@ tpf_binary_star::tpf_binary_star()
     this->SetNumberOfOutputPorts(2);
 }
 
-tpf_binary_star::~tpf_binary_star() {}
+tpf_binary_star::~tpf_binary_star() { }
 
 int tpf_binary_star::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
 {
@@ -325,19 +175,92 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Orbital frequency", 2), tpf::data::topology_t::POINT_DATA);
         stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Roche lobe radius", 2), tpf::data::topology_t::POINT_DATA);
 
-        // Load data
-        const auto data = load_data<float_t>(in_octree, get_array_name);
+        // Get input data
+        vtkIdType num_points;
 
-        const auto octree = std::get<0>(data);
+        std::shared_ptr<FLOAT_TYPE_ARRAY> cell_size = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> density = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> density_accretor = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> density_donor = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> density_other = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> velocities = nullptr;
+        std::shared_ptr<FLOAT_TYPE_ARRAY> gravitation = nullptr;
 
-        auto density = std::get<1>(data);
-        auto density_accretor = std::get<2>(data);
-        auto density_donor = std::get<3>(data);
-        auto density_other = std::get<4>(data);
-        auto velocities = std::get<5>(data);
-        auto gravitation = std::get<6>(data);
+        double x_min, x_max, y_min, y_max, z_min, z_max;
 
-        const auto num_points = density->GetNumberOfTuples();
+        if (tpf::mpi::get_instance().get_rank() == 0)
+        {
+            auto deleter = [](FLOAT_TYPE_ARRAY*) {};
+
+            num_points = in_octree->GetPoints()->GetNumberOfPoints();
+
+            cell_size = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str())), deleter);
+
+            density = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str())), deleter);
+            density_accretor = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2).c_str())), deleter);
+            density_donor = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3).c_str())), deleter);
+            density_other = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(4).c_str())), deleter);
+            velocities = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str())), deleter);
+            gravitation = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(6).c_str())), deleter);
+
+            x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+            x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+            y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+            y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
+            z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+            z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
+        }
+
+#ifdef __tpf_use_mpi
+        if (tpf::mpi::get_instance().check_mpi_status())
+        {
+            tpf::mpi::get_instance().broadcast(num_points, 0);
+
+            if (tpf::mpi::get_instance().get_rank() != 0)
+            {
+                auto deleter = [](FLOAT_TYPE_ARRAY* ptr) { ptr->Delete(); };
+
+                density = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                density->SetNumberOfComponents(1);
+                density->SetNumberOfTuples(num_points);
+
+                density_accretor = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                density_accretor->SetNumberOfComponents(1);
+                density_accretor->SetNumberOfTuples(num_points);
+
+                density_donor = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                density_donor->SetNumberOfComponents(1);
+                density_donor->SetNumberOfTuples(num_points);
+
+                density_other = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                density_other->SetNumberOfComponents(1);
+                density_other->SetNumberOfTuples(num_points);
+
+                velocities = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                velocities->SetNumberOfComponents(3);
+                velocities->SetNumberOfTuples(num_points);
+
+                gravitation = std::shared_ptr<FLOAT_TYPE_ARRAY>(FLOAT_TYPE_ARRAY::New(), deleter);
+                gravitation->SetNumberOfComponents(3);
+                gravitation->SetNumberOfTuples(num_points);
+            }
+
+            MPI_Bcast(density->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(density_accretor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(density_donor->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(density_other->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(velocities->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(gravitation->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+            MPI_Bcast(cell_size->GetVoidPointer(0), 3 * num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+
+            tpf::mpi::get_instance().broadcast(x_min, 0);
+            tpf::mpi::get_instance().broadcast(x_max, 0);
+            tpf::mpi::get_instance().broadcast(y_min, 0);
+            tpf::mpi::get_instance().broadcast(y_max, 0);
+            tpf::mpi::get_instance().broadcast(z_min, 0);
+            tpf::mpi::get_instance().broadcast(z_max, 0);
+        }
+#endif
 
         // "Enum" for classification
         const typename ID_TYPE_ARRAY::ValueType OTHER = 0;
@@ -450,7 +373,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                         static_cast<float_t>(tmp_velocity[1]), static_cast<float_t>(tmp_velocity[2]);
 
                     const auto cell_density = density->GetValue(p);
-                    const auto cell_volume = octree.find_node(cell_position).first->get_value().first->calculate_volume().get_float_value();
+                    const auto cell_volume = std::pow(2.0, -9.0) * cell_size->GetComponent(p, 0) * cell_size->GetComponent(p, 1) * cell_size->GetComponent(p, 2);
 
                     // Values are too big; make them smaller
                     const auto cell_mass = (cell_density * cell_volume);
