@@ -37,7 +37,7 @@ class VTK_EXPORT tpf_seed_octree : public vtkPolyDataAlgorithm
         void operator=(const tpf_seed_octree&);
 
         /// Using data types
-        using float_t = float;
+        using float_t = double;
 
         /// GUI parameters
         int SeedMethod, SeedOffset, SeedSize;

@@ -418,9 +418,6 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         roche_lobe->Fill(0.0);
 #endif
 
-        const int value_shift = static_cast<int>(std::floor(std::log(octree.get_root()->get_value().first->calculate_volume().get_float_value())));
-        const float_t value_multiplier = static_cast<float_t>(std::pow(2.0, -value_shift));
-
         for (int i = 0; i <= this->NumIterations; ++i)
         {
             // Sum over mass, position and velocity
@@ -456,7 +453,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                     const auto cell_volume = octree.find_node(cell_position).first->get_value().first->calculate_volume().get_float_value();
 
                     // Values are too big; make them smaller
-                    const auto cell_mass = (cell_density * cell_volume) * value_multiplier;
+                    const auto cell_mass = (cell_density * cell_volume);
 
                     mass[cell_classification - 1] += cell_mass;
                     center[cell_classification - 1] += cell_position * cell_mass;
@@ -470,9 +467,6 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
 
             velocity[ACCRETOR_INDEX] /= mass[ACCRETOR_INDEX];
             velocity[DONOR_INDEX] /= mass[DONOR_INDEX];
-
-            mass[ACCRETOR_INDEX] /= value_multiplier;
-            mass[DONOR_INDEX] /= value_multiplier;
 
             // Calculate orbital angular frequency
             const float_t frequency = ((center[ACCRETOR_INDEX] - center[DONOR_INDEX])

@@ -35,7 +35,7 @@ class VTK_EXPORT tpf_binary_star : public vtkAlgorithm
         void operator=(const tpf_binary_star&);
 
         /// Using data types
-        using float_t = float;
+        using float_t = double;
 
         /// Number of iteration steps
         int NumIterations;

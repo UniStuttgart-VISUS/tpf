@@ -54,7 +54,7 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         void operator=(const tpf_flow_field_octree&);
 
         /// Using data types
-        using float_t = float;
+        using float_t = double;
 
         /// Integration parameters
         int Method, NumAdvections, ForceFixedTimeStep;
