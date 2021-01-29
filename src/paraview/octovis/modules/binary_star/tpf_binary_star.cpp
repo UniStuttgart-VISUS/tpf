@@ -380,6 +380,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         }
 
         // Compute properties for each star or cell
+#ifdef __tpf_debug
         auto center_of_mass = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
         center_of_mass->SetName("Center of mass");
         center_of_mass->SetNumberOfComponents(3);
@@ -387,7 +388,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         center_of_mass->Fill(0.0);
 
         auto cluster_velocity = vtkSmartPointer<FLOAT_TYPE_ARRAY>::New();
-        cluster_velocity->SetName("Velocity");
+        cluster_velocity->SetName("Star velocity");
         cluster_velocity->SetNumberOfComponents(3);
         cluster_velocity->SetNumberOfTuples(num_points);
         cluster_velocity->Fill(0.0);
@@ -415,6 +416,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         roche_lobe->SetNumberOfComponents(1);
         roche_lobe->SetNumberOfTuples(num_points);
         roche_lobe->Fill(0.0);
+#endif
 
         const int value_shift = static_cast<int>(std::floor(std::log(octree.get_root()->get_value().first->calculate_volume().get_float_value())));
         const float_t value_multiplier = static_cast<float_t>(std::pow(2.0, -value_shift));
@@ -438,20 +440,21 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
 
             for (vtkIdType p = 0; p < num_points; ++p)
             {
-                in_octree->GetPoint(p, tmp_position.data());
-                cell_position << static_cast<float_t>(tmp_position[0]),
-                    static_cast<float_t>(tmp_position[1]), static_cast<float_t>(tmp_position[2]);
-
-                velocities->GetTuple(p, tmp_velocity.data());
-                cell_velocity << static_cast<float_t>(tmp_velocity[0]),
-                    static_cast<float_t>(tmp_velocity[1]), static_cast<float_t>(tmp_velocity[2]);
-
                 const auto cell_classification = classification->GetValue(p);
-                const auto cell_density = density->GetValue(p);
-                const auto cell_volume = octree.find_node(cell_position).first->get_value().first->calculate_volume().get_float_value();
 
                 if (cell_classification != OTHER)
                 {
+                    in_octree->GetPoint(p, tmp_position.data());
+                    cell_position << static_cast<float_t>(tmp_position[0]),
+                        static_cast<float_t>(tmp_position[1]), static_cast<float_t>(tmp_position[2]);
+
+                    velocities->GetTuple(p, tmp_velocity.data());
+                    cell_velocity << static_cast<float_t>(tmp_velocity[0]),
+                        static_cast<float_t>(tmp_velocity[1]), static_cast<float_t>(tmp_velocity[2]);
+
+                    const auto cell_density = density->GetValue(p);
+                    const auto cell_volume = octree.find_node(cell_position).first->get_value().first->calculate_volume().get_float_value();
+
                     // Values are too big; make them smaller
                     const auto cell_mass = (cell_density * cell_volume) * value_multiplier;
 
@@ -494,7 +497,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
 
             if (i == this->NumIterations)
             {
-#if __tpf_detailed
+#ifdef __tpf_detailed
                 // Output information
                 tpf::log::info_message(__tpf_info_message("Accretor"));
                 tpf::log::info_message(__tpf_info_message("  mass              ", mass[ACCRETOR_INDEX]));
@@ -577,6 +580,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                 }
 
                 // Store properties
+#ifdef __tpf_debug
                 if (cell_classification != OTHER)
                 {
                     center_of_mass->SetTuple3(p, center[cell_classification - 1][0], center[cell_classification - 1][1], center[cell_classification - 1][2]);
@@ -586,6 +590,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                     classifier->SetValue(p, cell_classification == 1 ? cell_classifier_accretor : cell_classifier_donor);
                     roche_lobe->SetValue(p, cell_classification == 1 ? roche_lobe_radius_accretor : roche_lobe_radius_donor);
                 }
+#endif
 
                 classification->SetValue(p, cell_classification);
             }
@@ -602,12 +607,15 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         auto output_octree = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
         output_octree->ShallowCopy(in_octree);
 
+#ifdef __tpf_debug
         output_octree->GetPointData()->AddArray(center_of_mass);
         output_octree->GetPointData()->AddArray(cluster_velocity);
         output_octree->GetPointData()->AddArray(angular_frequency);
         output_octree->GetPointData()->AddArray(acceleration);
         output_octree->GetPointData()->AddArray(classifier);
         output_octree->GetPointData()->AddArray(roche_lobe);
+#endif
+
         output_octree->GetPointData()->AddArray(classification);
 
         output_octree->GetFieldData()->AddArray(omega);
