@@ -27,7 +27,7 @@ function(pv_project NAME ENABLED)
       file(GLOB_RECURSE module_files modules/*.module)
 
       vtk_module_scan(
-        MODULE_FILES                "${module_files}"
+        MODULE_FILES                ${module_files}
         PROVIDES_MODULES            modules
         WANT_BY_DEFAULT             ON
         HIDE_MODULES_FROM_CACHE     OFF

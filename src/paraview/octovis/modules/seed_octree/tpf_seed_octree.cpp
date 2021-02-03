@@ -14,12 +14,13 @@
 #include "tpf/vtk/tpf_polydata.h"
 
 #include "vtkDoubleArray.h"
-#include "vtkLongLongArray.h"
 #define FLOAT_TYPE_ARRAY vtkDoubleArray
-#if _WIN32
-#define ID_TYPE_ARRAY vtkLongLongArray
-#else
+#ifdef __tpf_no_longlong
+#include "vtkLongArray.h"
 #define ID_TYPE_ARRAY vtkLongArray
+#else
+#include "vtkLongLongArray.h"
+#define ID_TYPE_ARRAY vtkLongLongArray
 #endif
 
 #include "vtkObjectFactory.h"

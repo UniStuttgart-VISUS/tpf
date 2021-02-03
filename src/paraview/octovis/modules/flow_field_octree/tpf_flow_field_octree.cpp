@@ -21,12 +21,14 @@
 #include "tpf/vtk/tpf_time.h"
 
 #include "vtkDoubleArray.h"
-#include "vtkLongLongArray.h"
+#include "vtkFloatArray.h"
 #define FLOAT_TYPE_ARRAY vtkDoubleArray
-#if _WIN32
-#define ID_TYPE_ARRAY vtkLongLongArray
-#else
+#ifdef __tpf_no_longlong
+#include "vtkLongArray.h"
 #define ID_TYPE_ARRAY vtkLongArray
+#else
+#include "vtkLongLongArray.h"
+#define ID_TYPE_ARRAY vtkLongLongArray
 #endif
 
 #include "vtkObjectFactory.h"
@@ -111,7 +113,8 @@ namespace
                 vtkPoints* points;
 
                 ID_TYPE_ARRAY* in_paths, * in_classification;
-                FLOAT_TYPE_ARRAY* in_x_velocities, * in_y_velocities, * in_z_velocities, * in_star_velocities;
+                FLOAT_TYPE_ARRAY* in_x_velocities, * in_y_velocities, * in_z_velocities;
+                vtkDataArray* in_star_velocities;
 
                 double x_min, x_max, y_min, y_max, z_min, z_max;
                 double time;
@@ -165,7 +168,15 @@ namespace
                         try
                         {
                             in_classification = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(12, 0).c_str()));
-                            in_star_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_stars->GetPointData()->GetArray(get_array_name(13, 1).c_str()));
+                            in_star_velocities = in_stars->GetPointData()->GetArray(get_array_name(13, 1).c_str());
+
+                            if (in_classification == nullptr || in_star_velocities == nullptr)
+                            {
+                                throw std::runtime_error(__tpf_error_message("Input array is null."));
+                            }
+
+                            this->star_velocity[0] << in_star_velocities->GetComponent(0, 0), in_star_velocities->GetComponent(0, 1), in_star_velocities->GetComponent(0, 2);
+                            this->star_velocity[1] << in_star_velocities->GetComponent(1, 0), in_star_velocities->GetComponent(1, 1), in_star_velocities->GetComponent(1, 2);
                         }
                         catch (const std::exception& e)
                         {
@@ -213,9 +224,22 @@ namespace
                             in_classification->SetNumberOfComponents(1);
                             in_classification->SetNumberOfTuples(num_points);
 
-                            in_star_velocities = FLOAT_TYPE_ARRAY::New();
-                            in_star_velocities->SetNumberOfComponents(3);
-                            in_star_velocities->SetNumberOfTuples(num_points);
+                            if (vtkFloatArray::SafeDownCast(in_star_velocities) != nullptr)
+                            {
+                                in_star_velocities = vtkFloatArray::New();
+                                in_star_velocities->SetNumberOfComponents(3);
+                                in_star_velocities->SetNumberOfTuples(2);
+                            }
+                            else if (vtkDoubleArray::SafeDownCast(in_star_velocities) != nullptr)
+                            {
+                                in_star_velocities = vtkDoubleArray::New();
+                                in_star_velocities->SetNumberOfComponents(3);
+                                in_star_velocities->SetNumberOfTuples(2);
+                            }
+                            else
+                            {
+                                throw std::runtime_error(__tpf_error_message("Invalid array type."));
+                            }
                         }
                     }
 
@@ -242,7 +266,9 @@ namespace
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
                     {
                         MPI_Bcast(in_classification->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-                        MPI_Bcast(in_star_velocities->GetVoidPointer(0), 6, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+                        MPI_Bcast(in_star_velocities->GetVoidPointer(0), 6,
+                            (vtkFloatArray::SafeDownCast(in_star_velocities) != nullptr) ? tpf::mpi::mpi_t<float>::value : tpf::mpi::mpi_t<double>::value,
+                            0, tpf::mpi::get_instance().get_comm());
                     }
                 }
 #endif
@@ -411,9 +437,6 @@ namespace
                 switch (this->locality_method)
                 {
                 case tpf_flow_field_octree::locality_method_t::velocity:
-                    this->star_velocity[0] << in_star_velocities->GetComponent(0, 0), in_star_velocities->GetComponent(0, 1), in_star_velocities->GetComponent(0, 2);
-                    this->star_velocity[1] << in_star_velocities->GetComponent(1, 0), in_star_velocities->GetComponent(1, 1), in_star_velocities->GetComponent(1, 2);
-
                     get_translation = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->star_velocity[get_star(position) - 1]; };
                     get_rotation = [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); };
                     is_valid = [get_star](const tpf::geometry::point<float_t>& position) { return get_star(position) > 0; };
@@ -566,7 +589,7 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_octree).second;
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
-        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
+        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
             get_array_name, static_cast<locality_method_t>(this->LocalityMethod),
             this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->ForceFixedFrequency ? std::make_optional(static_cast<float_t>(this->FrequencyOmega)) : std::nullopt);
