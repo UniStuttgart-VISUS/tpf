@@ -34,8 +34,9 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         enum class locality_method_t
         {
             none,
-            rotation,
+            orbit,
             velocity,
+            rotation,
             rigid_body
         };
 

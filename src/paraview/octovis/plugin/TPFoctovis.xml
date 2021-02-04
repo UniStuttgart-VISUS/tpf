@@ -281,6 +281,7 @@
                     <DataType value="vtkPointSet"/>
                 </DataTypeDomain>
                 <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="rotation_array" number_of_components="3"/>
                 <Documentation>
                     Identified star positions and respective properties
                 </Documentation>
@@ -445,7 +446,8 @@
                     <Entry value="0" text="None"/>
                     <Entry value="1" text="Rotation around origin"/>
                     <Entry value="2" text="Star velocity"/>
-                    <Entry value="3" text="Rigid body"/>
+                    <Entry value="3" text="Star rotation"/>
+                    <Entry value="4" text="Rigid body"/>
                 </EnumerationDomain>
                 <Documentation>
                     Method for the definition of locality
@@ -484,6 +486,7 @@
                         <Expression type="or">
                             <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="2" />
                             <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="3" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="4" />
                         </Expression>
                     </PropertyWidgetDecorator>
                 </Hints>
@@ -501,12 +504,30 @@
                     <PropertyWidgetDecorator type="CompositeDecorator">
                         <Expression type="or">
                             <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="2" />
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="3" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="4" />
                         </Expression>
                     </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
                     Velocity of the stars at their center of mass
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="StarRotation" label="Star Rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="14">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array">
+                    <RequiredProperties>
+                        <Property name="Stars" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="3" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="4" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Rotation of the stars around their center of mass
                 </Documentation>
             </StringVectorProperty>
 
@@ -541,6 +562,7 @@
                 <Property name="FrequencyOmega" />
                 <Property name="StarClassification" />
                 <Property name="StarVelocity" />
+                <Property name="StarRotation" />
             </PropertyGroup>
 
             <Hints>
