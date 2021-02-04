@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tpf/data/tpf_data_information.h"
+#include "tpf/data/tpf_grid_information.h"
 
 #include "tpf/math/tpf_matrix.h"
 #include "tpf/math/tpf_vector.h"

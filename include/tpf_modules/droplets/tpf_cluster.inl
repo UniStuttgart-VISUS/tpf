@@ -3,6 +3,7 @@
 #include "tpf/algorithm/tpf_least_squares.h"
 
 #include "tpf/data/tpf_data_information.h"
+#include "tpf/data/tpf_grid_information.h"
 
 #include "tpf/log/tpf_log.h"
 
