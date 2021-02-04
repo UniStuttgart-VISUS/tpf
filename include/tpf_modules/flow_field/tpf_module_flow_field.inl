@@ -329,7 +329,7 @@ namespace tpf
 
                     write global:    particles
                 **/
-                #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities \
+                #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
                     is_particle_valid, get_rotation_axis, get_translation, global_velocity_parts)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
