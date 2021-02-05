@@ -781,7 +781,7 @@ namespace tpf
                 std::vector<CGAL::SM_Vertex_index> previous_indices(circle_resolution);
 
                 {
-                    const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, offset));
+                    const auto center = disc->add_point(geometry::point<float_t>(0.0, 0.0, offset + z_offset));
 
                     previous_indices[0] = disc->add_point(geometry::point<float_t>(
                         polynomial_increment * std::cos(static_cast<float_t>(0.0)),
