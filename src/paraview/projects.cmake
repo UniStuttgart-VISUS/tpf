@@ -27,7 +27,7 @@ function(pv_project NAME ENABLED)
       file(GLOB_RECURSE module_files modules/*.module)
 
       vtk_module_scan(
-        MODULE_FILES                "${module_files}"
+        MODULE_FILES                ${module_files}
         PROVIDES_MODULES            modules
         WANT_BY_DEFAULT             ON
         HIDE_MODULES_FROM_CACHE     OFF
@@ -78,6 +78,7 @@ function(pv_plugin NAME MODULES PARAMETERS)
     target_link_libraries(${NAME} PRIVATE ${module_names} tpf_import)
 
     install(TARGETS ${NAME})
+    install(FILES ${NAME}.xml DESTINATION share/tpf/xml)
   else()
     paraview_add_plugin(${NAME}
       VERSION                  1.0
@@ -88,6 +89,8 @@ function(pv_plugin NAME MODULES PARAMETERS)
     )
 
     target_link_libraries(${NAME} PRIVATE tpf_import)
+
+    install(FILES ${NAME}.xml DESTINATION share/tpf/xml)
   endif()
 endfunction()
 
