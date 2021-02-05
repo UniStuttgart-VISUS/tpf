@@ -78,6 +78,7 @@ function(pv_plugin NAME MODULES PARAMETERS)
     target_link_libraries(${NAME} PRIVATE ${module_names} tpf_import)
 
     install(TARGETS ${NAME})
+    install(FILES ${NAME}.xml DESTINATION share/tpf/xml)
   else()
     paraview_add_plugin(${NAME}
       VERSION                  1.0
@@ -88,6 +89,8 @@ function(pv_plugin NAME MODULES PARAMETERS)
     )
 
     target_link_libraries(${NAME} PRIVATE tpf_import)
+
+    install(FILES ${NAME}.xml DESTINATION share/tpf/xml)
   endif()
 endfunction()
 
