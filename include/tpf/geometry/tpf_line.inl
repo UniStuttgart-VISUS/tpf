@@ -66,9 +66,25 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
-        inline std::shared_ptr<geometric_object<floatp_t>> line<floatp_t, kernel_t>::clone() const
+        inline std::shared_ptr<geometric_object<floatp_t>> line<floatp_t, kernel_t>::clone(const math::transformer<floatp_t, 3>& trafo) const
         {
-            return std::make_shared<line<floatp_t, kernel_t>>(*this);
+            auto copy = std::make_shared<line<floatp_t, kernel_t>>(*this);
+            copy->transform(trafo);
+
+            return copy;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometric_object<floatp_t>& line<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
+        {
+            if (!trafo.is_unit())
+            {
+                this->_line = typename kernel_t::Segment_3(
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_line.source()).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_line.target()).transform(trafo)).get_internal());
+            }
+
+            return *this;
         }
 
         template <typename floatp_t, typename kernel_t>

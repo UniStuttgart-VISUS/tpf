@@ -11,7 +11,7 @@ namespace tpf
     namespace modules
     {
         template <typename float_t>
-        inline fs3d_reader<float_t>::fs3d_reader() { }
+        inline fs3d_reader<float_t>::fs3d_reader() : fractions(nullptr), velocities(nullptr), timestep(0) { }
 
         template <typename float_t>
         inline std::string fs3d_reader<float_t>::get_name() const

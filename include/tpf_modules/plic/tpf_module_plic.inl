@@ -61,10 +61,11 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic<float_t>::set_algorithm_parameters(const std::size_t num_iterations, std::optional<float_t> pertubation)
+        inline void plic<float_t>::set_algorithm_parameters(const float_t error_margin, const std::size_t num_iterations, std::optional<float_t> perturbation)
         {
+            this->error_margin = error_margin;
             this->num_iterations = num_iterations;
-            this->perturbation = get_or_default(pertubation, static_cast<float_t>(0.00001L));
+            this->perturbation = get_or_default(perturbation, static_cast<float_t>(0.00001L));
         }
 
         template <typename float_t>
@@ -76,12 +77,14 @@ namespace tpf
 
             data::polydata<float_t>& plic_interface = *this->plic_interface;
 
+            auto array_coords = std::make_shared<data::array<int, 3>>("coords");
+            auto array_error = std::make_shared<data::array<float_t, 1>>("error");
+            auto array_iterations = std::make_shared<data::array<int, 1>>("iterations");
+
             // Calculate PLIC at all interface cells and store the error
 #ifdef __tpf_debug
             std::size_t interface_cells = 0;
             std::size_t illegal_cells = 0;
-
-            auto error = std::make_shared<data::array<float_t, 1>>("Error");
 #endif
 
             for (auto z = fractions.get_extent()[2].first; z <= fractions.get_extent()[2].second; ++z)
@@ -96,18 +99,14 @@ namespace tpf
                         {
                             // Create PLIC interface
                             auto reconstruction = reconstruct_interface(fractions(coords), gradients(coords),
-                                fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->num_iterations, this->perturbation);
+                                fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->error_margin, this->num_iterations, this->perturbation);
 
-                            if (reconstruction.first != nullptr)
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
-                                plic_interface.insert(reconstruction.first);
-
-#ifdef __tpf_debug
-                                for (std::size_t i = 0; i < reconstruction.first->get_num_cells(); ++i)
-                                {
-                                    error->push_back(reconstruction.second);
-                                }
-#endif
+                                plic_interface.insert(std::get<0>(reconstruction));
+                                array_coords->push_back(coords.cast<int>());
+                                array_error->push_back(std::get<1>(reconstruction));
+                                array_iterations->push_back(std::get<2>(reconstruction));
                             }
 #ifdef __tpf_debug
                             else
@@ -122,27 +121,28 @@ namespace tpf
                 }
             }
 
-#ifdef __tpf_debug
-            plic_interface.add(error, data::topology_t::CELL_DATA);
+            plic_interface.add(array_coords, tpf::data::topology_t::OBJECT_DATA);
+            plic_interface.add(array_error, tpf::data::topology_t::OBJECT_DATA);
+            plic_interface.add(array_iterations, tpf::data::topology_t::OBJECT_DATA);
 
+#ifdef __tpf_debug
             log::info_message(__tpf_info_message("Number of illegal cells: ", illegal_cells, " out of ", interface_cells, " interface cells."));
 #endif
         }
 
         template <typename float_t>
-        inline std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> plic<float_t>::reconstruct_interface(const float_t vof,
+        inline std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> plic<float_t>::reconstruct_interface(const float_t vof,
             const Eigen::Matrix<float_t, 3, 1>& gradient, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
-            const Eigen::Matrix<float_t, 3, 1>& cell_size, const std::size_t num_iterations, float_t perturbation)
+            const Eigen::Matrix<float_t, 3, 1>& cell_size, const float_t error_margin, const std::size_t num_iterations,
+            float_t perturbation)
         {
             // Auxiliary
             const auto cell_size_half = static_cast<float_t>(0.5) * cell_size;
             const float_t cell_volume = cell_size.prod();
 
             // Calculate error margin, initial minimum, maximum and ISO value
-            const float_t err_margin = static_cast<float_t>(0.0001);
-
-            float_t min_val = err_margin;
-            float_t max_val = static_cast<float_t>(1.0) - err_margin;
+            float_t min_val = error_margin;
+            float_t max_val = static_cast<float_t>(1.0) - error_margin;
 
             // Assume, that this function is only called for cells, where an interface should be calculated.
             // The following definition of starting iso_value will force an interface for the current cell.
@@ -180,6 +180,7 @@ namespace tpf
             // Perform binary search
             std::shared_ptr<geometry::polygon<float_t>> plic = nullptr;
             float_t error = static_cast<float_t>(0.0);
+            std::size_t iterations = 0;
 
             for (std::size_t i = 0; i < num_iterations; ++i)
             {
@@ -246,7 +247,9 @@ namespace tpf
                 iso_value = (max_val + min_val) / 2.0;
 
                 // Create PLIC on last iteration
-                if ((error = std::abs(volume - vof)) < err_margin || i == num_iterations - 1)
+                error = std::abs(volume - vof);
+                iterations = i + 1;
+                if (error < error_margin || i == num_iterations - 1)
                 {
                     if (intersections.size() >= 3)
                     {
@@ -270,7 +273,7 @@ namespace tpf
                 }
             }
 
-            return std::make_pair(plic, error);
+            return std::make_tuple(plic, error, iterations);
         }
     }
 }

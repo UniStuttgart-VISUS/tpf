@@ -8,7 +8,7 @@
 #include "tpf_tetrahedron.h"
 #include "tpf_triangle.h"
 
-#include "../algorithm/tpf_jooat.h"
+#include "../algorithm/tpf_joaat.h"
 
 #include "../stdext/tpf_comparator.h"
 

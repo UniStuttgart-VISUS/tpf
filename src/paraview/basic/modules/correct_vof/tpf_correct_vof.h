@@ -1,13 +1,13 @@
 #pragma once
 
 #include "vtkRectilinearGridAlgorithm.h"
- 
+
 class VTK_EXPORT tpf_correct_vof : public vtkRectilinearGridAlgorithm
 {
     public:
         static tpf_correct_vof* New();
         vtkTypeMacro(tpf_correct_vof, vtkRectilinearGridAlgorithm);
- 
+
     protected:
         tpf_correct_vof();
         ~tpf_correct_vof();
@@ -15,7 +15,7 @@ class VTK_EXPORT tpf_correct_vof : public vtkRectilinearGridAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

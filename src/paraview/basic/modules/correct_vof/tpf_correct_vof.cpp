@@ -62,7 +62,7 @@ int tpf_correct_vof::RequestData(vtkInformation*, vtkInformationVector** input_v
         const auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_vof, tpf::data::topology_t::CELL_DATA, GetInputArrayToProcess(0, in_vof));
 
         // Create output data
-        auto new_vof = vof.copy_structure<float_t, 1>("Volume of Fluid");
+        auto new_vof = vof.copy_structure<float_t, 1>(vof.get_name());
 
         // Run interface gradient module
         tpf::modules::correct_vof<float_t> correct_vof;

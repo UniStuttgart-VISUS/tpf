@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <vector>
- 
+
 class VTK_EXPORT tpf_fs3d_reader : public vtkRectilinearGridAlgorithm
 {
     public:
@@ -15,13 +15,13 @@ class VTK_EXPORT tpf_fs3d_reader : public vtkRectilinearGridAlgorithm
 
         vtkSetStringMacro(FileName);
         vtkGetStringMacro(FileName);
- 
+
     protected:
         tpf_fs3d_reader();
         ~tpf_fs3d_reader();
 
         int RequestInformation(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

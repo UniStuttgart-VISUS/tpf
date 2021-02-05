@@ -58,11 +58,17 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void plic3<float_t>::set_algorithm_parameters(std::optional<std::size_t> num_iterations_plic,
-            std::optional<std::size_t> num_iterations_plic3)
+        inline void plic3<float_t>::set_algorithm_parameters(float_t epsilon, float_t error_margin_plic,
+            float_t error_margin_plic3, std::size_t num_iterations_plic, std::size_t num_iterations_plic3,
+            std::optional<float_t> perturbation, std::optional<bool> hide_error_cubes)
         {
-            this->plic_iterations_ = get_or_default<std::size_t>(num_iterations_plic, 15);
-            this->plic3_iterations_ = get_or_default<std::size_t>(num_iterations_plic3, 15);
+            this->epsilon_ = epsilon;
+            this->error_margin_plic_ = error_margin_plic;
+            this->error_margin_plic3_ = error_margin_plic3;
+            this->num_iterations_plic_ = num_iterations_plic;
+            this->num_iterations_plic3_ = num_iterations_plic3;
+            this->perturbation_ = get_or_default<float_t>(perturbation, static_cast<float_t>(0.00001L));
+            this->hide_error_cubes_ = get_or_default<float_t>(hide_error_cubes, false);
         }
 
         template <typename float_t>
@@ -74,14 +80,17 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& f_norm_3ph = *this->f_norm_3ph;
 
             data::polydata<float_t>& plic3_interface = *this->plic3_interface;
+            auto array_coords = std::make_shared<data::array<int, 3>>("coords");
             auto types = std::make_shared<data::array<int, 1>>("type");
-            auto gradients_f = std::make_shared<data::array<float_t, 3>>("grad");
-            auto gradients_f3 = std::make_shared<data::array<float_t, 3>>("grad3");
             auto values_f = std::make_shared<data::array<float_t, 1>>("f");
             auto values_f3 = std::make_shared<data::array<float_t, 1>>("f3");
             auto values_n3 = std::make_shared<data::array<float_t, 3>>("fnorm3ph");
+            auto gradients_f = std::make_shared<data::array<float_t, 3>>("grad");
+            auto gradients_f3 = std::make_shared<data::array<float_t, 3>>("grad3");
+            auto array_error = std::make_shared<data::array<float_t, 1>>("error");
+            auto array_iterations = std::make_shared<data::array<int, 1>>("iterations");
 
-            const float_t epsilon = static_cast<float_t>(0.0001L);
+            const float_t epsilon = this->epsilon_;
             const float_t epsilon_one = static_cast<float_t>(1.0L) - epsilon;
 
             const auto extent = f.get_extent();
@@ -94,8 +103,7 @@ namespace tpf
                         auto f_value = f(coords);
                         auto f3_value = f3(coords);
                         Eigen::Matrix<float_t, 3, 1> n3_value = f_norm_3ph(coords);
-                        Eigen::Matrix<float_t, 3, 1> n3_output;
-                        n3_output << 0.0, 0.0, 0.0;
+                        Eigen::Matrix<float_t, 3, 1> n3_output = Eigen::Matrix<float_t, 3, 1>::Zero();
 
                         // empty cells
                         if (f_value < epsilon && f3_value < epsilon) {
@@ -116,12 +124,14 @@ namespace tpf
                         polygon_t type = polygon_t::ERROR;
                         math::vec3_t<float_t> grad = interface_gradient<float_t>::calculate_gradient(coords, f); // TODO perfomance, not needed in all cases below
                         math::vec3_t<float_t> grad3 = interface_gradient<float_t>::calculate_gradient(coords, f3); // TODO perfomance, not needed in all cases below
+                        float_t error = 0;
+                        std::size_t iterations = 0;
 
                         // full solid cell - interface
                         if (!done && f3_value > epsilon_one)
                         {
-                            auto reconstruction = plic<float_t>::reconstruct_interface(epsilon_one, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(epsilon_one, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 auto neighbor = neighbor_type(f3, f, coords, epsilon);
                                 switch (neighbor) {
@@ -143,7 +153,9 @@ namespace tpf
                                     }
                                 }
 
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
@@ -154,44 +166,52 @@ namespace tpf
                             if (neighbor == neighbor_t::OTHER) {
                                 continue;
                             }
-                            auto reconstruction = plic<float_t>::reconstruct_interface(epsilon_one, grad, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(epsilon_one, grad, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 type = polygon_t::FLUID_GAS;
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
                         // only solid interface
                         if (!done && f_value < epsilon)
                         {
-                            auto reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 type = polygon_t::SOLID_GAS;
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
                         // only fluid interface - without solid neighbor
                         if (!done && f3_value < epsilon && !this->has_non_zero_neighbor(f3, coords, epsilon))
                         {
-                            auto reconstruction = plic<float_t>::reconstruct_interface(f_value, grad, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(f_value, grad, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 type = polygon_t::FLUID_GAS;
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
                         // only solid + fluid
                         if (!done && f3_value + f_value > epsilon_one)
                         {
-                            auto reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 type = polygon_t::SOLID_FLUID;
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
@@ -202,12 +222,14 @@ namespace tpf
                             {
                                 throw std::runtime_error(__tpf_error_message("Normal contains nan values."));
                             }
-                            auto reconstruction = plic<float_t>::reconstruct_interface(f_value, -n3_value, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->plic_iterations_);
-                            if (reconstruction.first != nullptr)
+                            auto reconstruction = plic<float_t>::reconstruct_interface(f_value, -n3_value, f.get_cell_coordinates(coords), f.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(reconstruction) != nullptr)
                             {
                                 type = polygon_t::FLUID_TYPE2;
                                 n3_output = n3_value;
-                                plic3_interface.insert(reconstruction.first);
+                                plic3_interface.insert(std::get<0>(reconstruction));
+                                error = std::get<1>(reconstruction);
+                                iterations = std::get<2>(reconstruction);
                                 done = true;
                             }
                         }
@@ -218,20 +240,23 @@ namespace tpf
                             {
                                 throw std::runtime_error(__tpf_error_message("Normal contains nan values."));
                             }
-                            auto f3_reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->plic_iterations_);
-                            if (f3_reconstruction.first != nullptr)
+                            auto f3_reconstruction = plic<float_t>::reconstruct_interface(f3_value, grad3, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->error_margin_plic_, this->num_iterations_plic_, this->perturbation_);
+                            if (std::get<0>(f3_reconstruction) != nullptr)
                             {
                                 // Add extra polygon, therefore directly add to lists and not set done=true
-                                plic3_interface.insert(f3_reconstruction.first);
+                                plic3_interface.insert(std::get<0>(f3_reconstruction));
+                                array_coords->push_back(coords.cast<int>());
                                 types->push_back(polygon_t::SOLID_MIX);
-                                gradients_f->push_back(grad);
-                                gradients_f3->push_back(grad3);
                                 values_f->push_back(f_value);
                                 values_f3->push_back(f3_value);
                                 values_n3->push_back(n3_output); // Still want zero n3_value here.
+                                gradients_f->push_back(grad);
+                                gradients_f3->push_back(grad3);
+                                array_error->push_back(std::get<1>(f3_reconstruction));
+                                array_iterations->push_back(std::get<2>(f3_reconstruction));
 
                                 // interface plane
-                                const auto& f3_interface = f3_reconstruction.first;
+                                const auto& f3_interface = std::get<0>(f3_reconstruction);
                                 const geometry::plane<float_t> f3_plane(f3_interface->get_points()[0], grad3);
 
                                 // the cell
@@ -258,18 +283,20 @@ namespace tpf
                                 }
                                 geometry::polyhedron<float_t> poly_cell(polyhedron_points);
 
-                                auto f_reconstruction = reconstruct_f3_interface(poly_cell, f_value, n3_value, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->plic3_iterations_);
-                                if (f_reconstruction.first != nullptr)
+                                auto f_reconstruction = reconstruct_f3_interface(poly_cell, f_value, n3_value, f3.get_cell_coordinates(coords), f3.get_cell_sizes(coords), this->error_margin_plic3_, this->num_iterations_plic3_, this->perturbation_);
+                                if (std::get<0>(f_reconstruction) != nullptr)
                                 {
                                     type = polygon_t::FLUID_TYPE13;
                                     n3_output = n3_value;
-                                    plic3_interface.insert(f_reconstruction.first);
+                                    plic3_interface.insert(std::get<0>(f_reconstruction));
+                                    error = std::get<1>(f_reconstruction);
+                                    iterations = std::get<2>(f_reconstruction);
                                     done = true;
                                 }
                             }
                         }
 
-                        if (!done) {
+                        if (!done && !this->hide_error_cubes_) {
                             // draw error cube
                             const auto pos = f.get_cell_coordinates(coords);
                             const auto size = f.get_cell_sizes(coords);
@@ -279,23 +306,32 @@ namespace tpf
                             auto cube = std::make_shared<tpf::geometry::cuboid<float_t>>(p_min, p_max);
 
                             plic3_interface.insert(cube);
+                            done = true;
                         }
-                        types->push_back(type);
-                        gradients_f->push_back(grad);
-                        gradients_f3->push_back(grad3);
-                        values_f->push_back(f_value);
-                        values_f3->push_back(f3_value);
-                        values_n3->push_back(n3_output);
+                        if (done) {
+                            array_coords->push_back(coords.cast<int>());
+                            types->push_back(type);
+                            values_f->push_back(f_value);
+                            values_f3->push_back(f3_value);
+                            values_n3->push_back(n3_output);
+                            gradients_f->push_back(grad);
+                            gradients_f3->push_back(grad3);
+                            array_error->push_back(error);
+                            array_iterations->push_back(iterations);
+                        }
                     }
                 }
             }
 
+            plic3_interface.add(array_coords, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(types, tpf::data::topology_t::OBJECT_DATA);
-            plic3_interface.add(gradients_f, tpf::data::topology_t::OBJECT_DATA);
-            plic3_interface.add(gradients_f3, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(values_f, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(values_f3, tpf::data::topology_t::OBJECT_DATA);
             plic3_interface.add(values_n3, tpf::data::topology_t::OBJECT_DATA);
+            plic3_interface.add(gradients_f, tpf::data::topology_t::OBJECT_DATA);
+            plic3_interface.add(gradients_f3, tpf::data::topology_t::OBJECT_DATA);
+            plic3_interface.add(array_error, tpf::data::topology_t::OBJECT_DATA);
+            plic3_interface.add(array_iterations, tpf::data::topology_t::OBJECT_DATA);
         }
 
         template <typename float_t>
@@ -390,19 +426,17 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline std::pair<std::shared_ptr<geometry::polygon<float_t>>, float_t> plic3<float_t>::reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
+        inline std::tuple<std::shared_ptr<geometry::polygon<float_t>>, float_t, std::size_t> plic3<float_t>::reconstruct_f3_interface(const geometry::polyhedron<float_t>& poly_cell,
             float_t vof, const Eigen::Matrix<float_t, 3, 1>& norm, const Eigen::Matrix<float_t, 3, 1>& cell_coordinates,
-            const Eigen::Matrix<float_t, 3, 1>& cell_size, std::size_t num_iterations, float_t perturbation)
+            const Eigen::Matrix<float_t, 3, 1>& cell_size, float_t error_margin, std::size_t num_iterations, float_t perturbation)
         {
             // Calculate error margin, initial minimum, maximum and ISO value
-            const float_t err_margin = static_cast<float_t>(0.0001);
-
-            float_t min_val = err_margin;
-            float_t max_val = static_cast<float_t>(1.0) - err_margin;
+            float_t min_val = error_margin;
+            float_t max_val = static_cast<float_t>(1.0) - error_margin;
 
             if (vof <= min_val || vof >= max_val)
             {
-                return std::make_pair(nullptr, err_margin);
+                return std::make_tuple(nullptr, error_margin, 0);
             }
 
             float_t iso_value = vof;
@@ -440,6 +474,7 @@ namespace tpf
             // Perform binary search
             std::shared_ptr<geometry::polygon<float_t>> plic = nullptr;
             float_t error = static_cast<float_t>(0.0);
+            std::size_t iterations = 0;
 
             const auto poly_cell_diag = (opposite_corner - corner).norm();
             const auto poly_cell_volume = poly_cell.calculate_volume();
@@ -511,7 +546,9 @@ namespace tpf
                 iso_value = (max_val + min_val) / 2.0;
 
                 // Create PLIC on last iteration
-                if ((error = std::abs(volume - vof)) < err_margin || i == num_iterations - 1)
+                error = std::abs(volume - vof);
+                iterations = i + 1;
+                if (error < error_margin || i == num_iterations - 1)
                 {
                     if (intersections.size() >= 3)
                     {
@@ -535,7 +572,7 @@ namespace tpf
                 }
             }
 
-            return std::make_pair(plic, error);
+            return std::make_tuple(plic, error, iterations);
         }
     }
 }

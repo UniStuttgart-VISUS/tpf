@@ -65,19 +65,23 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         tpf::modules::plic3<float_t> plic3_module;
         plic3_module.set_input(f, f3, f_norm_3ph);
         plic3_module.set_output(plic3_interface);
-        plic3_module.set_parameters(this->PlicIterations, this->Plic3Iterations);
+        plic3_module.set_parameters(this->Epsilon, this->ErrorMarginPlic, this->ErrorMarginPlic3, this->NumIterationsPlic,
+            this->NumIterationsPlic3, this->Perturbation, static_cast<bool>(this->HideErrorCubes));
         plic3_module.run();
 
         // Set output
         auto output = vtkPolyData::GetData(output_vector);
 
         tpf::vtk::set_polydata(output, plic3_interface,
+                tpf::data::data_information<int, 3>{ "coords", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<int, 1>{ "type", tpf::data::topology_t::OBJECT_DATA },
-                tpf::data::data_information<float_t, 3>{ "grad", tpf::data::topology_t::OBJECT_DATA },
-                tpf::data::data_information<float_t, 3>{ "grad3", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 1>{ "f", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<float_t, 1>{ "f3", tpf::data::topology_t::OBJECT_DATA },
-                tpf::data::data_information<float_t, 3>{ "fnorm3ph", tpf::data::topology_t::OBJECT_DATA });
+                tpf::data::data_information<float_t, 3>{ "fnorm3ph", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 3>{ "grad", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 3>{ "grad3", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
+                tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
     }
     catch (const std::runtime_error& ex)
     {

@@ -31,7 +31,7 @@ namespace tpf
             /// </summary>
             /// <param name="point">Up point on the plane</param>
             /// <param name="normal">Plane normal</param>
-            plane(const point<floatp_t, kernel_t>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal) noexcept;
+            plane(const point<floatp_t, kernel_t>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal);
 
             /// <summary>
             /// Constructor
@@ -85,7 +85,13 @@ namespace tpf
             /// Clone object (deep copy)
             /// </summary>
             /// <returns>Deep copy</returns>
-            virtual std::shared_ptr<geometric_object<floatp_t>> clone() const;
+            virtual std::shared_ptr<geometric_object<floatp_t>> clone(const math::transformer<floatp_t, 3>& trafo = math::transformer<floatp_t, 3>::unit()) const;
+
+            /// <summary>
+            /// Transform this object using a transformer
+            /// </summary>
+            /// <param name="trafo">Transformer</param>
+            virtual geometric_object<floatp_t>& transform(const math::transformer<floatp_t, 3>& trafo);
 
             /// <summary>
             /// Return number of points

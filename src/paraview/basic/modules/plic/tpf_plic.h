@@ -8,6 +8,9 @@ public:
     static tpf_plic* New();
     vtkTypeMacro(tpf_plic, vtkPolyDataAlgorithm);
 
+    vtkGetMacro(ErrorMargin, double);
+    vtkSetMacro(ErrorMargin, double);
+
     vtkGetMacro(NumIterations, int);
     vtkSetMacro(NumIterations, int);
 
@@ -33,6 +36,9 @@ private:
 
     /// Number of ghost levels
     std::size_t num_ghost_levels;
+
+    /// Error margin
+    double ErrorMargin;
 
     /// Number of iterations
     int NumIterations;

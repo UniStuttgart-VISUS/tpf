@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vtkMultiBlockDataSetAlgorithm.h"
- 
+
 class VTK_EXPORT tpf_droplets : public vtkMultiBlockDataSetAlgorithm
 {
     public:
@@ -25,7 +25,7 @@ class VTK_EXPORT tpf_droplets : public vtkMultiBlockDataSetAlgorithm
 
         vtkGetMacro(RotationMethod, int);
         vtkSetMacro(RotationMethod, int);
- 
+
     protected:
         tpf_droplets();
         ~tpf_droplets();
@@ -33,7 +33,7 @@ class VTK_EXPORT tpf_droplets : public vtkMultiBlockDataSetAlgorithm
         int FillInputPortInformation(int, vtkInformation*);
 
         int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
- 
+
         int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
     private:

@@ -19,8 +19,9 @@ namespace tpf
     namespace geometry
     {
         template <typename floatp_t, typename kernel_t>
-        inline plane<floatp_t, kernel_t>::plane(const point<floatp_t, kernel_t>& first, const Eigen::Matrix<floatp_t, 3, 1>& normal) noexcept
+        inline plane<floatp_t, kernel_t>::plane(const point<floatp_t, kernel_t>& first, const Eigen::Matrix<floatp_t, 3, 1>& normal)
         {
+            // Will throw exception if normal is zero.
             const auto vectors = math::template orthonormal<floatp_t>(normal);
 
             const point<floatp_t, kernel_t> second(first.get_vertex() + vectors.first);
@@ -80,9 +81,26 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
-        inline std::shared_ptr<geometric_object<floatp_t>> plane<floatp_t, kernel_t>::clone() const
+        inline std::shared_ptr<geometric_object<floatp_t>> plane<floatp_t, kernel_t>::clone(const math::transformer<floatp_t, 3>& trafo) const
         {
-            return std::make_shared<plane<floatp_t, kernel_t>>(*this);
+            auto copy = std::make_shared<plane<floatp_t, kernel_t>>(*this);
+            copy->transform(trafo);
+
+            return copy;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometric_object<floatp_t>& plane<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
+        {
+            if (!trafo.is_unit())
+            {
+                this->_plane = typename kernel_t::Plane_3(
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_plane.point()).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_plane.point() + this->_plane.base1()).transform(trafo)).get_internal(),
+                    static_cast<point<floatp_t, kernel_t>&>(point<floatp_t, kernel_t>(this->_plane.point() + this->_plane.base2()).transform(trafo)).get_internal());
+            }
+
+            return *this;
         }
 
         template <typename floatp_t, typename kernel_t>
