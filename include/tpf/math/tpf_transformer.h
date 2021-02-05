@@ -32,21 +32,23 @@ namespace tpf
             transformer();
 
             /// <summary>
-            /// Constructor
+            /// Transformation to a coordinate system defined by an up-point and a normal
             /// </summary>
             /// <param name="point">Origin</param>
             /// <param name="normal">Normal</param>
-            transformer(const Eigen::Matrix<floatp_t, 3, 1>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal);
+            /// <param name="invert">Invert transformation matrix</param>
+            transformer(const Eigen::Matrix<floatp_t, 3, 1>& point, const Eigen::Matrix<floatp_t, 3, 1>& normal, bool invert = false);
 
             /// <summary>
-            /// Constructor
+            /// Transformation to a given coordinate system
             /// </summary>
             /// <param name="origin">Origin</param>
             /// <param name="x_axis">x axis</param>
             /// <param name="y_axis">y axis</param>
             /// <param name="z_axis">z axis</param>
+            /// <param name="invert">Invert transformation matrix</param>
             transformer(const Eigen::Matrix<floatp_t, 3, 1>& origin, const Eigen::Matrix<floatp_t, 3, 1>& x_axis,
-                const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis);
+                const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis, bool invert = false);
 
             /// <summary>
             /// Constructor
@@ -93,10 +95,30 @@ namespace tpf
             bool operator!=(const transformer& rhs) const;
 
             /// <summary>
-            /// Answer if this transformer stores a unit matrix
+            /// Multiply internal transformation matrices
             /// </summary>
-            /// <returns>Does this transformer store a unit matrix?</returns>
+            /// <param name="other">Other transformer</param>
+            /// <returns>Transformer containing the product of the transformation matrices</returns>
+            transformer operator*(const transformer& other) const;
+
+            /// <summary>
+            /// Multiply internal transformation matrices
+            /// </summary>
+            /// <param name="other">Other transformer</param>
+            /// <returns>This, containing the product of the transformation matrices</returns>
+            transformer& operator*=(const transformer& other);
+
+            /// <summary>
+            /// Answer if this transformer would not alter the input
+            /// </summary>
+            /// <returns>True if the transformer does not alter the input; false otherwise</returns>
             bool is_unit() const;
+
+            /// <summary>
+            /// Set pre-processing function called before transformation
+            /// </summary>
+            /// <param name="func">Pre-processing function</param>
+            void set_preprocessing(std::function<Eigen::Matrix<floatp_t, 4, 1>(const Eigen::Matrix<floatp_t, 4, 1>&)> func);
 
             /// <summary>
             /// Transform vector
@@ -126,6 +148,34 @@ namespace tpf
             /// <return>Transformed vector</return>
             Eigen::Matrix<floatp_t, dimension, 1>& transform_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec, floatp_t w = homogeneous) const;
 
+            /// <summary>
+            /// Transform vector
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1> transform_normal(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector inverse
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1> transform_normal_inverse(const Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_normal_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
+            /// <summary>
+            /// Transform vector inverse
+            /// </summary>
+            /// <param name="vec">Vector to transform</param>
+            /// <return>Transformed vector</return>
+            Eigen::Matrix<floatp_t, dimension, 1>& transform_normal_inverse_inplace(Eigen::Matrix<floatp_t, dimension, 1>& vec) const;
+
         private:
             /// <summary>
             /// Create matrix for transformation from input into standard coordinate system
@@ -134,11 +184,21 @@ namespace tpf
             /// <param name="x_axis">X axis of input coordinate system</param>
             /// <param name="y_axis">Y axis of input coordinate system</param>
             /// <param name="z_axis">Z axis of input coordinate system</param>
+            /// <param name="invert">Invert transformation matrix</param>
             void create_transformation_matrix(const Eigen::Matrix<floatp_t, 3, 1>& origin, const Eigen::Matrix<floatp_t, 3, 1>& x_axis,
-                const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis);
+                const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis, bool invert);
+
+            /// <summary>
+            /// Set default pre-processing function
+            /// </summary>
+            void set_default_preprocessing() noexcept;
 
             /// Transformation matrix
             Eigen::Matrix<floatp_t, 4, 4> trafo;
+
+            /// Pre-processing function
+            std::function<Eigen::Matrix<floatp_t, 4, 1>(const Eigen::Matrix<floatp_t, 4, 1>&)> preprocessing;
+            bool is_default_function;
         };
     }
 }

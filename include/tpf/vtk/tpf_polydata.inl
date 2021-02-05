@@ -294,7 +294,7 @@ namespace tpf
 
                     data_array = polydata.template get_cell_data_as<value_t, rows, columns>(data_info.name);
                 }
-                else if (data_info.topology == data::topology_t::POINT_DATA)
+                else if (data_info.topology == data::topology_t::POINT_DATA || data_info.topology == data::topology_t::TEXTURE_COORDINATES)
                 {
                     if (!polydata.has_point_data(data_info.name))
                     {

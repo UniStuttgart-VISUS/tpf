@@ -36,7 +36,7 @@ namespace tpf
             /// <summary>
             /// Constructor
             /// </summary>
-            /// <param name="plane">Triangle</param>
+            /// <param name="triangle">Triangle</param>
             triangle(const typename kernel_t::Triangle_3& triangle) noexcept;
 
             /// <summary>

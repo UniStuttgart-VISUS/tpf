@@ -377,17 +377,28 @@ namespace tpf
                     boost::trim(header.unit);
 
                     ifs.seekg(0, std::ios::end);
-                    auto file_size = static_cast<std::size_t>(ifs.tellg());
+                    const auto file_size = static_cast<std::size_t>(ifs.tellg());
 
-                    header.components = static_cast<int>((file_size - data_header::length) / 
-                        (static_cast<std::size_t>(header.x_resolution) * static_cast<std::size_t>(header.y_resolution)
-                        * static_cast<std::size_t>(header.z_resolution) * static_cast<std::size_t>(sizeof(double))));
+                    const auto size_per_component = static_cast<std::size_t>(header.x_resolution) * static_cast<std::size_t>(header.y_resolution)
+                        * static_cast<std::size_t>(header.z_resolution) * static_cast<std::size_t>(sizeof(double));
+
+                    if (size_per_component == 0)
+                    {
+                        throw std::runtime_error(__tpf_error_message("Invalid resolution in header of file '", this->data_filenames[timestep], "'!"));
+                    }
+
+                    header.components = static_cast<int>((file_size - data_header::length) / size_per_component);
+
+                    if (header.components * size_per_component != file_size - data_header::length)
+                    {
+                        throw std::runtime_error(__tpf_error_message("Invalid size of file '", this->data_filenames[timestep], "'!"));
+                    }
 
                     ifs.close();
                 }
                 else
                 {
-                    throw std::runtime_error(__tpf_error_message("Error reading data file header!"));
+                    throw std::runtime_error(__tpf_error_message("Error reading header of file '", this->data_filenames[timestep], "'!"));
                 }
 
                 return header;
@@ -442,7 +453,7 @@ namespace tpf
                 }
                 else
                 {
-                    throw std::runtime_error(__tpf_error_message("Error reading data file!"));
+                    throw std::runtime_error(__tpf_error_message("Error reading data file '", this->data_filenames[timestep], "'!"));
                 }
 
                 return data;
@@ -498,7 +509,7 @@ namespace tpf
 
                 if (result != MPI_SUCCESS)
                 {
-                    throw std::runtime_error(__tpf_error_message("Unable to open data file!"));
+                    throw std::runtime_error(__tpf_error_message("Unable to open data file '", this->data_filenames[timestep], "'!"));
                 }
 
                 // Calculate file size and offsets
@@ -511,7 +522,7 @@ namespace tpf
 
                 if (increment * components + initial_offset != file_size)
                 {
-                    throw std::runtime_error(__tpf_error_message("File size does not match!"));
+                    throw std::runtime_error(__tpf_error_message("File size does not match for file '", this->data_filenames[timestep], "'!"));
                 }
 
                 // Read data block
@@ -523,14 +534,14 @@ namespace tpf
 
                     if (result != MPI_SUCCESS)
                     {
-                        throw std::runtime_error(__tpf_error_message("Unable to set data file view!"));
+                        throw std::runtime_error(__tpf_error_message("Unable to set data file view for file '", this->data_filenames[timestep], "'!"));
                     }
 
                     result = MPI_File_read_all(file, &data[c], 1, memtype, MPI_STATUS_IGNORE);
 
                     if (result != MPI_SUCCESS)
                     {
-                        throw std::runtime_error(__tpf_error_message("Unable to read data file!"));
+                        throw std::runtime_error(__tpf_error_message("Unable to read data file for file '", this->data_filenames[timestep], "'!"));
                     }
                 }
 
@@ -603,7 +614,7 @@ namespace tpf
                 }
                 else
                 {
-                    throw std::runtime_error(__tpf_error_message("Error reading data file!"));
+                    throw std::runtime_error(__tpf_error_message("Error reading data file '", this->data_filenames[timestep], "'!"));
                 }
 
                 return data;

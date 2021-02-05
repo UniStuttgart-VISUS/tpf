@@ -10,7 +10,7 @@ namespace tpf
     {
         /// Topology type
         enum class topology_t {
-            CELL_DATA, POINT_DATA, OBJECT_DATA
+            CELL_DATA, POINT_DATA, OBJECT_DATA, TEXTURE_COORDINATES
         };
 
         /// <summary>
