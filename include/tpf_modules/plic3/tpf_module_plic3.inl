@@ -317,7 +317,7 @@ namespace tpf
                             gradients_f->push_back(grad);
                             gradients_f3->push_back(grad3);
                             array_error->push_back(error);
-                            array_iterations->push_back(iterations);
+                            array_iterations->push_back(static_cast<int>(iterations));
                         }
                     }
                 }
