@@ -1,12 +1,15 @@
 #pragma once
 
-#include "vtkMultiBlockDataSetAlgorithm.h"
+#include "vtkAlgorithm.h"
 
-class VTK_EXPORT tpf_droplets : public vtkMultiBlockDataSetAlgorithm
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+
+class VTK_EXPORT tpf_droplets : public vtkAlgorithm
 {
     public:
         static tpf_droplets* New();
-        vtkTypeMacro(tpf_droplets, vtkMultiBlockDataSetAlgorithm);
+        vtkTypeMacro(tpf_droplets, vtkAlgorithm);
 
         vtkGetMacro(CalculateTranslation, int);
         vtkSetMacro(CalculateTranslation, int);
@@ -30,11 +33,15 @@ class VTK_EXPORT tpf_droplets : public vtkMultiBlockDataSetAlgorithm
         tpf_droplets();
         ~tpf_droplets();
 
-        int FillInputPortInformation(int, vtkInformation*);
+        virtual int FillInputPortInformation(int, vtkInformation*) override;
+        virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-        int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+        virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
 
-        int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+        virtual int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
 
     private:
         tpf_droplets(const tpf_droplets&);
