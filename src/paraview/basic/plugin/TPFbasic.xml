@@ -153,6 +153,17 @@
                 </Documentation>
             </IntVectorProperty>
 
+            <OutputPort name="Grid" index="0" id="grid">
+                <Documentation>
+                    Grid where every cell contains information about the corresponding droplet
+                </Documentation>
+            </OutputPort>
+            <OutputPort name="Positions" index="1" id="points">
+                <Documentation>
+                    Positions of the droplets and respective properties
+                </Documentation>
+            </OutputPort>
+
             <Hints>
                 <ShowInMenu category="Two-Phase Flow"/>
             </Hints>
