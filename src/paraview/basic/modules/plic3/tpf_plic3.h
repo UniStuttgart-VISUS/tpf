@@ -1,7 +1,9 @@
 #pragma once
 
-#include "vtkInformation.h"
 #include "vtkPolyDataAlgorithm.h"
+
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
 
 class VTK_EXPORT tpf_plic3 : public vtkPolyDataAlgorithm
 {

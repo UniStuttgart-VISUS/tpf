@@ -2,6 +2,9 @@
 
 #include "vtkAlgorithm.h"
 
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+
 class VTK_EXPORT tpf_fluid_position : public vtkAlgorithm
 {
 public:
