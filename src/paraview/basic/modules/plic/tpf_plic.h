@@ -2,6 +2,9 @@
 
 #include "vtkPolyDataAlgorithm.h"
 
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+
 class VTK_EXPORT tpf_plic : public vtkPolyDataAlgorithm
 {
 public:
