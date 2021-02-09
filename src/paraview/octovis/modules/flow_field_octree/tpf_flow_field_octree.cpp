@@ -513,10 +513,10 @@ namespace
                 if (this->timesteps.size() > this->time_offset)
                 {
                     // Request update
-                    request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
+                    this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
-                    this->velocity_alg->Update(request);
-                    this->stars_alg->Update(request);
+                    this->velocity_alg->Update(this->request);
+                    this->stars_alg->Update(this->request);
                 }
 
                 // Calculate time difference
@@ -608,7 +608,7 @@ namespace
         /// <summary>
         /// Reset input algorithms to their beginning state
         /// </summary>
-        void reset()
+        virtual void reset() override
         {
             // Request update to original time step
             this->time_offset = this->original_time;
@@ -642,7 +642,7 @@ namespace
         std::function<std::string(int, int)> get_array_name;
 
         /// Locality definition for the stars
-        tpf_flow_field_octree::locality_method_t locality_method;
+        typename tpf_flow_field_octree::locality_method_t locality_method;
 
         /// Fixed timestep
         std::optional<float_t> fixed_timestep;
@@ -731,12 +731,12 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
             this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->ForceFixedFrequency ? std::make_optional(static_cast<float_t>(this->FrequencyOmega)) : std::nullopt);
 
-        auto initial_data = call_back_loader();
-        auto initial_octree = std::get<1>(initial_data);
-        auto initial_octree_global = std::get<2>(initial_data);
-        auto initial_get_translation = std::get<3>(initial_data);
-        auto initial_get_rotation_axis = std::get<4>(initial_data);
-        auto initial_is_particle_valid = std::get<5>(initial_data);
+        const auto initial_data = call_back_loader();
+        const auto initial_octree = std::get<1>(initial_data);
+        const auto initial_octree_global = std::get<2>(initial_data);
+        const auto& initial_get_translation = std::get<3>(initial_data);
+        const auto& initial_get_rotation_axis = std::get<4>(initial_data);
+        const auto& initial_is_particle_valid = std::get<5>(initial_data);
 
         const auto timestep_delta = (this->ForceFixedTimeStep || std::get<0>(initial_data) == static_cast<float_t>(0.0))
             ? static_cast<float_t>(this->StreamTimeStep) : std::get<0>(initial_data);
