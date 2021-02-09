@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vtkAlgorithm.h"
+
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 
