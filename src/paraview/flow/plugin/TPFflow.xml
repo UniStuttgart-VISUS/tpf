@@ -1,0 +1,170 @@
+<ServerManagerConfiguration>
+    <ProxyGroup name="filters">
+        <!--
+
+        Flow Field.
+
+        Compute stream-, streak- or pathlines for vector fields on rectilinear grids.
+
+        -->
+        <SourceProxy name="Flow Field" class="tpf_flow_field" label="Flow Field">
+            <Documentation>
+                Compute stream-, streak- or pathlines for vector fields on rectilinear grids.
+            </Documentation>
+
+            <InputProperty name="Input Grid" command="SetInputConnection" port_index="0">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="droplets_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="global_velocity_array" number_of_components="3"/>
+                <Documentation>
+                    Grid containing a volume of fluid field, interface gradients, interface positions, and a velocity field
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Droplets" command="SetInputConnection" port_index="1">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <InputArrayDomain name="translation_array" number_of_components="3"/>
+                <InputArrayDomain name="rotation_array" number_of_components="3"/>
+                <Documentation>
+                    Extracted droplet positions with corresponding properties
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Droplet ID" label="Droplet ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="droplets_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    ID of the corresponding droplet to which the respective cell belongs
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity" label="Velocity field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity field
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Global Velocity" label="Global velocity part" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="global_velocity_array">
+                    <RequiredProperties>
+                        <Property name="Input Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity field containing the global velocity part
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Droplet Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array">
+                    <RequiredProperties>
+                        <Property name="Droplets" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Translation of the droplet at its center of mass
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Droplet Rotation" label="Droplet rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array">
+                    <RequiredProperties>
+                        <Property name="Droplets" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Rotation of the droplet around its axis of rotation
+                </Documentation>
+            </StringVectorProperty>
+
+            <IntVectorProperty name="Method" command="SetMethod" label="Method" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Streamlines"/>
+                    <Entry value="1" text="Streaklines"/>
+                    <Entry value="2" text="Pathlines"/>
+                </EnumerationDomain>
+                <Documentation>
+                    Method for the computation of the flow lines
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="SeedPerCell" command="SetSeedPerCell" label="Seed size per cell" number_of_elements="1" default_values="1">
+                <Documentation>
+                    Number of seeded particles per cell
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of lines" number_of_elements="1" default_values="20">
+                <Documentation>
+                    Number of advection steps
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="ForceFixedTimeStep" command="SetForceFixedTimeStep" label="Force fixed time step" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Force a fixed time step for streak- and pathline computation
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="StreamTimeStep" command="SetStreamTimeStep" label="Fixed time step" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedTimeStep" value="1" />
+                </Hints>
+                <Documentation>
+                    Time step size for streamline computation; and for streak- and pathline computation in case of a fixed time step
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <PropertyGroup label="Input grid">
+                <Property name="VOF" />
+                <Property name="Droplet ID" />
+                <Property name="Interface Gradient" />
+                <Property name="Fluid Positions" />
+                <Property name="Velocity" />
+                <Property name="Global Velocity" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Droplets">
+                <Property name="Droplet Translation" />
+                <Property name="Droplet Rotation" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Computation">
+                <Property name="Method" />
+                <Property name="SeedPerCell" />
+                <Property name="NumAdvections" />
+                <Property name="ForceFixedTimeStep" />
+                <Property name="StreamTimeStep" />
+            </PropertyGroup>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>

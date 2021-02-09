@@ -1,0 +1,8 @@
+NAME
+  TPFflow::tpf_flow_field
+LIBRARY_NAME
+  tpf_flow_field
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
