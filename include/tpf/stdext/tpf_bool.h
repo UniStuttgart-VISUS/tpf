@@ -13,14 +13,14 @@ namespace tpf
         /// </summary>
         bool_t();
         bool_t(bool value);
-        bool_t(const bool_t&) = default;
-        bool_t(bool_t&&) noexcept = default;
+        bool_t(const bool_t&);
+        bool_t(bool_t&&) noexcept;
 
         /// <summary>
         /// Assignments
         /// </summary>
-        bool_t& operator=(const bool_t&) = default;
-        bool_t& operator=(bool_t&&) noexcept = default;
+        bool_t& operator=(const bool_t&);
+        bool_t& operator=(bool_t&&) noexcept;
         bool_t& operator=(bool value);
 
         /// <summary>
