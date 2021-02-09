@@ -435,7 +435,14 @@ namespace tpf
                             if (this->calculate_rotation)
                             {
                                 auto& rotation = *rotation_ptr;
-                                droplet_velocities(coords) += rotation(cluster_id).cross(complete_positions(coords) - complete_droplets.get_object(cluster_id)->get_points()[0]);
+
+                                const auto position = complete_positions(coords);
+                                const auto rotation_axis = rotation(cluster_id);
+                                const Eigen::Matrix<float_t, 3, 1> relative_position = position - complete_droplets.get_object(cluster_id)->get_points()[0];
+                                const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
+                                    - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
+
+                                droplet_velocities(coords) += rotation(cluster_id).cross(angular_position);
                             }
                         }
                     }
