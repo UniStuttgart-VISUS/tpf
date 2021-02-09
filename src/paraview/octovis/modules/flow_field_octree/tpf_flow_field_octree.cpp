@@ -12,6 +12,8 @@
 
 #include "tpf/log/tpf_log.h"
 
+#include "tpf/math/tpf_quaternion.h"
+
 #include "tpf/mpi/tpf_mpi.h"
 
 #include "tpf/policies/tpf_interpolatable.h"
@@ -417,7 +419,21 @@ namespace
                     std::array<double, 3> point;
                     points->GetPoint(p, point.data());
 
-                    const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
+                    // Compute global velocity part
+                    Eigen::Matrix<float_t, 3, 1> angular_velocity;
+                    angular_velocity.setZero();
+
+                    if ((this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
+                        this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body) &&
+                        !this->rotation_axis[in_classification->GetValue(p) - 1].isZero())
+                    {
+                        const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
+                        const Eigen::Matrix<float_t, 3, 1> relative_position = position - in_star_positions[in_classification->GetValue(p) - 1];
+                        const Eigen::Matrix<float_t, 3, 1> rotation_axis = this->rotation_axis[in_classification->GetValue(p) - 1];
+                        const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
+
+                        angular_velocity = rotation_axis.cross(angular_position);
+                    }
 
                     switch (this->locality_method)
                     {
@@ -426,14 +442,11 @@ namespace
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::rotation:
-                        node_information_global.push_back(std::make_pair(path, this->rotation_axis[in_classification->GetValue(p) - 1]
-                            .cross(position - in_star_positions[in_classification->GetValue(p) - 1])));
+                        node_information_global.push_back(std::make_pair(path, angular_velocity));
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::rigid_body:
-                        node_information_global.push_back(std::make_pair(path, this->star_velocity[in_classification->GetValue(p) - 1] +
-                            this->rotation_axis[in_classification->GetValue(p) - 1]
-                            .cross(position - in_star_positions[in_classification->GetValue(p) - 1])));
+                        node_information_global.push_back(std::make_pair(path, this->star_velocity[in_classification->GetValue(p) - 1] + angular_velocity));
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::none:
@@ -444,6 +457,7 @@ namespace
                             static_cast<float_t>(0.0))));
                     }
 
+                    // Add classification information
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)

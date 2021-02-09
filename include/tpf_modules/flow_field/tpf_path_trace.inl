@@ -71,7 +71,7 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline std::size_t path_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles, const std::size_t num_advections)
+            inline std::size_t path_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles)
             {
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
@@ -86,7 +86,7 @@ namespace tpf
                 // Copy traces that are still valid
                 for (std::size_t i = 0; i < num_valid_particles; ++i)
                 {
-                    if (stream_trace<floatp_t>::particles[i].size() == num_advections + 1)
+                    if (stream_trace<floatp_t>::validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
@@ -100,7 +100,7 @@ namespace tpf
                 // Copy outdated traces
                 for (std::size_t i = 0; i < num_valid_particles; ++i)
                 {
-                    if (stream_trace<floatp_t>::particles[i].size() != num_advections + 1)
+                    if (!stream_trace<floatp_t>::validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);

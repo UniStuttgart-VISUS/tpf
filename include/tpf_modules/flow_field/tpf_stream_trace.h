@@ -4,6 +4,8 @@
 
 #include "tpf/geometry/tpf_point.h"
 
+#include "tpf/stdext/tpf_bool.h"
+
 #include <vector>
 
 namespace tpf
@@ -65,12 +67,17 @@ namespace tpf
                 std::size_t get_num_lines() const;
 
                 /// <summary>
+                /// Invalidate a particle (trace)
+                /// </summary>
+                /// <param name="index">Index of the seed/trace</param>
+                void invalidate_particle(std::size_t index);
+
+                /// <summary>
                 /// Sort the particle traces for length and update the number of valid particles
                 /// </summary>
                 /// <param name="num_valid_particles">Previous number of valid particles</param>
-                /// <param name="num_advections">Number of advection step</param>
                 /// <returns>New number of valid particles</returns>
-                virtual std::size_t sort_and_count(std::size_t num_valid_particles, std::size_t num_advections);
+                virtual std::size_t sort_and_count(std::size_t num_valid_particles);
 
                 /// <summary>
                 /// Return the traces
@@ -81,6 +88,9 @@ namespace tpf
             protected:
                 /// Particles
                 std::vector<std::vector<tpf::geometry::point<floatp_t>>> particles;
+
+                /// Validity of particles
+                std::vector<tpf::bool_t> validity;
             };
         }
     }

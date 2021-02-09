@@ -55,7 +55,7 @@ namespace tpf
                 tpf::geometry::point<floatp_t>& get_seed(const std::size_t index);
 
                 /// <summary>
-                /// 
+                /// Initialize seed
                 /// </summary>
                 /// <template name="forward_iterator_t">Forward iterator type</template>
                 /// <param name="begin">First item to insert</param>

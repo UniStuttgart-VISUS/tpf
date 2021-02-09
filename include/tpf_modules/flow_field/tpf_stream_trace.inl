@@ -18,16 +18,21 @@ namespace tpf
             inline stream_trace<floatp_t>::stream_trace(stream_trace&& move) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles = std::move(move.particles);
+
+                this->validity.resize(this->particles.size());
+                std::fill(this->validity.begin(), this->validity.end(), true);
             }
 
             template <typename floatp_t>
             inline stream_trace<floatp_t>::stream_trace(particle_seed<floatp_t>&& move) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles.resize(particle_seed<floatp_t>::seed.size());
+                this->validity.resize(this->particles.size());
 
                 for (std::size_t i = 0; i < particle_seed<floatp_t>::seed.size(); ++i)
                 {
                     this->particles[i].push_back(particle_seed<floatp_t>::seed[i]);
+                    this->validity[i] = true;
                 }
             }
 
@@ -63,13 +68,19 @@ namespace tpf
             }
 
             template <typename floatp_t>
+            inline void stream_trace<floatp_t>::invalidate_particle(const std::size_t index)
+            {
+                this->validity[index] = false;
+            }
+
+            template <typename floatp_t>
             inline const std::vector<std::vector<tpf::geometry::point<floatp_t>>>& stream_trace<floatp_t>::get_trace() const
             {
                 return this->particles;
             }
 
             template <typename floatp_t>
-            inline std::size_t stream_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles, const std::size_t num_advections)
+            inline std::size_t stream_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles)
             {
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
@@ -80,7 +91,7 @@ namespace tpf
                 // Copy traces that are still valid
                 for (std::size_t i = 0; i < num_valid_particles; ++i)
                 {
-                    if (this->particles[i].size() == num_advections + 1)
+                    if (this->validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(this->particles[i]);
@@ -92,7 +103,7 @@ namespace tpf
                 // Copy outdated traces
                 for (std::size_t i = 0; i < num_valid_particles; ++i)
                 {
-                    if (this->particles[i].size() != num_advections + 1)
+                    if (!this->validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(this->particles[i]);

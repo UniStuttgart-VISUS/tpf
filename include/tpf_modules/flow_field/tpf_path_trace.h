@@ -82,9 +82,8 @@ namespace tpf
                 /// Sort the particle traces for length and update the number of valid particles
                 /// </summary>
                 /// <param name="num_valid_particles">Previous number of valid particles</param>
-                /// <param name="num_advections">Number of advection step</param>
                 /// <returns>New number of valid particles</returns>
-                virtual std::size_t sort_and_count(std::size_t num_valid_particles, std::size_t num_advections);
+                virtual std::size_t sort_and_count(std::size_t num_valid_particles);
 
             protected:
                 /// Original particles

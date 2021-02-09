@@ -149,10 +149,14 @@ namespace tpf
                             particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * this->timestep));
                         }
                     }
+                    else
+                    {
+                        particles.invalidate_particle(index);
+                    }
                 }
 
                 // Sort vector for number of particles and count still valid ones
-                num_valid_particles = particles.sort_and_count(num_valid_particles, advection + 1);
+                num_valid_particles = particles.sort_and_count(num_valid_particles);
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
@@ -238,10 +242,14 @@ namespace tpf
                                 tpf::geometry::point<float_t>(original_particle + velocity * this->timestep), new_rotation);
                         }
                     }
+                    else
+                    {
+                        particles.invalidate_particle(index);
+                    }
                 }
 
                 // Sort vector for number of particles and count still valid ones
-                num_valid_particles = particles.sort_and_count(num_valid_particles, advection + 1);
+                num_valid_particles = particles.sort_and_count(num_valid_particles);
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
@@ -366,6 +374,10 @@ namespace tpf
                                 particles.get_rotation(index, particle_index) = new_rotation;
                             }
                         }
+                        else
+                        {
+                            particles.invalidate_particle(index);
+                        }
                     }
 
                     // Interpolate velocity and advect the original seed, while keeping the local seed unchanged
@@ -387,10 +399,14 @@ namespace tpf
                         // Insert new particle at the seed
                         particles.add_particle(index, particles.get_seed(index), original_seed, tpf::math::quaternion<float_t>());
                     }
+                    else
+                    {
+                        particles.invalidate_particle(index);
+                    }
                 }
 
                 // Sort vector for number of particles and count still valid ones
-                num_valid_particles = particles.sort_and_count(num_valid_particles, advection + 1);
+                num_valid_particles = particles.sort_and_count(num_valid_particles);
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
