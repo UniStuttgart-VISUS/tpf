@@ -195,7 +195,7 @@ namespace tpf
             /// <summary>
             /// Create quaternion from axis representation
             /// </summary>
-            /// <param name="axis">Rotation axis</returns>
+            /// <param name="axis">Rotation axis</param>
             void from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis);
 
         private:
