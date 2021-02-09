@@ -60,7 +60,10 @@ namespace tpf
                             {
                                 const math::vec3_t<floatp_t> cell_center = fractions.get_cell_coordinates(coords);
 
-                                velocities(coords) += spinning_axis.cross(cell_center - this->orb_center) * magnitude;
+                                const auto relative_position = cell_center - this->orb_center;
+
+                                velocities(coords) += spinning_axis.cross(relative_position -
+                                    (relative_position.dot(spinning_axis) / spinning_axis.squaredNorm()) * spinning_axis) * magnitude;
                             }
                         }
                     }
