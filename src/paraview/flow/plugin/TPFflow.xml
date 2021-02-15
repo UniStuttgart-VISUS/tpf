@@ -20,12 +20,12 @@
                 <DataTypeDomain name="input_type">
                     <DataType value="vtkRectilinearGrid"/>
                 </DataTypeDomain>
-                <InputArrayDomain attribute_type="point" name="fractions_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="point" name="droplets_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
-                <InputArrayDomain attribute_type="point" name="global_velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="droplets_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="cell" name="velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="cell" name="global_velocity_array" number_of_components="3"/>
                 <Documentation>
-                    Grid containing a volume of fluid field, interface gradients, interface positions, and a velocity field
+                    Grid containing a volume of fluid field, droplet information, and a velocity field
                 </Documentation>
             </InputProperty>
             <InputProperty name="Droplets" command="SetInputConnection" port_index="1">
@@ -36,8 +36,8 @@
                 <DataTypeDomain name="input_type">
                     <DataType value="vtkPolyData"/>
                 </DataTypeDomain>
-                <InputArrayDomain name="translation_array" number_of_components="3"/>
-                <InputArrayDomain name="rotation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="translation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="rotation_array" number_of_components="3"/>
                 <Documentation>
                     Extracted droplet positions with corresponding properties
                 </Documentation>
@@ -143,8 +143,6 @@
             <PropertyGroup label="Input grid">
                 <Property name="VOF" />
                 <Property name="Droplet ID" />
-                <Property name="Interface Gradient" />
-                <Property name="Fluid Positions" />
                 <Property name="Velocity" />
                 <Property name="Global Velocity" />
             </PropertyGroup>

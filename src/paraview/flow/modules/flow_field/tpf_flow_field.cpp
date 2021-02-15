@@ -20,10 +20,13 @@
 #include "tpf/vtk/tpf_polydata.h"
 #include "tpf/vtk/tpf_time.h"
 
+#include "vtkAlgorithm.h"
+#include "vtkCellData.h"
 #include "vtkObjectFactory.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 #include "vtkMultiBlockDataSet.h"
+#include "vtkPointData.h"
 #include "vtkPolyData.h"
 #include "vtkRectilinearGrid.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
@@ -54,8 +57,11 @@ namespace
         /// <param name="request">Original request that will be modified for requesting different time frames</param>
         /// <param name="grid_alg">Algorithm producing the velocity field and additional information</param>
         /// <param name="droplets_alg">Algorithm producing droplet data</param>
+        /// <param name="get_array_name">Function to query the respective array names</param>
+        /// <param name="fixed_timestep">Optional fixed timestep</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
-            vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg)
+            vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
+            std::optional<float_t> fixed_timestep = std::nullopt)
         {
             this->time_offset = this->original_time = current_timestep;
             this->timesteps = timesteps;
@@ -63,6 +69,10 @@ namespace
             this->request = request;
             this->grid_alg = grid_alg;
             this->droplets_alg = droplets_alg;
+
+            this->get_array_name = get_array_name;
+
+            this->fixed_timestep = fixed_timestep;
         }
 
         /// <summary>
@@ -84,12 +94,9 @@ namespace
                 auto in_grid = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0));
                 auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
 
-                this->droplet_grid = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid,
-                    tpf::data::topology_t::CELL_DATA, in_grid->GetPointData()->GetArray(get_array_name(1, 0).c_str()));
-                this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid,
-                    tpf::data::topology_t::CELL_DATA, in_grid->GetPointData()->GetArray(get_array_name(2, 0).c_str()));
-                this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid,
-                    tpf::data::topology_t::CELL_DATA, in_grid->GetPointData()->GetArray(get_array_name(3, 0).c_str()));
+                this->droplet_grid = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0));
+                this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
+                this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(3, 0));
 
                 auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
                     tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
@@ -144,7 +151,31 @@ namespace
                 };
 
                 // Compute time step
-                const float_t timestep_delta = this->fixed_timestep ? *fixed_timestep : (this->timesteps[this->time_offset] - this->timesteps[this->time_offset - 1]);
+                float_t timestep_delta;
+
+                if (this->fixed_timestep)
+                {
+                    timestep_delta = *this->fixed_timestep;
+                }
+                else if (this->timesteps.empty() || this->timesteps.size() == 1)
+                {
+                    tpf::log::warning_message(__tpf_warning_message("No valid time step found. Using 1.0 instead."));
+
+                    timestep_delta = 1.0;
+                }
+                else if (this->time_offset == 0)
+                {
+                    timestep_delta = this->timesteps[1] - this->timesteps[0];
+                }
+                else
+                {
+                    timestep_delta = this->timesteps[this->time_offset] - this->timesteps[this->time_offset - 1];
+                }
+
+                if (timestep_delta == 0.0)
+                {
+                    timestep_delta = static_cast<float_t>(1.0);
+                }
 
                 // Check if next time step is available
                 ++this->time_offset;
@@ -275,12 +306,13 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")"));
         };
 
-        auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, in_grid->GetPointData()->GetArray(get_array_name(0, 0).c_str()));
+        auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(0, 0));
 
         const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_grid).second;
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
-        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0));
+        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
+            get_array_name, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt);
 
         const auto initial_data = call_back_loader();
         const auto initial_velocities = std::get<1>(initial_data);
@@ -289,8 +321,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const auto& initial_get_rotation_axis = std::get<4>(initial_data);
         const auto& initial_is_particle_valid = std::get<5>(initial_data);
 
-        const auto timestep_delta = (this->ForceFixedTimeStep || std::get<0>(initial_data) == static_cast<float_t>(0.0))
-            ? static_cast<float_t>(this->StreamTimeStep) : std::get<0>(initial_data);
+        const auto timestep_delta = std::get<0>(initial_data);
 
         // Create seed
         tpf::data::polydata<float_t> seed;
