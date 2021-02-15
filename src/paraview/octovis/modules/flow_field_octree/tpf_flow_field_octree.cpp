@@ -738,8 +738,7 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         const auto& initial_get_rotation_axis = std::get<4>(initial_data);
         const auto& initial_is_particle_valid = std::get<5>(initial_data);
 
-        const auto timestep_delta = (this->ForceFixedTimeStep || std::get<0>(initial_data) == static_cast<float_t>(0.0))
-            ? static_cast<float_t>(this->StreamTimeStep) : std::get<0>(initial_data);
+        const auto timestep_delta = std::get<0>(initial_data);
 
         // Get initial seed
         tpf::data::polydata<float_t> seed = tpf::vtk::get_polydata<float_t>(in_seed);
