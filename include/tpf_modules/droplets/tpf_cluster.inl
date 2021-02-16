@@ -119,9 +119,6 @@ namespace tpf
                 floatp_t rotation_energy = static_cast<floatp_t>(0.0L);
                 floatp_t local_energy = static_cast<floatp_t>(0.0L);
 
-                const auto barycenter = get_position();
-                const auto translation = get_velocity().first;
-
                 // Compute inertia and angular momentum and use it to solve for the rotation axis
                 const std::size_t num_entries = this->positions.size();
 
