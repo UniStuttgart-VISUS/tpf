@@ -50,18 +50,8 @@ namespace tpf
         }
 
         template <typename float_t, typename point_t>
-        inline void flow_field<float_t, point_t>::set_algorithm_input(
-            const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>& velocities,
-            const policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>& global_velocity_parts,
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation,
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_rotation_axis,
-            std::function<bool(const point_t&)> is_particle_valid, const data::polydata<float_t>& seed)
+        inline void flow_field<float_t, point_t>::set_algorithm_input(const data::polydata<float_t>& seed)
         {
-            this->velocities = &velocities;
-            this->global_velocity_parts = &global_velocity_parts;
-            this->is_particle_valid = is_particle_valid;
-            this->get_translation = get_translation;
-            this->get_rotation_axis = get_rotation_axis;
             this->seed = &seed;
         }
 
@@ -72,12 +62,10 @@ namespace tpf
         }
 
         template <typename float_t, typename point_t>
-        inline void flow_field<float_t, point_t>::set_algorithm_parameters(const flow_field_aux::method_t method,
-            const std::size_t num_advections, const float_t timestep)
+        inline void flow_field<float_t, point_t>::set_algorithm_parameters(const flow_field_aux::method_t method, const std::size_t num_advections)
         {
             this->method = method;
             this->num_advections = num_advections;
-            this->timestep = timestep;
         }
 
         template <typename float_t, typename point_t>
@@ -117,6 +105,17 @@ namespace tpf
         {
             tpf::log::info_message(__tpf_info_message("Started streamline computation..."));
 
+            // Get data
+            auto& next_time_frame_callback = *this->next_time_frame_callback;
+
+            const auto data = next_time_frame_callback();
+
+            const auto velocities = std::get<1>(data);
+            const auto global_velocity_parts = std::get<2>(data);
+            const auto is_particle_valid = std::get<6>(data);
+
+            const auto timestep_delta = std::get<0>(data);
+
             // Create particle trace
             flow_field_aux::stream_trace<float_t> particles(std::move(seed));
 
@@ -137,16 +136,16 @@ namespace tpf
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
 
-                    if (this->is_particle_valid(particle))
+                    if (is_particle_valid(particle))
                     {
-                        const auto velocity = this->velocities->interpolate(point_t(particle));
-                        const auto global_velocity_part = this->global_velocity_parts->interpolate(point_t(particle));
+                        const auto velocity = velocities->interpolate(point_t(particle));
+                        const auto global_velocity_part = global_velocity_parts->interpolate(point_t(particle));
 
                         const auto local_velocity = velocity - global_velocity_part;
 
                         if (!local_velocity.isZero())
                         {
-                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * this->timestep));
+                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta));
                         }
                     }
                     else
@@ -175,6 +174,8 @@ namespace tpf
                 }
             }
 
+            next_time_frame_callback.reset();
+
             // Create line segments
             create_lines(particles, advection);
         }
@@ -184,14 +185,17 @@ namespace tpf
         {
             tpf::log::info_message(__tpf_info_message("Started pathline computation..."));
 
-            // Get data and callback functions
-            auto velocities = this->velocities;
-            auto global_velocity_parts = this->global_velocity_parts;
-
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_rotation_axis = this->get_rotation_axis;
-            std::function<bool(const point_t&)> is_particle_valid = this->is_particle_valid;
-
+            // Get data
             auto& next_time_frame_callback = *this->next_time_frame_callback;
+
+            auto data = next_time_frame_callback();
+
+            auto velocities = std::get<1>(data);
+            auto global_velocity_parts = std::get<2>(data);
+            auto get_rotation_axis = std::get<4>(data);
+            auto is_particle_valid = std::get<6>(data);
+
+            auto timestep_delta = std::get<0>(data);
 
             // Create particle trace
             flow_field_aux::path_trace<float_t> particles(std::move(seed));
@@ -230,16 +234,16 @@ namespace tpf
                             const auto axis = get_rotation_axis(original_particle);
 
                             tpf::math::quaternion<float_t> quaternion;
-                            quaternion.from_axis(axis);
+                            quaternion.from_axis(axis, timestep_delta);
                             quaternion.invert();
 
                             const auto new_rotation = quaternion * previous_rotation;
 
                             // Calculate droplet-local velocity
-                            local_velocity = previous_rotation * local_velocity;
+                            local_velocity = previous_rotation.rotate(local_velocity);
 
-                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * this->timestep),
-                                tpf::geometry::point<float_t>(original_particle + velocity * this->timestep), new_rotation);
+                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta),
+                                tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta), new_rotation);
                         }
                     }
                     else
@@ -276,13 +280,14 @@ namespace tpf
                         try
                         {
                             // Get data for next time step: [Time step delta, velocities]
-                            auto next_data = next_time_frame_callback();
+                            data = next_time_frame_callback();
 
-                            this->timestep = std::get<0>(next_data) == static_cast<float_t>(0.0) ? this->timestep : std::get<0>(next_data);
-                            velocities = std::get<1>(next_data);
-                            global_velocity_parts = std::get<2>(next_data);
-                            get_rotation_axis = std::get<4>(next_data);
-                            is_particle_valid = std::get<5>(next_data);
+                            timestep_delta = std::get<0>(data) == static_cast<float_t>(0.0) ? timestep_delta : std::get<0>(data);
+
+                            velocities = std::get<1>(data);
+                            global_velocity_parts = std::get<2>(data);
+                            get_rotation_axis = std::get<4>(data);
+                            is_particle_valid = std::get<6>(data);
                         }
                         catch (const std::exception&)
                         {
@@ -311,15 +316,19 @@ namespace tpf
         {
             tpf::log::info_message(__tpf_info_message("Started streakline computation..."));
 
-            // Get data for whole extent
-            auto velocities = this->velocities;
-            auto global_velocity_parts = this->global_velocity_parts;
-
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation = this->get_translation;
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_rotation_axis = this->get_rotation_axis;
-            std::function<bool(const point_t&)> is_particle_valid = this->is_particle_valid;
-
+            // Get data
             auto& next_time_frame_callback = *this->next_time_frame_callback;
+
+            auto data = next_time_frame_callback();
+
+            auto velocities = std::get<1>(data);
+            auto global_velocity_parts = std::get<2>(data);
+            auto get_translation = std::get<3>(data);
+            auto get_rotation_axis = std::get<4>(data);
+            auto get_barycenter = std::get<5>(data);
+            auto is_particle_valid = std::get<6>(data);
+
+            auto timestep_delta = std::get<0>(data);
 
             // Create particle trace
             flow_field_aux::streak_trace<float_t> particles(std::move(seed));
@@ -360,17 +369,17 @@ namespace tpf
                                 const auto axis = get_rotation_axis(original_particle);
 
                                 tpf::math::quaternion<float_t> quaternion;
-                                quaternion.from_axis(axis);
+                                quaternion.from_axis(axis, timestep_delta);
                                 quaternion.invert();
 
                                 const auto new_rotation = quaternion * previous_rotation;
 
                                 // Calculate droplet-local velocity
-                                local_velocity = previous_rotation * local_velocity;
+                                local_velocity = previous_rotation.rotate(local_velocity);
 
                                 // Advect particles
-                                particles.get_particle(index, particle_index) = tpf::geometry::point<float_t>(particle + local_velocity * this->timestep);
-                                particles.get_original_particle(index, particle_index) = tpf::geometry::point<float_t>(original_particle + velocity * this->timestep);
+                                particles.get_particle(index, particle_index) = tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta);
+                                particles.get_original_particle(index, particle_index) = tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta);
                                 particles.get_rotation(index, particle_index) = new_rotation;
                             }
                         }
@@ -388,13 +397,16 @@ namespace tpf
                         // Advect the seed using the global velocity part
                         const auto translation = get_translation(original_seed);
                         const auto axis = get_rotation_axis(original_seed);
+                        const auto barycenter = get_barycenter(original_seed);
 
                         tpf::math::quaternion<float_t> quaternion;
-                        quaternion.from_axis(axis);
+                        quaternion.from_axis(axis, timestep_delta);
                         quaternion.invert();
 
+                        const Eigen::Matrix<float_t, 3, 1> relative_position = original_seed.get_vertex() - barycenter;
+
                         original_seed = tpf::geometry::point<float_t>(original_seed.get_vertex()
-                            + (((quaternion * original_seed.get_vertex()) - original_seed.get_vertex()) + translation) * this->timestep);
+                            + (quaternion.rotate(relative_position) + barycenter) + (translation * timestep_delta));
 
                         // Insert new particle at the seed
                         particles.add_particle(index, particles.get_seed(index), original_seed, tpf::math::quaternion<float_t>());
@@ -433,14 +445,16 @@ namespace tpf
                         try
                         {
                             // Get data for next time step: [Time step delta, velocities]
-                            auto next_data = next_time_frame_callback();
+                            data = next_time_frame_callback();
 
-                            this->timestep = std::get<0>(next_data) == static_cast<float_t>(0.0) ? this->timestep : std::get<0>(next_data);
-                            velocities = std::get<1>(next_data);
-                            global_velocity_parts = std::get<2>(next_data);
-                            get_translation = std::get<3>(next_data);
-                            get_rotation_axis = std::get<4>(next_data);
-                            is_particle_valid = std::get<5>(next_data);
+                            timestep_delta = std::get<0>(data) == static_cast<float_t>(0.0) ? timestep_delta : std::get<0>(data);
+
+                            velocities = std::get<1>(data);
+                            global_velocity_parts = std::get<2>(data);
+                            get_translation = std::get<3>(data);
+                            get_rotation_axis = std::get<4>(data);
+                            get_barycenter = std::get<5>(data);
+                            is_particle_valid = std::get<6>(data);
                         }
                         catch (const std::exception&)
                         {
