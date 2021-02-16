@@ -131,7 +131,8 @@ namespace tpf
 
                     write global:    particles
                 **/
-                #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles)
+                #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
+                    is_particle_valid, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -214,7 +215,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, get_rotation_axis, global_velocity_parts)
+                    is_particle_valid, get_rotation_axis, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -347,7 +348,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, get_rotation_axis, get_translation, global_velocity_parts)
+                    is_particle_valid, get_rotation_axis, get_translation, get_barycenter, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     for (std::size_t particle_index = 0; particle_index < particles.get_num_particles(index); ++particle_index)
