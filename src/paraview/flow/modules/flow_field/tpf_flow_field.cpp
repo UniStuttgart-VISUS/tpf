@@ -85,6 +85,7 @@ namespace
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)>> operator()() override
         {
             // Get data
@@ -103,6 +104,7 @@ namespace
                     tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
 
                 // Store rotation axes and droplet velocities
+                this->droplets = droplets.get_geometry();
                 this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
                 this->rotation_axis = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
 
@@ -132,6 +134,21 @@ namespace
                         const auto id = this->droplet_grid(*cell);
 
                         return this->rotation_axis->at(id);
+                    }
+
+                    return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                };
+
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_barycenter =
+                    [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                {
+                    const auto cell = this->droplet_grid.find_cell(position);
+
+                    if (cell)
+                    {
+                        const auto id = this->droplet_grid(*cell);
+
+                        return this->droplets[id]->get_points().front();
                     }
 
                     return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
@@ -193,7 +210,7 @@ namespace
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
-                    get_translation, get_rotation, is_valid);
+                    get_translation, get_rotation, get_barycenter, is_valid);
             }
 
             throw std::exception();
@@ -207,7 +224,10 @@ namespace
             // Request update to original time step
             this->time_offset = this->original_time;
 
-            request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
+            if (!this->timesteps.empty())
+            {
+                request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
+            }
 
             this->grid_alg->Update(request);
             this->droplets_alg->Update(request);
@@ -242,7 +262,8 @@ namespace
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
         tpf::data::grid<long long, float_t, 3, 1> droplet_grid;
 
-        /// Rotation and velocity
+        /// Droplets, their rotation and velocity
+        std::vector<std::shared_ptr<tpf::geometry::geometric_object<float_t>>> droplets;
         std::shared_ptr<tpf::data::array<float_t, 3, 1>> rotation_axis;
         std::shared_ptr<tpf::data::array<float_t, 3, 1>> droplet_velocity;
     };
@@ -314,15 +335,6 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
             get_array_name, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt);
 
-        const auto initial_data = call_back_loader();
-        const auto initial_velocities = std::get<1>(initial_data);
-        const auto initial_global_velocities = std::get<2>(initial_data);
-        const auto& initial_get_translation = std::get<3>(initial_data);
-        const auto& initial_get_rotation_axis = std::get<4>(initial_data);
-        const auto& initial_is_particle_valid = std::get<5>(initial_data);
-
-        const auto timestep_delta = std::get<0>(initial_data);
-
         // Create seed
         tpf::data::polydata<float_t> seed;
 
@@ -350,12 +362,11 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
 
         flow_t flow_field_module;
 
-        flow_field_module.set_input(*initial_velocities, *initial_global_velocities, initial_get_translation,
-            initial_get_rotation_axis, initial_is_particle_valid, seed);
+        flow_field_module.set_input(seed);
         flow_field_module.set_output(lines);
 
         flow_field_module.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
-            static_cast<std::size_t>(this->NumAdvections), timestep_delta);
+            static_cast<std::size_t>(this->NumAdvections));
 
         flow_field_module.set_callbacks(&call_back_loader);
 

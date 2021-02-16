@@ -106,6 +106,7 @@ namespace
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<bool(const tpf::geometry::point<float_t>&)>> operator()() override
         {
             // Get data
@@ -117,7 +118,6 @@ namespace
                 ID_TYPE_ARRAY* in_paths, * in_classification;
                 FLOAT_TYPE_ARRAY* in_x_velocities, * in_y_velocities, * in_z_velocities;
                 vtkDataArray* in_star_velocities, * in_star_rotation;
-                std::array<Eigen::Matrix<float_t, 3, 1>, 2> in_star_positions;
 
                 double x_min, x_max, y_min, y_max, z_min, z_max;
                 double time;
@@ -146,6 +146,7 @@ namespace
 
                     time = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10, 0).c_str()))->GetValue(0);
 
+                    // Set rotation according to selected method
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::none)
                     {
                         rotation = 0.0;
@@ -159,6 +160,10 @@ namespace
                         rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11, 0).c_str()))->GetValue(0);
                     }
 
+                    this->position[0].setZero();
+                    this->position[1].setZero();
+
+                    // Load data describing translation and rotation of the stars
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
@@ -210,8 +215,8 @@ namespace
                                 in_stars->GetPoint(0, tmp_star_pos_1.data());
                                 in_stars->GetPoint(1, tmp_star_pos_2.data());
 
-                                in_star_positions[0] << tmp_star_pos_1[0], tmp_star_pos_1[1], tmp_star_pos_1[2];
-                                in_star_positions[1] << tmp_star_pos_2[0], tmp_star_pos_2[1], tmp_star_pos_2[2];
+                                this->position[0] << tmp_star_pos_1[0], tmp_star_pos_1[1], tmp_star_pos_1[2];
+                                this->position[1] << tmp_star_pos_2[0], tmp_star_pos_2[1], tmp_star_pos_2[2];
                             }
                         }
                         catch (const std::exception& e)
@@ -428,7 +433,7 @@ namespace
                         !this->rotation_axis[in_classification->GetValue(p) - 1].isZero())
                     {
                         const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
-                        const Eigen::Matrix<float_t, 3, 1> relative_position = position - in_star_positions[in_classification->GetValue(p) - 1];
+                        const Eigen::Matrix<float_t, 3, 1> relative_position = position - this->position[in_classification->GetValue(p) - 1];
                         const Eigen::Matrix<float_t, 3, 1> rotation_axis = this->rotation_axis[in_classification->GetValue(p) - 1];
                         const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
 
@@ -561,7 +566,10 @@ namespace
 
                 std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_translation;
                 std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_rotation;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_barycenter;
                 std::function<bool(const tpf::geometry::point<float_t>&)> is_valid;
+
+                get_barycenter = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->position[get_star(position) - 1]; };
 
                 switch (this->locality_method)
                 {
@@ -599,7 +607,7 @@ namespace
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree_global),
-                    get_translation, get_rotation, is_valid);
+                    get_translation, get_rotation, get_barycenter, is_valid);
             }
 
             throw std::exception();
@@ -654,7 +662,8 @@ namespace
         tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree, octree_global;
         tpf::data::octree<float_t, int> octree_classification;
 
-        /// Rotation and velocity
+        /// Position, rotation and velocity
+        std::array<Eigen::Matrix<float_t, 3, 1>, 2> position;
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> rotation_axis;
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> star_velocity;
     };
@@ -731,15 +740,6 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
             this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->ForceFixedFrequency ? std::make_optional(static_cast<float_t>(this->FrequencyOmega)) : std::nullopt);
 
-        const auto initial_data = call_back_loader();
-        const auto initial_octree = std::get<1>(initial_data);
-        const auto initial_octree_global = std::get<2>(initial_data);
-        const auto& initial_get_translation = std::get<3>(initial_data);
-        const auto& initial_get_rotation_axis = std::get<4>(initial_data);
-        const auto& initial_is_particle_valid = std::get<5>(initial_data);
-
-        const auto timestep_delta = std::get<0>(initial_data);
-
         // Get initial seed
         tpf::data::polydata<float_t> seed = tpf::vtk::get_polydata<float_t>(in_seed);
 
@@ -749,12 +749,11 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         flow_t flow_field;
         tpf::data::polydata<float_t> lines;
 
-        flow_field.set_input(*initial_octree, *initial_octree_global, initial_get_translation,
-            initial_get_rotation_axis, initial_is_particle_valid, seed);
+        flow_field.set_input(seed);
         flow_field.set_output(lines);
 
         flow_field.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
-            static_cast<std::size_t>(this->NumAdvections), timestep_delta);
+            static_cast<std::size_t>(this->NumAdvections));
 
         flow_field.set_callbacks(&call_back_loader);
 
