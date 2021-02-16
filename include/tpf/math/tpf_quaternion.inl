@@ -12,11 +12,11 @@ namespace tpf
     namespace math
     {
         template <typename floatp_t>
-        inline quaternion<floatp_t>::quaternion() : real(1.0)
+        inline quaternion<floatp_t>::quaternion() : real(1.0), imaginary(0.0, 0.0, 0.0)
         { }
 
         template <typename floatp_t>
-        inline quaternion<floatp_t>::quaternion(floatp_t real) : real(real)
+        inline quaternion<floatp_t>::quaternion(floatp_t real) : real(real), imaginary(0.0, 0.0, 0.0)
         { }
 
         template <typename floatp_t>
@@ -82,7 +82,7 @@ namespace tpf
 
         template <typename floatp_t>
         template <typename U>
-        inline Eigen::Matrix<U, 3, 1> quaternion<floatp_t>::operator*(const Eigen::Matrix<U, 3, 1>& vec) const
+        inline Eigen::Matrix<U, 3, 1> quaternion<floatp_t>::rotate(const Eigen::Matrix<U, 3, 1>& vec) const
         {
             return ((*this) * quaternion<floatp_t>(static_cast<floatp_t>(0.0), vec) * this->inverse()).get_imaginary();
         }
@@ -200,16 +200,12 @@ namespace tpf
         }
 
         template <typename floatp_t>
-        inline void quaternion<floatp_t>::from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis)
+        inline void quaternion<floatp_t>::from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis, const floatp_t scaling)
         {
-            this->real = std::cos(axis.norm() / static_cast<floatp_t>(2.0));
-            this->imaginary = axis.normalized() * std::sin(axis.norm() / static_cast<floatp_t>(2.0));
-        }
+            const auto theta = scaling * axis.norm();
 
-        template <typename floatp_t>
-        inline quaternion<floatp_t> operator+(floatp_t real, const Eigen::Matrix<floatp_t, 3, 1>& imaginary)
-        {
-            return quaternion<floatp_t>(real, imaginary);
+            this->real = std::cos(theta / static_cast<floatp_t>(2.0));
+            this->imaginary = axis.normalized() * std::sin(theta / static_cast<floatp_t>(2.0));
         }
 
         template <typename floatp_t>
