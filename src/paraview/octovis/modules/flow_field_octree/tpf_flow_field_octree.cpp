@@ -160,8 +160,8 @@ namespace
                         rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11, 0).c_str()))->GetValue(0);
                     }
 
-                    this->position[0].setZero();
-                    this->position[1].setZero();
+                    this->star_position[0].setZero();
+                    this->star_position[1].setZero();
 
                     // Load data describing translation and rotation of the stars
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
@@ -215,8 +215,8 @@ namespace
                                 in_stars->GetPoint(0, tmp_star_pos_1.data());
                                 in_stars->GetPoint(1, tmp_star_pos_2.data());
 
-                                this->position[0] << tmp_star_pos_1[0], tmp_star_pos_1[1], tmp_star_pos_1[2];
-                                this->position[1] << tmp_star_pos_2[0], tmp_star_pos_2[1], tmp_star_pos_2[2];
+                                this->star_position[0] << tmp_star_pos_1[0], tmp_star_pos_1[1], tmp_star_pos_1[2];
+                                this->star_position[1] << tmp_star_pos_2[0], tmp_star_pos_2[1], tmp_star_pos_2[2];
                             }
                         }
                         catch (const std::exception& e)
@@ -433,7 +433,7 @@ namespace
                         !this->rotation_axis[in_classification->GetValue(p) - 1].isZero())
                     {
                         const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
-                        const Eigen::Matrix<float_t, 3, 1> relative_position = position - this->position[in_classification->GetValue(p) - 1];
+                        const Eigen::Matrix<float_t, 3, 1> relative_position = position - this->star_position[in_classification->GetValue(p) - 1];
                         const Eigen::Matrix<float_t, 3, 1> rotation_axis = this->rotation_axis[in_classification->GetValue(p) - 1];
                         const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
 
@@ -569,7 +569,7 @@ namespace
                 std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_barycenter;
                 std::function<bool(const tpf::geometry::point<float_t>&)> is_valid;
 
-                get_barycenter = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->position[get_star(position) - 1]; };
+                get_barycenter = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->star_position[get_star(position) - 1]; };
 
                 switch (this->locality_method)
                 {
@@ -663,7 +663,7 @@ namespace
         tpf::data::octree<float_t, int> octree_classification;
 
         /// Position, rotation and velocity
-        std::array<Eigen::Matrix<float_t, 3, 1>, 2> position;
+        std::array<Eigen::Matrix<float_t, 3, 1>, 2> star_position;
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> rotation_axis;
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> star_velocity;
     };
