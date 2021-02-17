@@ -12,7 +12,7 @@
                 Correct volume of fluid by removing single-cell droplets.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -54,7 +54,7 @@
                 Identify droplets by neighborhood in the volume of fluid field, and calculate droplet-specific properties.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -170,7 +170,7 @@
                 Calculate a point per cell as the fluid position: cell center, fluid barycenter, or interface barycenter.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -245,7 +245,7 @@
                 Allows to write rectilinear grids and their attached fields in the FS3D file format.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -308,7 +308,7 @@
                 Calculate the curvature at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -372,7 +372,7 @@
                 Calculate the gradient at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -414,7 +414,7 @@
                 Reconstruct the interface between two fluid phases by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -487,7 +487,7 @@
                 Reconstruct the interface between two fluid phases and a solid phase by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -589,7 +589,7 @@
                 Calculate the surface tension force at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
