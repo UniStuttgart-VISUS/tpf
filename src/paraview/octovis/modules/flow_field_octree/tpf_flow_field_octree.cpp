@@ -769,6 +769,9 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
 
         tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::CELL_DATA, *lines.template get_cell_data_as<std::size_t, 1>("ID (Advection)"));
         tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::CELL_DATA, *lines.template get_cell_data_as<std::size_t, 1>("ID (Distribution)"));
+
+        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Advection)"));
+        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Distribution)"));
     }
     catch (const std::runtime_error& ex)
     {
