@@ -176,9 +176,15 @@ tpf::data::polydata<float_t> seed_at_leaves(const tpf::data::octree<float_t, flo
     return seed;
 }
 
+enum class predicate_t
+{
+    both, larger, smaller
+};
+
 /// Create seed points around the isosurface, defined by the isovalue parameter
 template <typename float_t>
-tpf::data::polydata<float_t> seed_at_isosurface(const tpf::data::octree<float_t, float_t>& octree, const float_t isovalue)
+tpf::data::polydata<float_t> seed_at_isosurface(const tpf::data::octree<float_t, float_t>& octree,
+    const float_t isovalue, const predicate_t predicate = predicate_t::both)
 {
     // Find cells, where own and neighboring isovalues are on opposite sides of the input isovalue
     const auto leaves = octree.get_leaf_nodes();
@@ -203,7 +209,8 @@ tpf::data::polydata<float_t> seed_at_isosurface(const tpf::data::octree<float_t,
         }
 
         // If isovalue crosses the threshold, add the position to the seed
-        if ((has_positive == has_negative) || (has_positive && center_isovalue < 0.0) || (has_negative && center_isovalue > 0.0))
+        if (((predicate == predicate_t::smaller || predicate == predicate_t::both) && has_positive && center_isovalue < 0.0) ||
+            ((predicate == predicate_t::larger || predicate == predicate_t::both) && has_negative && center_isovalue > 0.0))
         {
             seed.insert(std::make_shared<tpf::geometry::point<float_t>>(center_position));
         }
@@ -282,7 +289,7 @@ int tpf_seed_octree::RequestData(vtkInformation *request, vtkInformationVector *
             seed = seed_at_leaves(octree);
             break;
         case 1:
-            seed = seed_at_isosurface(octree, static_cast<float_t>(this->Isovalue));
+            seed = seed_at_isosurface(octree, static_cast<float_t>(this->Isovalue), static_cast<predicate_t>(this->Predicate));
             break;
         }
 

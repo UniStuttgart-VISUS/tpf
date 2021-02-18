@@ -22,6 +22,9 @@ class VTK_EXPORT tpf_seed_octree : public vtkPolyDataAlgorithm
 
         vtkGetMacro(Isovalue, double);
         vtkSetMacro(Isovalue, double);
+
+        vtkGetMacro(Predicate, int);
+        vtkSetMacro(Predicate, int);
  
     protected:
         tpf_seed_octree();
@@ -43,4 +46,5 @@ class VTK_EXPORT tpf_seed_octree : public vtkPolyDataAlgorithm
         /// GUI parameters
         int SeedMethod, SeedOffset, SeedSize;
         double Isovalue;
+        int Predicate;
 };
