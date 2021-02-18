@@ -67,6 +67,12 @@ namespace tpf
                 std::size_t get_num_lines() const;
 
                 /// <summary>
+                /// Return the number of (advected) particles
+                /// </summary>
+                /// <returns>Number of particles</returns>
+                std::size_t get_num_particles() const;
+
+                /// <summary>
                 /// Invalidate a particle (trace)
                 /// </summary>
                 /// <param name="index">Index of the seed/trace</param>

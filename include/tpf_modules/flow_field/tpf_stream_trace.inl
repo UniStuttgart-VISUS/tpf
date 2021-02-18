@@ -41,7 +41,7 @@ namespace tpf
             {
                 return this->particles[index].back();
             }
-            
+
             template <typename floatp_t>
             inline tpf::geometry::point<floatp_t>& stream_trace<floatp_t>::get_last_particle(const std::size_t index)
             {
@@ -65,6 +65,19 @@ namespace tpf
                 }
 
                 return num_lines;
+            }
+
+            template <typename floatp_t>
+            inline std::size_t stream_trace<floatp_t>::get_num_particles() const
+            {
+                std::size_t num_particles = 0;
+
+                for (const auto& trace : this->particles)
+                {
+                    num_particles += trace.size();
+                }
+
+                return num_particles;
             }
 
             template <typename floatp_t>
