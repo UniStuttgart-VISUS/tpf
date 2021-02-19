@@ -193,7 +193,7 @@ namespace tpf
 
             auto velocities = std::get<1>(data);
             auto global_velocity_parts = std::get<2>(data);
-            auto get_rotation_axis = std::get<4>(data);
+            auto get_angular_velocity = std::get<4>(data);
             auto is_particle_valid = std::get<6>(data);
 
             auto timestep_delta = std::get<0>(data);
@@ -215,7 +215,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, get_rotation_axis, global_velocity_parts, timestep_delta)
+                    is_particle_valid, get_angular_velocity, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -232,10 +232,10 @@ namespace tpf
                         {
                             // Calculate rotation
                             const auto previous_rotation = particles.get_last_rotation(index);
-                            const auto axis = get_rotation_axis(original_particle);
+                            const auto angular_velocity = get_angular_velocity(original_particle);
 
                             tpf::math::quaternion<float_t> quaternion;
-                            quaternion.from_axis(axis, timestep_delta);
+                            quaternion.from_axis(angular_velocity, timestep_delta);
                             quaternion.invert();
 
                             const auto new_rotation = quaternion * previous_rotation;
@@ -287,7 +287,7 @@ namespace tpf
 
                             velocities = std::get<1>(data);
                             global_velocity_parts = std::get<2>(data);
-                            get_rotation_axis = std::get<4>(data);
+                            get_angular_velocity = std::get<4>(data);
                             is_particle_valid = std::get<6>(data);
                         }
                         catch (const std::exception&)
@@ -325,7 +325,7 @@ namespace tpf
             auto velocities = std::get<1>(data);
             auto global_velocity_parts = std::get<2>(data);
             auto get_translation = std::get<3>(data);
-            auto get_rotation_axis = std::get<4>(data);
+            auto get_angular_velocity = std::get<4>(data);
             auto get_barycenter = std::get<5>(data);
             auto is_particle_valid = std::get<6>(data);
 
@@ -348,7 +348,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, get_rotation_axis, get_translation, get_barycenter, global_velocity_parts, timestep_delta)
+                    is_particle_valid, get_angular_velocity, get_translation, get_barycenter, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     for (std::size_t particle_index = 0; particle_index < particles.get_num_particles(index); ++particle_index)
@@ -367,10 +367,10 @@ namespace tpf
                             {
                                 // Calculate rotation
                                 const auto previous_rotation = particles.get_rotation(index, particle_index);
-                                const auto axis = get_rotation_axis(original_particle);
+                                const auto angular_velocity = get_angular_velocity(original_particle);
 
                                 tpf::math::quaternion<float_t> quaternion;
-                                quaternion.from_axis(axis, timestep_delta);
+                                quaternion.from_axis(angular_velocity, timestep_delta);
                                 quaternion.invert();
 
                                 const auto new_rotation = quaternion * previous_rotation;
@@ -397,11 +397,11 @@ namespace tpf
                     {
                         // Advect the seed using the global velocity part
                         const auto translation = get_translation(original_seed);
-                        const auto axis = get_rotation_axis(original_seed);
+                        const auto angular_velocity = get_angular_velocity(original_seed);
                         const auto barycenter = get_barycenter(original_seed);
 
                         tpf::math::quaternion<float_t> quaternion;
-                        quaternion.from_axis(axis, timestep_delta);
+                        quaternion.from_axis(angular_velocity, timestep_delta);
                         quaternion.invert();
 
                         const Eigen::Matrix<float_t, 3, 1> relative_position = original_seed.get_vertex() - barycenter;
@@ -453,7 +453,7 @@ namespace tpf
                             velocities = std::get<1>(data);
                             global_velocity_parts = std::get<2>(data);
                             get_translation = std::get<3>(data);
-                            get_rotation_axis = std::get<4>(data);
+                            get_angular_velocity = std::get<4>(data);
                             get_barycenter = std::get<5>(data);
                             is_particle_valid = std::get<6>(data);
                         }

@@ -101,7 +101,7 @@
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
-                    Rotation of the droplet around its axis of rotation
+                    Rotation of the droplet around its axis of rotation, given as angular velocity
                 </Documentation>
             </StringVectorProperty>
 

@@ -389,8 +389,8 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
             const std::array<Eigen::Matrix<float_t, 3, 1>, 2> velocity{ cluster[0].get_velocity().first, cluster[1].get_velocity().first };
 
             // Compute axis of rotation
-            const std::array<Eigen::Matrix<float_t, 3, 1>, 2> rotation_axis{
-                std::get<0>(cluster[0].get_rotation_mechanics()), std::get<0>(cluster[1].get_rotation_mechanics()) };
+            const std::array<Eigen::Matrix<float_t, 3, 1>, 2> angular_velocity{
+                std::get<0>(cluster[0].get_angular_velocity_mechanics()), std::get<0>(cluster[1].get_angular_velocity_mechanics()) };
 
             // Calculate orbital angular frequency
             const float_t frequency = ((center[ACCRETOR_INDEX] - center[DONOR_INDEX])
@@ -421,7 +421,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                 tpf::log::info_message(__tpf_info_message("  mass              ", mass[ACCRETOR_INDEX]));
                 tpf::log::info_message(__tpf_info_message("  location          [", center[ACCRETOR_INDEX][0], ", ", center[ACCRETOR_INDEX][1], ", ", center[ACCRETOR_INDEX][2], "]"));
                 tpf::log::info_message(__tpf_info_message("  velocity          [", velocity[ACCRETOR_INDEX][0], ", ", velocity[ACCRETOR_INDEX][1], ", ", velocity[ACCRETOR_INDEX][2], "]"));
-                tpf::log::info_message(__tpf_info_message("  axis of rotation  [", rotation_axis[ACCRETOR_INDEX][0], ", ", rotation_axis[ACCRETOR_INDEX][1], ", ", rotation_axis[ACCRETOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  angular velocity  [", angular_velocity[ACCRETOR_INDEX][0], ", ", angular_velocity[ACCRETOR_INDEX][1], ", ", angular_velocity[ACCRETOR_INDEX][2], "]"));
                 tpf::log::info_message(__tpf_info_message("  angular frequency ", frequency));
                 tpf::log::info_message(__tpf_info_message("  Roche lobe radius ", roche_lobe_radius_accretor));
 
@@ -429,7 +429,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                 tpf::log::info_message(__tpf_info_message("  mass              ", mass[DONOR_INDEX]));
                 tpf::log::info_message(__tpf_info_message("  location          [", center[DONOR_INDEX][0], ", ", center[DONOR_INDEX][1], ", ", center[DONOR_INDEX][2], "]"));
                 tpf::log::info_message(__tpf_info_message("  velocity          [", velocity[DONOR_INDEX][0], ", ", velocity[DONOR_INDEX][1], ", ", velocity[DONOR_INDEX][2], "]"));
-                tpf::log::info_message(__tpf_info_message("  axis of rotation  [", rotation_axis[DONOR_INDEX][0], ", ", rotation_axis[DONOR_INDEX][1], ", ", rotation_axis[DONOR_INDEX][2], "]"));
+                tpf::log::info_message(__tpf_info_message("  angular velocity  [", angular_velocity[DONOR_INDEX][0], ", ", angular_velocity[DONOR_INDEX][1], ", ", angular_velocity[DONOR_INDEX][2], "]"));
                 tpf::log::info_message(__tpf_info_message("  angular frequency ", frequency));
                 tpf::log::info_message(__tpf_info_message("  Roche lobe radius ", roche_lobe_radius_donor));
 #endif
@@ -444,8 +444,8 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                 stars.template get_point_data_as<float_t, 1, 1>("Mass")->at(ACCRETOR_INDEX) = mass[ACCRETOR_INDEX];
                 stars.template get_point_data_as<float_t, 1, 1>("Mass")->at(DONOR_INDEX) = mass[DONOR_INDEX];
 
-                stars.template get_point_data_as<float_t, 3, 1>("Axis of rotation")->at(ACCRETOR_INDEX) = rotation_axis[ACCRETOR_INDEX];
-                stars.template get_point_data_as<float_t, 3, 1>("Axis of rotation")->at(DONOR_INDEX) = rotation_axis[DONOR_INDEX];
+                stars.template get_point_data_as<float_t, 3, 1>("Angular velocity")->at(ACCRETOR_INDEX) = angular_velocity[ACCRETOR_INDEX];
+                stars.template get_point_data_as<float_t, 3, 1>("Angular velocity")->at(DONOR_INDEX) = angular_velocity[DONOR_INDEX];
 
                 stars.template get_point_data_as<float_t, 1, 1>("Orbital frequency")->at(ACCRETOR_INDEX) = frequency;
                 stars.template get_point_data_as<float_t, 1, 1>("Orbital frequency")->at(DONOR_INDEX) = frequency;
@@ -508,7 +508,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
                 {
                     center_of_mass->SetTuple3(p, center[cell_classification - 1][0], center[cell_classification - 1][1], center[cell_classification - 1][2]);
                     cluster_velocity->SetTuple3(p, velocity[cell_classification - 1][0], velocity[cell_classification - 1][1], velocity[cell_classification - 1][2]);
-                    cluster_rotation->SetTuple3(p, rotation_axis[cell_classification - 1][0], rotation_axis[cell_classification - 1][1], rotation_axis[cell_classification - 1][2]);
+                    cluster_rotation->SetTuple3(p, angular_velocity[cell_classification - 1][0], angular_velocity[cell_classification - 1][1], angular_velocity[cell_classification - 1][2]);
                     angular_frequency->SetValue(p, frequency);
                     acceleration->SetTuple3(p, cell_acceleration[0], cell_acceleration[1], cell_acceleration[2]);
                     classifier->SetValue(p, cell_classification == 1 ? cell_classifier_accretor : cell_classifier_donor);

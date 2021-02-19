@@ -32,7 +32,7 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, velocity, global velocity part, translation, rotation, barycenter, validity]</returns>
+                /// <returns>[Time step delta, velocity, global velocity part, translation, angular velocity, barycenter, validity]</returns>
                 virtual std::tuple<float_t,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,

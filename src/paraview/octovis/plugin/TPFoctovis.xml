@@ -400,14 +400,14 @@
                 </Documentation>
             </StringVectorProperty>
 
-            <StringVectorProperty name="Grid Rotation" label="Grid rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="11">
+            <StringVectorProperty name="Grid Rotation" label="Angular frequency" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="11">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="omega_array">
                     <RequiredProperties>
                         <Property name="Octree" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
-                    Grid rotation given by the angle omega
+                    Grid rotation given by the angular frequency omega
                 </Documentation>
             </StringVectorProperty>
 
@@ -527,7 +527,7 @@
                     </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
-                    Rotation of the stars around their center of mass
+                    Rotation of the stars around their center of mass, given as angular velocity
                 </Documentation>
             </StringVectorProperty>
 

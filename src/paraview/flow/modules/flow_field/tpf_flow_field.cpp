@@ -78,7 +78,7 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts, translation, rotation, validity]</returns>
+        /// <returns>[Time step delta, velocities, global velocity parts, translation, angular velocity, validity]</returns>
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
@@ -103,10 +103,10 @@ namespace
                     tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
                     tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
 
-                // Store rotation axes and droplet velocities
+                // Store angular velocities and droplet velocities
                 this->droplets = droplets.get_geometry();
                 this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
-                this->rotation_axis = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
+                this->angular_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
 
                 // Create look-up functions
                 std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation =
@@ -124,7 +124,7 @@ namespace
                     return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
                 };
 
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_rotation =
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_angular_velocity =
                     [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
                 {
                     const auto cell = this->droplet_grid.find_cell(position);
@@ -133,7 +133,7 @@ namespace
                     {
                         const auto id = this->droplet_grid(*cell);
 
-                        return this->rotation_axis->at(id);
+                        return this->angular_velocity->at(id);
                     }
 
                     return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
@@ -206,11 +206,11 @@ namespace
                     this->droplets_alg->Update(this->request);
                 }
 
-                // Return [Time step delta, velocities, global velocity parts, translation, rotation, validity]
+                // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
-                    get_translation, get_rotation, get_barycenter, is_valid);
+                    get_translation, get_angular_velocity, get_barycenter, is_valid);
             }
 
             throw std::exception();
@@ -262,9 +262,9 @@ namespace
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
         tpf::data::grid<long long, float_t, 3, 1> droplet_grid;
 
-        /// Droplets, their rotation and velocity
+        /// Droplets, their angular velocity and velocity
         std::vector<std::shared_ptr<tpf::geometry::geometric_object<float_t>>> droplets;
-        std::shared_ptr<tpf::data::array<float_t, 3, 1>> rotation_axis;
+        std::shared_ptr<tpf::data::array<float_t, 3, 1>> angular_velocity;
         std::shared_ptr<tpf::data::array<float_t, 3, 1>> droplet_velocity;
     };
 }

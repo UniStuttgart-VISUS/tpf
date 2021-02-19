@@ -75,7 +75,7 @@ namespace
         /// <param name="get_array_name">Function to retrieve the array names</param>
         /// <param name="locality_method">Method for defining the locality of the stars</param>
         /// <param name="fixed_timestep">Optional fixed timestep</param>
-        /// <param name="fixed_frequency">Optional fixed grid rotation</param>
+        /// <param name="fixed_frequency">Optional fixed grid angular frequency</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps, vtkInformation* request,
             vtkAlgorithm* velocity_alg, vtkAlgorithm* stars_alg, std::function<std::string(int, int)> get_array_name,
             const tpf_flow_field_octree::locality_method_t locality_method,
@@ -99,7 +99,7 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts, translation, rotation, validity]</returns>
+        /// <returns>[Time step delta, velocities, global velocity parts, translation, angular velocity, validity]</returns>
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
@@ -117,11 +117,11 @@ namespace
 
                 ID_TYPE_ARRAY* in_paths, * in_classification;
                 FLOAT_TYPE_ARRAY* in_x_velocities, * in_y_velocities, * in_z_velocities;
-                vtkDataArray* in_star_velocities, * in_star_rotation;
+                vtkDataArray* in_star_velocities, * in_star_angular_velocity;
 
                 double x_min, x_max, y_min, y_max, z_min, z_max;
                 double time;
-                double rotation;
+                double angular_frequency;
 
                 if (tpf::mpi::get_instance().get_rank() == 0)
                 {
@@ -146,18 +146,18 @@ namespace
 
                     time = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10, 0).c_str()))->GetValue(0);
 
-                    // Set rotation according to selected method
+                    // Set angular velocity according to selected method
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::none)
                     {
-                        rotation = 0.0;
+                        angular_frequency = 0.0;
                     }
                     else if (this->fixed_frequency)
                     {
-                        rotation = *this->fixed_frequency;
+                        angular_frequency = *this->fixed_frequency;
                     }
                     else
                     {
-                        rotation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11, 0).c_str()))->GetValue(0);
+                        angular_frequency = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11, 0).c_str()))->GetValue(0);
                     }
 
                     this->star_position[0].setZero();
@@ -200,15 +200,17 @@ namespace
                             if (this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                                 this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
                             {
-                                in_star_rotation = in_stars->GetPointData()->GetArray(get_array_name(14, 1).c_str());
+                                in_star_angular_velocity = in_stars->GetPointData()->GetArray(get_array_name(14, 1).c_str());
 
-                                if (in_star_rotation == nullptr)
+                                if (in_star_angular_velocity == nullptr)
                                 {
                                     throw std::runtime_error(__tpf_error_message("Star rotation array is null."));
                                 }
 
-                                this->rotation_axis[0] << in_star_rotation->GetComponent(0, 0), in_star_rotation->GetComponent(0, 1), in_star_rotation->GetComponent(0, 2);
-                                this->rotation_axis[1] << in_star_rotation->GetComponent(1, 0), in_star_rotation->GetComponent(1, 1), in_star_rotation->GetComponent(1, 2);
+                                this->angular_velocity[0] << in_star_angular_velocity->GetComponent(0, 0),
+                                    in_star_angular_velocity->GetComponent(0, 1), in_star_angular_velocity->GetComponent(0, 2);
+                                this->angular_velocity[1] << in_star_angular_velocity->GetComponent(1, 0),
+                                    in_star_angular_velocity->GetComponent(1, 1), in_star_angular_velocity->GetComponent(1, 2);
 
                                 // Get center of mass of the stars
                                 std::array<double, 3> tmp_star_pos_1, tmp_star_pos_2;
@@ -290,17 +292,17 @@ namespace
                             if (this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                                 this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
                             {
-                                if (vtkFloatArray::SafeDownCast(in_star_rotation) != nullptr)
+                                if (vtkFloatArray::SafeDownCast(in_star_angular_velocity) != nullptr)
                                 {
-                                    in_star_rotation = vtkFloatArray::New();
-                                    in_star_rotation->SetNumberOfComponents(3);
-                                    in_star_rotation->SetNumberOfTuples(2);
+                                    in_star_angular_velocity = vtkFloatArray::New();
+                                    in_star_angular_velocity->SetNumberOfComponents(3);
+                                    in_star_angular_velocity->SetNumberOfTuples(2);
                                 }
-                                else if (vtkDoubleArray::SafeDownCast(in_star_rotation) != nullptr)
+                                else if (vtkDoubleArray::SafeDownCast(in_star_angular_velocity) != nullptr)
                                 {
-                                    in_star_rotation = vtkDoubleArray::New();
-                                    in_star_rotation->SetNumberOfComponents(3);
-                                    in_star_rotation->SetNumberOfTuples(2);
+                                    in_star_angular_velocity = vtkDoubleArray::New();
+                                    in_star_angular_velocity->SetNumberOfComponents(3);
+                                    in_star_angular_velocity->SetNumberOfTuples(2);
                                 }
                                 else
                                 {
@@ -327,7 +329,7 @@ namespace
 
                     tpf::mpi::get_instance().broadcast(time, 0);
 
-                    tpf::mpi::get_instance().broadcast(rotation, 0);
+                    tpf::mpi::get_instance().broadcast(angular_frequency, 0);
 
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
@@ -346,8 +348,8 @@ namespace
                         if (this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                             this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
                         {
-                            MPI_Bcast(in_star_rotation->GetVoidPointer(0), 6,
-                                (vtkFloatArray::SafeDownCast(in_star_rotation) != nullptr) ? tpf::mpi::mpi_t<float>::value : tpf::mpi::mpi_t<double>::value,
+                            MPI_Bcast(in_star_angular_velocity->GetVoidPointer(0), 6,
+                                (vtkFloatArray::SafeDownCast(in_star_angular_velocity) != nullptr) ? tpf::mpi::mpi_t<float>::value : tpf::mpi::mpi_t<double>::value,
                                 0, tpf::mpi::get_instance().get_comm());
 
                             MPI_Bcast(in_star_positions[0].data(), 3, tpf::mpi::mpi_t<float_t>::value, 0, tpf::mpi::get_instance().get_comm());
@@ -425,19 +427,20 @@ namespace
                     points->GetPoint(p, point.data());
 
                     // Compute global velocity part
-                    Eigen::Matrix<float_t, 3, 1> angular_velocity;
-                    angular_velocity.setZero();
+                    Eigen::Matrix<float_t, 3, 1> tangential_velocity;
+                    tangential_velocity.setZero();
 
                     if ((this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body) &&
-                        !this->rotation_axis[in_classification->GetValue(p) - 1].isZero())
+                        !this->angular_velocity[in_classification->GetValue(p) - 1].isZero())
                     {
                         const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
                         const Eigen::Matrix<float_t, 3, 1> relative_position = position - this->star_position[in_classification->GetValue(p) - 1];
-                        const Eigen::Matrix<float_t, 3, 1> rotation_axis = this->rotation_axis[in_classification->GetValue(p) - 1];
-                        const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
+                        const Eigen::Matrix<float_t, 3, 1> angular_velocity = this->angular_velocity[in_classification->GetValue(p) - 1];
+                        const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
+                            - (relative_position.dot(angular_velocity) / angular_velocity.squaredNorm()) * angular_velocity;
 
-                        angular_velocity = rotation_axis.cross(angular_position);
+                        tangential_velocity = angular_velocity.cross(angular_position);
                     }
 
                     switch (this->locality_method)
@@ -447,18 +450,18 @@ namespace
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::rotation:
-                        node_information_global.push_back(std::make_pair(path, angular_velocity));
+                        node_information_global.push_back(std::make_pair(path, tangential_velocity));
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::rigid_body:
-                        node_information_global.push_back(std::make_pair(path, this->star_velocity[in_classification->GetValue(p) - 1] + angular_velocity));
+                        node_information_global.push_back(std::make_pair(path, this->star_velocity[in_classification->GetValue(p) - 1] + tangential_velocity));
 
                         break;
                     case tpf_flow_field_octree::locality_method_t::none:
                     case tpf_flow_field_octree::locality_method_t::orbit:
                         node_information_global.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
-                            static_cast<float_t>(-point[1] * rotation),
-                            static_cast<float_t>(point[0] * rotation),
+                            static_cast<float_t>(-point[1] * angular_frequency),
+                            static_cast<float_t>(point[0] * angular_frequency),
                             static_cast<float_t>(0.0))));
                     }
 
@@ -496,7 +499,7 @@ namespace
                         if (this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                             this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
                         {
-                            in_star_rotation->Delete();
+                            in_star_angular_velocity->Delete();
                         }
                     }
                 }
@@ -565,7 +568,7 @@ namespace
                 };
 
                 std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_translation;
-                std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_rotation;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_angular_velocity;
                 std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)> get_barycenter;
                 std::function<bool(const tpf::geometry::point<float_t>&)> is_valid;
 
@@ -575,39 +578,39 @@ namespace
                 {
                 case tpf_flow_field_octree::locality_method_t::velocity:
                     get_translation = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->star_velocity[get_star(position) - 1]; };
-                    get_rotation = [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); };
+                    get_angular_velocity = [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); };
                     is_valid = [get_star](const tpf::geometry::point<float_t>& position) { return get_star(position) > 0; };
 
                     break;
                 case tpf_flow_field_octree::locality_method_t::rotation:
                     get_translation = [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); };
-                    get_rotation = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->rotation_axis[get_star(position) - 1]; };
+                    get_angular_velocity = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->angular_velocity[get_star(position) - 1]; };
                     is_valid = [get_star](const tpf::geometry::point<float_t>& position) { return get_star(position) > 0; };
 
                     break;
                 case tpf_flow_field_octree::locality_method_t::rigid_body:
                     get_translation = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->star_velocity[get_star(position) - 1]; };
-                    get_rotation = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->rotation_axis[get_star(position) - 1]; };
+                    get_angular_velocity = [this, get_star](const tpf::geometry::point<float_t>& position) { return this->angular_velocity[get_star(position) - 1]; };
                     is_valid = [get_star](const tpf::geometry::point<float_t>& position) { return get_star(position) > 0; };
 
                     break;
                 case tpf_flow_field_octree::locality_method_t::orbit:
                 case tpf_flow_field_octree::locality_method_t::none:
                 default:
-                    this->rotation_axis[0] = this->rotation_axis[1] = Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0) * rotation;
+                    this->angular_velocity[0] = this->angular_velocity[1] = Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 1.0) * angular_frequency;
 
                     get_translation = [](const tpf::geometry::point<float_t>& position) { return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0); };
-                    get_rotation = [this](const tpf::geometry::point<float_t>& position) { return this->rotation_axis[0]; };
+                    get_angular_velocity = [this](const tpf::geometry::point<float_t>& position) { return this->angular_velocity[0]; };
                     is_valid = [](const tpf::geometry::point<float_t>& position) { return true; };
 
                     break;
                 }
 
-                // Return [Time step delta, velocities, global velocity parts, translation, rotation, validity]
+                // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree_global),
-                    get_translation, get_rotation, get_barycenter, is_valid);
+                    get_translation, get_angular_velocity, get_barycenter, is_valid);
             }
 
             throw std::exception();
@@ -662,9 +665,9 @@ namespace
         tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree, octree_global;
         tpf::data::octree<float_t, int> octree_classification;
 
-        /// Position, rotation and velocity
+        /// Position, angular velocity and velocity
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> star_position;
-        std::array<Eigen::Matrix<float_t, 3, 1>, 2> rotation_axis;
+        std::array<Eigen::Matrix<float_t, 3, 1>, 2> angular_velocity;
         std::array<Eigen::Matrix<float_t, 3, 1>, 2> star_velocity;
     };
 }
