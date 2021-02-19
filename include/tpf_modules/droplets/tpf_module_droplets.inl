@@ -87,14 +87,14 @@ namespace tpf
             {
                 if (this->calculate_translation || this->calculate_rotation || this->calculate_energy || this->calculate_inertia)
                 {
-                    log::warning_message(__tpf_warning_message("No velocity field given. Cannot calculate translation, rotation, energy and inertia."));
+                    log::warning_message(__tpf_warning_message("No velocity field given. Cannot calculate translation, angular velocities, energy and inertia."));
                 }
 
                 this->calculate_translation = this->calculate_rotation = this->calculate_energy = this->calculate_inertia = false;
             }
             else if (!this->calculate_translation && this->calculate_rotation)
             {
-                log::warning_message(__tpf_warning_message("Calculation of rotation without prior calculation of translation not allowed. Calculating both instead."));
+                log::warning_message(__tpf_warning_message("Calculation of angular velocities without prior calculation of translation not allowed. Calculating both instead."));
 
                 this->calculate_translation = this->calculate_rotation = true;
             }
@@ -237,7 +237,7 @@ namespace tpf
             data::array<float_t, 1>& radius = *complete_droplets.template create<float_t, 1>("Radius", data::topology_t::POINT_DATA);
 
             std::shared_ptr<data::array<float_t, 3>> translation_ptr = nullptr;
-            std::shared_ptr<data::array<float_t, 3>> rotation_ptr = nullptr;
+            std::shared_ptr<data::array<float_t, 3>> angular_velocities_ptr = nullptr;
             std::shared_ptr<data::array<float_t, 1>> energy_ptr = nullptr;
             std::shared_ptr<data::array<float_t, 1>> energy_translation_ptr = nullptr;
             std::shared_ptr<data::array<float_t, 1>> energy_rotation_ptr = nullptr;
@@ -245,7 +245,7 @@ namespace tpf
             std::shared_ptr<data::array<float_t, 3, 3>> inertia_ptr = nullptr;
 
             if (this->calculate_translation) translation_ptr = complete_droplets.template create<float_t, 3>("Translation", data::topology_t::POINT_DATA);
-            if (this->calculate_rotation) rotation_ptr = complete_droplets.template create<float_t, 3>("Rotation", data::topology_t::POINT_DATA);
+            if (this->calculate_rotation) angular_velocities_ptr = complete_droplets.template create<float_t, 3>("Rotation", data::topology_t::POINT_DATA);
             if (this->calculate_energy) energy_ptr = complete_droplets.template create<float_t, 1>("Energy", data::topology_t::POINT_DATA);
             if (this->calculate_energy && this->calculate_translation) energy_translation_ptr = complete_droplets.template create<float_t, 1>("Translation Energy", data::topology_t::POINT_DATA);
             if (this->calculate_energy && this->calculate_rotation) energy_rotation_ptr = complete_droplets.template create<float_t, 1>("Rotation Energy", data::topology_t::POINT_DATA);
@@ -305,43 +305,43 @@ namespace tpf
                     }
                 }
 
-                // Calculate and store rotation
+                // Calculate and store angular_velocities
                 if (this->calculate_rotation)
                 {
-                    std::tuple<math::vec3_t<float_t>, float_t, float_t> rotation_axis;
+                    std::tuple<math::vec3_t<float_t>, float_t, float_t> angular_velocity;
 
-                    auto& rotation = *rotation_ptr;
+                    auto& angular_velocities = *angular_velocities_ptr;
 
                     switch (this->rotation_method)
                     {
                     case droplets_aux::rotation_method_t::MECHANICS:
-                        rotation_axis = cluster_info.get_rotation_mechanics();
+                        angular_velocity = cluster_info.get_angular_velocity_mechanics();
                         break;
                     case droplets_aux::rotation_method_t::VELOCITIES:
-                        rotation_axis = cluster_info.get_rotation_velocities();
+                        angular_velocity = cluster_info.get_angular_velocity_velocities();
                         break;
                     case droplets_aux::rotation_method_t::PCA:
-                        rotation_axis = cluster_info.get_rotation_pca();
+                        angular_velocity = cluster_info.get_angular_velocity_pca();
                         break;
                     }
 
-                    rotation(cluster_id) = std::get<0>(rotation_axis);
+                    angular_velocities(cluster_id) = std::get<0>(angular_velocity);
 
 #ifdef __tpf_debug
-                    log::info_message(__tpf_info_message("Rotation:\t(", rotation(cluster_id)[0], ", ", rotation(cluster_id)[1], ", ", rotation(cluster_id)[2], ")"));
+                    log::info_message(__tpf_info_message("Rotation:\t(", angular_velocities(cluster_id)[0], ", ", angular_velocities(cluster_id)[1], ", ", angular_velocities(cluster_id)[2], ")"));
 #endif
 
                     if (this->calculate_energy)
                     {
                         auto& rotation_energy = *energy_rotation_ptr;
-                        rotation_energy(cluster_id) = std::get<1>(rotation_axis);
+                        rotation_energy(cluster_id) = std::get<1>(angular_velocity);
 
 #ifdef __tpf_debug
-                        log::info_message(__tpf_info_message("Energy (rotation):\t", rotation_energy(cluster_id)));
+                        log::info_message(__tpf_info_message("Energy (angular_velocities):\t", rotation_energy(cluster_id)));
 #endif
 
                         auto& local_energy = *energy_local_ptr;
-                        local_energy(cluster_id) = std::get<2>(rotation_axis);
+                        local_energy(cluster_id) = std::get<2>(angular_velocity);
 
 #ifdef __tpf_debug
                         log::info_message(__tpf_info_message("Energy (local):\t", local_energy(cluster_id)));
@@ -434,15 +434,15 @@ namespace tpf
 
                             if (this->calculate_rotation)
                             {
-                                auto& rotation = *rotation_ptr;
+                                auto& angular_velocities = *angular_velocities_ptr;
 
                                 const auto position = complete_positions(coords);
-                                const auto rotation_axis = rotation(cluster_id);
+                                const auto angular_velocity = angular_velocities(cluster_id);
                                 const Eigen::Matrix<float_t, 3, 1> relative_position = position - complete_droplets.get_object(cluster_id)->get_points()[0];
                                 const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
-                                    - (relative_position.dot(rotation_axis) / rotation_axis.squaredNorm()) * rotation_axis;
+                                    - (relative_position.dot(angular_velocity) / angular_velocity.squaredNorm()) * angular_velocity;
 
-                                droplet_velocities(coords) += rotation(cluster_id).cross(angular_position);
+                                droplet_velocities(coords) += angular_velocity.cross(angular_position);
                             }
                         }
                     }
