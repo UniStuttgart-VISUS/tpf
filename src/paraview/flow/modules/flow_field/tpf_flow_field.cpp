@@ -386,7 +386,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Advection)"));
         tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Distribution)"));
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Flow Field' failed."));
 
