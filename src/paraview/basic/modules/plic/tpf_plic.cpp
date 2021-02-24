@@ -21,8 +21,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
-#include <tuple>
+#include <exception>
 
 vtkStandardNewMacro(tpf_plic);
 
@@ -103,7 +102,7 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
             tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
             tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'PLIC' failed."));
 

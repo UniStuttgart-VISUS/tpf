@@ -16,7 +16,7 @@
 #include "vtkInformationVector.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
-#include <stdexcept>
+#include <exception>
 
 vtkStandardNewMacro(tpf_test_data);
 
@@ -113,7 +113,7 @@ int tpf_test_data::RequestData(vtkInformation*, vtkInformationVector**, vtkInfor
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "Volume of Fluid", vof.get_data(), vof.get_num_components());
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, "Velocity", velocities.get_data(), velocities.get_num_components());
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Test Data' failed."));
 

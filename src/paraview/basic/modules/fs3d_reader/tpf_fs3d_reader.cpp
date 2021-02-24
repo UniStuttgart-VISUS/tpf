@@ -16,6 +16,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <cmath>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -75,7 +76,7 @@ int tpf_fs3d_reader::RequestInformation(vtkInformation*, vtkInformationVector**,
         // Can produce sub extents
         output_info->Set(CAN_PRODUCE_SUB_EXTENT(), 1);
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Information request to plugin 'FS3D Reader' failed."));
 
@@ -158,7 +159,7 @@ int tpf_fs3d_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInf
             tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, vector_data.get_name(), vector_data.get_data(), vector_data.get_num_components());
         }
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'FS3D Reader' failed."));
 

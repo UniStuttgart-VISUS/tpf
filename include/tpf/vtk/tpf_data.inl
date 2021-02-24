@@ -14,6 +14,7 @@
 #include "vtkSmartPointer.h"
 
 #include <algorithm>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -206,7 +207,7 @@ namespace tpf
                     throw std::runtime_error(__tpf_error_message("Given type and found VTK array type are incompatible."));
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Failed getting data."));
             }
@@ -245,7 +246,7 @@ namespace tpf
                     throw std::runtime_error(__tpf_error_message("Invalid topology type."));
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Failed getting data."));
             }
@@ -300,7 +301,7 @@ namespace tpf
                 }
 
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Failed setting data."));
             }

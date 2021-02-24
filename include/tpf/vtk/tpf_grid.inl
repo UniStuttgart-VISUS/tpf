@@ -14,6 +14,7 @@
 #include "vtkRectilinearGrid.h"
 #include "vtkSmartPointer.h"
 
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -110,7 +111,7 @@ namespace tpf
                     }
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error getting information."));
             }
@@ -236,7 +237,7 @@ namespace tpf
                 {
                     return get_grid<data_t, point_t, dimensions, rows, columns>(grid, data_type, data_name);
                 }
-                catch (const std::runtime_error& ex)
+                catch (const std::exception& ex)
                 {
                     last_error = ex.what();
                 }

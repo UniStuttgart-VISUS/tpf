@@ -17,7 +17,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
+#include <exception>
 #include <string>
 
 vtkStandardNewMacro(tpf_fs3d_writer);
@@ -91,7 +91,7 @@ int tpf_fs3d_writer::RequestData(vtkInformation*, vtkInformationVector** input_v
 
             fs3d_writer.run();
         }
-        catch (const std::runtime_error& ex)
+        catch (const std::exception& ex)
         {
             if (found)
             {
@@ -116,7 +116,7 @@ int tpf_fs3d_writer::RequestData(vtkInformation*, vtkInformationVector** input_v
 
             fs3d_writer.run();
         }
-        catch (const std::runtime_error& ex)
+        catch (const std::exception& ex)
         {
             if (found)
             {
@@ -128,7 +128,7 @@ int tpf_fs3d_writer::RequestData(vtkInformation*, vtkInformationVector** input_v
         auto output = vtkRectilinearGrid::GetData(output_vector);
         output->ShallowCopy(in_grid);
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Correct VOF' failed."));
 

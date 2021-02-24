@@ -22,6 +22,7 @@
 #include "vtkSmartPointer.h"
 
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
@@ -180,7 +181,7 @@ namespace tpf
 
                     return{ points, verts, lines, polys };
                 }
-                catch (const std::runtime_error& ex)
+                catch (const std::exception& ex)
                 {
                     throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error creating mesh."));
                 }
@@ -240,7 +241,7 @@ namespace tpf
 
                     return geometric_objects;
                 }
-                catch (const std::runtime_error& ex)
+                catch (const std::exception& ex)
                 {
                     throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error creating geometry."));
                 }

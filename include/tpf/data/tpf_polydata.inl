@@ -642,6 +642,11 @@ namespace tpf
                 }
             }
 
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find point data '", name, "'."));
+            }
+
             return ret_value;
         }
 
@@ -657,6 +662,11 @@ namespace tpf
                 {
                     ret_value = entry;
                 }
+            }
+
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find point data '", name, "'."));
             }
 
             return std::dynamic_pointer_cast<array<value_t, rows, columns>, array_base>(ret_value);
@@ -695,6 +705,11 @@ namespace tpf
                 }
             }
 
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find cell data '", name, "'."));
+            }
+
             return ret_value;
         }
 
@@ -710,6 +725,11 @@ namespace tpf
                 {
                     ret_value = entry;
                 }
+            }
+
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find cell data '", name, "'."));
             }
 
             return std::dynamic_pointer_cast<array<value_t, rows, columns>, array_base>(ret_value);
@@ -748,6 +768,11 @@ namespace tpf
                 }
             }
 
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find object data '", name, "'."));
+            }
+
             return ret_value;
         }
 
@@ -763,6 +788,11 @@ namespace tpf
                 {
                     ret_value = entry;
                 }
+            }
+
+            if (ret_value == nullptr)
+            {
+                throw std::runtime_error(__tpf_error_message("Could not find object data '", name, "'."));
             }
 
             return std::dynamic_pointer_cast<array<value_t, rows, columns>, array_base>(ret_value);
