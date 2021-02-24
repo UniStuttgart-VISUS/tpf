@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -335,7 +336,7 @@ int tpf_seed_octree::RequestData(vtkInformation *request, vtkInformationVector *
         output->SetPoints(mesh.points);
         output->SetVerts(mesh.vertices);
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Seed (Octo-Tiger)' failed."));
 

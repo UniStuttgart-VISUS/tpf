@@ -175,7 +175,7 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
 
         stars.add(std::make_shared<tpf::data::array<float_t, 3>>("Velocity", 2), tpf::data::topology_t::POINT_DATA);
         stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Mass", 2), tpf::data::topology_t::POINT_DATA);
-        stars.add(std::make_shared<tpf::data::array<float_t, 3>>("Axis of rotation", 2), tpf::data::topology_t::POINT_DATA);
+        stars.add(std::make_shared<tpf::data::array<float_t, 3>>("Angular velocity", 2), tpf::data::topology_t::POINT_DATA);
         stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Orbital frequency", 2), tpf::data::topology_t::POINT_DATA);
         stars.add(std::make_shared<tpf::data::array<float_t, 1>>("Roche lobe radius", 2), tpf::data::topology_t::POINT_DATA);
 
@@ -551,13 +551,13 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         tpf::vtk::set_polydata(output_stars, stars,
             tpf::data::data_information<float_t, 3>{ "Velocity", tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ "Mass", tpf::data::topology_t::POINT_DATA },
-            tpf::data::data_information<float_t, 3>{ "Axis of rotation", tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<float_t, 3>{ "Angular velocity", tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ "Orbital frequency", tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ "Roche lobe radius", tpf::data::topology_t::POINT_DATA });
 
         output_stars->GetFieldData()->AddArray(omega);
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Binary Star (Octo-Tiger)' failed."));
 
