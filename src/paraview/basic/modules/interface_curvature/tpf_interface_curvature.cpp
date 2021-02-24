@@ -17,8 +17,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
-#include <tuple>
+#include <exception>
 
 vtkStandardNewMacro(tpf_interface_curvature);
 
@@ -81,7 +80,7 @@ int tpf_interface_curvature::RequestData(vtkInformation*, vtkInformationVector**
         output->ShallowCopy(in_grid);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, curvature.get_name(), curvature.get_data(), curvature.get_num_components());
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Interface Curvature' failed."));
 

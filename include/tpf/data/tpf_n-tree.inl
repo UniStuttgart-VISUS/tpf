@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <list>
 #include <memory>
 #include <stdexcept>
@@ -419,7 +420,7 @@ namespace tpf
                 // Interpolate the value at the given position
                 return interpolate_at_point(point, points);
             }
-            catch (const std::runtime_error&
+            catch (const std::exception&
 #ifdef __tpf_debug
                 e
 #endif

@@ -24,9 +24,9 @@
 #include "vtkIdTypeArray.h"
 
 #include <algorithm>
+#include <exception>
 #include <functional>
 #include <optional>
-#include <stdexcept>
 #include <tuple>
 
 vtkStandardNewMacro(tpf_droplets);
@@ -247,7 +247,7 @@ int tpf_droplets::RequestData(vtkInformation*, vtkInformationVector** input_vect
         tpf::vtk::append_polydata(output_positions, droplets,
             tpf::data::data_information<float_t, 1>{ "Radius", tpf::data::topology_t::POINT_DATA });
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Droplets' failed."));
 
