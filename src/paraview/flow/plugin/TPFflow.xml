@@ -12,7 +12,7 @@
                 Compute stream-, streak- or pathlines for vector fields on rectilinear grids.
             </Documentation>
 
-            <InputProperty name="Input Grid" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input" command="SetInputConnection" port_index="0">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -24,6 +24,7 @@
                 <InputArrayDomain attribute_type="cell" name="droplets_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="cell" name="velocity_array" number_of_components="3"/>
                 <InputArrayDomain attribute_type="cell" name="global_velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
                 <Documentation>
                     Grid containing a volume of fluid field, droplet information, and a velocity field
                 </Documentation>
@@ -46,7 +47,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -56,7 +57,7 @@
             <StringVectorProperty name="Droplet ID" label="Droplet ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="droplets_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -66,7 +67,7 @@
             <StringVectorProperty name="Velocity" label="Velocity field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -76,7 +77,7 @@
             <StringVectorProperty name="Global Velocity" label="Global velocity part" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="global_velocity_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -139,6 +140,26 @@
                     Time step size for streamline computation; and for streak- and pathline computation in case of a fixed time step
                 </Documentation>
             </DoubleVectorProperty>
+            <IntVectorProperty name="TimeStepFromData" command="SetTimeStepFromData" label="Get time step from data" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Get a time step for stream-, streak- and pathline computation from within the data
+                </Documentation>
+            </IntVectorProperty>
+            <StringVectorProperty name="TimeStep" label="Time step" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="time_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepFromData" value="1" />
+                </Hints>
+                <Documentation>
+                    Rotation of the droplet around its axis of rotation, given as angular velocity
+                </Documentation>
+            </StringVectorProperty>
 
             <PropertyGroup label="Input grid">
                 <Property name="VOF" />
@@ -158,6 +179,8 @@
                 <Property name="NumAdvections" />
                 <Property name="ForceFixedTimeStep" />
                 <Property name="StreamTimeStep" />
+                <Property name="TimeStepFromData" />
+                <Property name="TimeStep" />
             </PropertyGroup>
 
             <Hints>

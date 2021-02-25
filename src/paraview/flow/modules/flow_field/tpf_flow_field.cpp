@@ -22,6 +22,7 @@
 
 #include "vtkAlgorithm.h"
 #include "vtkCellData.h"
+#include "vtkFieldData.h"
 #include "vtkObjectFactory.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
@@ -59,9 +60,10 @@ namespace
         /// <param name="droplets_alg">Algorithm producing droplet data</param>
         /// <param name="get_array_name">Function to query the respective array names</param>
         /// <param name="fixed_timestep">Optional fixed timestep</param>
+        /// <param name="time_from_data">Extract timestep information from data</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
             vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
-            std::optional<float_t> fixed_timestep = std::nullopt)
+            std::optional<float_t> fixed_timestep = std::nullopt, const bool time_from_data = false)
         {
             this->time_offset = this->original_time = current_timestep;
             this->timesteps = timesteps;
@@ -73,6 +75,7 @@ namespace
             this->get_array_name = get_array_name;
 
             this->fixed_timestep = fixed_timestep;
+            this->time_from_data = time_from_data;
         }
 
         /// <summary>
@@ -93,79 +96,107 @@ namespace
             {
                 // Load input grids and droplets
                 auto in_grid = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0));
-                auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
 
                 this->droplet_grid = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0));
                 this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
                 this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(3, 0));
 
-                auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
-                    tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
-                    tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
-
-                // Store angular velocities and droplet velocities
-                this->droplets = droplets.get_geometry();
-                this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
-                this->angular_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
-
                 // Create look-up functions
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation =
-                    [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_angular_velocity;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_barycenter;
+                std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)> is_valid;
+
+                if (this->droplets_alg != nullptr && vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0)) != nullptr)
                 {
-                    const auto cell = this->droplet_grid.find_cell(position);
+                    auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
 
-                    if (cell)
+                    const auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
+                        tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
+                        tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
+
+                    // Store angular velocities and droplet velocities
+                    this->droplets = droplets.get_geometry();
+                    this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
+                    this->angular_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
+
+                    // Create look-up functions
+                    get_translation = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
                     {
-                        const auto id = this->droplet_grid(*cell);
+                        const auto cell = this->droplet_grid.find_cell(position);
 
-                        return this->droplet_velocity->at(id);
-                    }
+                        if (cell)
+                        {
+                            const auto id = this->droplet_grid(*cell);
 
-                    return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                };
+                            return this->droplet_velocity->at(id);
+                        }
 
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_angular_velocity =
-                    [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_angular_velocity = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid.find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = this->droplet_grid(*cell);
+
+                            return this->angular_velocity->at(id);
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_barycenter = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid.find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = this->droplet_grid(*cell);
+
+                            return this->droplets[id]->get_points().front();
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position)
+                    {
+                        const auto cell = this->droplet_grid.find_cell(position);
+
+                        if (cell)
+                        {
+                            return this->droplet_grid(*cell) >= 0;
+                        }
+
+                        return false;
+                    };
+                }
+                else
                 {
-                    const auto cell = this->droplet_grid.find_cell(position);
-
-                    if (cell)
+                    get_translation = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
                     {
-                        const auto id = this->droplet_grid(*cell);
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
 
-                        return this->angular_velocity->at(id);
-                    }
-
-                    return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                };
-
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_barycenter =
-                    [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                {
-                    const auto cell = this->droplet_grid.find_cell(position);
-
-                    if (cell)
+                    get_angular_velocity = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
                     {
-                        const auto id = this->droplet_grid(*cell);
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
 
-                        return this->droplets[id]->get_points().front();
-                    }
-
-                    return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                };
-
-                std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)> is_valid =
-                    [this](const Eigen::Matrix<float_t, 3, 1>& position)
-                {
-                    const auto cell = this->droplet_grid.find_cell(position);
-
-                    if (cell)
+                    get_barycenter = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
                     {
-                        return this->droplet_grid(*cell) >= 0;
-                    }
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
 
-                    return false;
-                };
+                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> bool
+                    {
+                        return static_cast<bool>(this->droplet_grid.find_cell(position));
+                    };
+                }
 
                 // Compute time step
                 float_t timestep_delta;
@@ -173,6 +204,21 @@ namespace
                 if (this->fixed_timestep)
                 {
                     timestep_delta = *this->fixed_timestep;
+                }
+                else if (this->time_from_data)
+                {
+                    const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
+
+                    if (time_array == nullptr)
+                    {
+                        tpf::log::warning_message(__tpf_warning_message("No valid time step data found. Using 1.0 instead."));
+
+                        timestep_delta = 1.0;
+                    }
+                    else
+                    {
+                        timestep_delta = time_array->GetComponent(0, 0);
+                    }
                 }
                 else if (this->timesteps.empty() || this->timesteps.size() == 1)
                 {
@@ -203,7 +249,11 @@ namespace
                     this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
                     this->grid_alg->Update(this->request);
-                    this->droplets_alg->Update(this->request);
+
+                    if (this->droplets_alg != nullptr)
+                    {
+                        this->droplets_alg->Update(this->request);
+                    }
                 }
 
                 // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
@@ -230,7 +280,11 @@ namespace
             }
 
             this->grid_alg->Update(request);
-            this->droplets_alg->Update(request);
+
+            if (this->droplets_alg != nullptr)
+            {
+                this->droplets_alg->Update(request);
+            }
         }
 
     private:
@@ -257,6 +311,7 @@ namespace
 
         /// Fixed timestep
         std::optional<float_t> fixed_timestep;
+        bool time_from_data;
 
         /// Data of current timestep
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
@@ -294,6 +349,7 @@ int tpf_flow_field::FillInputPortInformation(int port, vtkInformation* info)
     else if (port == 1)
     {
         info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData");
+        info->Set(vtkAlgorithm::INPUT_IS_OPTIONAL(), 1);
         return 1;
     }
 
@@ -333,7 +389,8 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
-            get_array_name, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt);
+            get_array_name, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
+            this->TimeStepFromData != 0);
 
         // Create seed
         tpf::data::polydata<float_t> seed;

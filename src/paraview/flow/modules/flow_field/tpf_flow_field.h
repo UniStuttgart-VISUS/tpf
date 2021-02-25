@@ -23,6 +23,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(StreamTimeStep, double);
         vtkSetMacro(StreamTimeStep, double);
 
+        vtkGetMacro(TimeStepFromData, int);
+        vtkSetMacro(TimeStepFromData, int);
+
         enum class locality_method_t
         {
             none,
@@ -65,4 +68,7 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Time step if fixed
         double StreamTimeStep;
+
+        /// Force fixed time step
+        int TimeStepFromData;
 };
