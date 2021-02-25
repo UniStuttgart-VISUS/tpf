@@ -12,7 +12,7 @@
                 Correct volume of fluid by removing single-cell droplets.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -29,7 +29,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -54,7 +54,7 @@
                 Identify droplets by neighborhood in the volume of fluid field, and calculate droplet-specific properties.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -73,7 +73,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -83,7 +83,7 @@
             <StringVectorProperty name="Fluid Positions" label="Fluid positions" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="positions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -93,7 +93,7 @@
             <StringVectorProperty name="Velocity" label="Velocity field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -181,7 +181,7 @@
                 Calculate a point per cell as the fluid position: cell center, fluid barycenter, or interface barycenter.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -199,7 +199,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -209,7 +209,7 @@
             <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -256,7 +256,7 @@
                 Allows to write rectilinear grids and their attached fields in the FS3D file format.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -272,7 +272,7 @@
             <StringVectorProperty name="Output Field" label="Output field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -319,7 +319,7 @@
                 Calculate the curvature at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -338,7 +338,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -348,7 +348,7 @@
             <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -358,7 +358,7 @@
             <StringVectorProperty name="Interface Positions" label="Interface positions" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="positions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -383,7 +383,7 @@
                 Calculate the gradient at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -400,7 +400,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -425,7 +425,7 @@
                 Reconstruct the interface between two fluid phases by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -443,7 +443,7 @@
             <StringVectorProperty name="VOF" label="VOF" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -453,7 +453,7 @@
             <StringVectorProperty name="Interface Gradient" label="Gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array" none_string="None">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Hints>
@@ -498,7 +498,7 @@
                 Reconstruct the interface between two fluid phases and a solid phase by piecewise linear interface calculation.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -517,7 +517,7 @@
             <StringVectorProperty name="SelectInputScalarsF" label="VOF (liquid)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="input_array_f">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -527,7 +527,7 @@
             <StringVectorProperty name="SelectInputScalarsF3" label="VOF (solid)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="input_array_f3">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -537,7 +537,7 @@
             <StringVectorProperty name="SelectInputVectorsFNorm3Ph" label="Interface normals" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="input_array_f_norm_3ph">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -600,7 +600,7 @@
                 Calculate the surface tension force at the phase interface.
             </Documentation>
 
-            <InputProperty name="Input Grid" port_index="0" command="SetInputConnection">
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -619,7 +619,7 @@
             <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -629,7 +629,7 @@
             <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -639,7 +639,7 @@
             <StringVectorProperty name="Interface Curvatures" label="Interface curvatures" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="curvatures_array">
                     <RequiredProperties>
-                        <Property name="Input Grid" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
