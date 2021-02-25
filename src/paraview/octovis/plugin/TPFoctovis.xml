@@ -12,7 +12,7 @@
                 Identify and classify the stars.
             </Documentation>
 
-            <InputProperty name="Octree" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input" label="Octree" command="SetInputConnection" port_index="0">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -41,7 +41,7 @@
             <StringVectorProperty name="Density" label="Density" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="density_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -51,7 +51,7 @@
             <StringVectorProperty name="Density Accretor" label="Density (Accretor)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="density_accretor_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -61,7 +61,7 @@
             <StringVectorProperty name="Density Donor" label="Density (Donor)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="density_donor_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -71,7 +71,7 @@
             <StringVectorProperty name="Density Other" label="Density (Other)" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="density_other_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -82,7 +82,7 @@
             <StringVectorProperty name="Velocity" label="Velocity" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -92,7 +92,7 @@
             <StringVectorProperty name="Gravitation" label="Gravitation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gravitation_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -103,7 +103,7 @@
             <StringVectorProperty name="CellSize" label="Cell size" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="cell_size_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -114,7 +114,7 @@
             <StringVectorProperty name="Minimum X" label="Minimum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -124,7 +124,7 @@
             <StringVectorProperty name="Maximum X" label="Maximum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -134,7 +134,7 @@
             <StringVectorProperty name="Minimum Y" label="Minimum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="9">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -144,7 +144,7 @@
             <StringVectorProperty name="Maximum Y" label="Maximum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="10">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -154,7 +154,7 @@
             <StringVectorProperty name="Minimum Z" label="Minimum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="11">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -164,7 +164,7 @@
             <StringVectorProperty name="Maximum Z" label="Maximum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -235,7 +235,7 @@
                 Compute stream-, streak- or pathlines on the octree from Octo-Tiger simulation results.
             </Documentation>
 
-            <InputProperty name="Octree" command="SetInputConnection" port_index="0">
+            <InputProperty name="Input" label="Octree" command="SetInputConnection" port_index="0">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -244,9 +244,7 @@
                     <DataType value="vtkPointSet"/>
                 </DataTypeDomain>
                 <InputArrayDomain attribute_type="point" name="id_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="point" name="vx_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="point" name="vy_array" number_of_components="1"/>
-                <InputArrayDomain attribute_type="point" name="vz_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="velocity_array" number_of_components="3"/>
                 <InputArrayDomain attribute_type="field" name="xmin_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="xmax_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="ymin_array" number_of_components="1"/>
@@ -290,48 +288,28 @@
             <StringVectorProperty name="ID" label="Point ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
                     IDs indicating the point position within the octree
                 </Documentation>
             </StringVectorProperty>
-            <StringVectorProperty name="Velocity X" label="Velocity X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vx_array">
+            <StringVectorProperty name="Velocity" label="Velocity" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
-                    Velocity component for x-direction
-                </Documentation>
-            </StringVectorProperty>
-            <StringVectorProperty name="Velocity Y" label="Velocity Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vy_array">
-                    <RequiredProperties>
-                        <Property name="Octree" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Documentation>
-                    Velocity component for y-direction
-                </Documentation>
-            </StringVectorProperty>
-            <StringVectorProperty name="Velocity Z" label="Velocity Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="vz_array">
-                    <RequiredProperties>
-                        <Property name="Octree" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Documentation>
-                    Velocity component for z-direction
+                    Velocities
                 </Documentation>
             </StringVectorProperty>
 
             <StringVectorProperty name="Minimum X" label="Minimum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -341,7 +319,7 @@
             <StringVectorProperty name="Maximum X" label="Maximum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -351,7 +329,7 @@
             <StringVectorProperty name="Minimum Y" label="Minimum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -361,7 +339,7 @@
             <StringVectorProperty name="Maximum Y" label="Maximum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -371,7 +349,7 @@
             <StringVectorProperty name="Minimum Z" label="Minimum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmin_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -381,7 +359,7 @@
             <StringVectorProperty name="Maximum Z" label="Maximum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="9">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmax_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -392,7 +370,7 @@
             <StringVectorProperty name="Time" label="Time" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="10">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="time_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -403,7 +381,7 @@
             <StringVectorProperty name="Grid Rotation" label="Angular frequency" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="11">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="omega_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -478,7 +456,7 @@
             <StringVectorProperty name="StarClassification" label="Star Classification" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="classification_array">
                     <RequiredProperties>
-                        <Property name="Octree" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Hints>
@@ -533,9 +511,7 @@
 
             <PropertyGroup label="Point data">
                 <Property name="ID" />
-                <Property name="Velocity X" />
-                <Property name="Velocity Y" />
-                <Property name="Velocity Z" />
+                <Property name="Velocity" />
             </PropertyGroup>
 
             <PropertyGroup label="Domain data">
@@ -582,7 +558,7 @@
                 Create seed from the octree, e.g., at an iso surface.
             </Documentation>
 
-            <InputProperty name="Points" command="SetInputConnection">
+            <InputProperty name="Input" label="Octree" command="SetInputConnection">
                 <ProxyGroupDomain name="groups">
                     <Group name="sources"/>
                     <Group name="filters"/>
@@ -600,7 +576,7 @@
             <StringVectorProperty name="ID" label="Point ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -610,7 +586,7 @@
             <StringVectorProperty name="Density" label="Density" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_array" none_string="None">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Hints>
@@ -624,7 +600,7 @@
             <StringVectorProperty name="Minimum X" label="Minimum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmin_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -634,7 +610,7 @@
             <StringVectorProperty name="Maximum X" label="Maximum X" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="xmax_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -644,7 +620,7 @@
             <StringVectorProperty name="Minimum Y" label="Minimum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymin_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -654,7 +630,7 @@
             <StringVectorProperty name="Maximum Y" label="Maximum Y" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="ymax_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -664,7 +640,7 @@
             <StringVectorProperty name="Minimum Z" label="Minimum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmin_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>
@@ -674,7 +650,7 @@
             <StringVectorProperty name="Maximum Z" label="Maximum Z" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="zmax_array">
                     <RequiredProperties>
-                        <Property name="Points" function="Input" />
+                        <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Documentation>

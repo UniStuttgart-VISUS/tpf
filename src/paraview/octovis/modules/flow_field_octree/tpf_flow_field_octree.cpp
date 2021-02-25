@@ -116,7 +116,7 @@ namespace
                 vtkPoints* points;
 
                 ID_TYPE_ARRAY* in_paths, * in_classification;
-                FLOAT_TYPE_ARRAY* in_x_velocities, * in_y_velocities, * in_z_velocities;
+                FLOAT_TYPE_ARRAY* in_velocities;
                 vtkDataArray* in_star_velocities, * in_star_angular_velocity;
 
                 double x_min, x_max, y_min, y_max, z_min, z_max;
@@ -133,9 +133,7 @@ namespace
 
                     in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0, 0).c_str()));
 
-                    in_x_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1, 0).c_str()));
-                    in_y_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2, 0).c_str()));
-                    in_z_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3, 0).c_str()));
+                    in_velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1, 0).c_str()));
 
                     x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(4, 0).c_str()))->GetValue(0);
                     x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(5, 0).c_str()))->GetValue(0);
@@ -248,17 +246,9 @@ namespace
                         in_paths->SetNumberOfComponents(1);
                         in_paths->SetNumberOfTuples(num_points);
 
-                        in_x_velocities = FLOAT_TYPE_ARRAY::New();
-                        in_x_velocities->SetNumberOfComponents(1);
-                        in_x_velocities->SetNumberOfTuples(num_points);
-
-                        in_y_velocities = FLOAT_TYPE_ARRAY::New();
-                        in_y_velocities->SetNumberOfComponents(1);
-                        in_y_velocities->SetNumberOfTuples(num_points);
-
-                        in_z_velocities = FLOAT_TYPE_ARRAY::New();
-                        in_z_velocities->SetNumberOfComponents(1);
-                        in_z_velocities->SetNumberOfTuples(num_points);
+                        in_velocities = FLOAT_TYPE_ARRAY::New();
+                        in_velocities->SetNumberOfComponents(3);
+                        in_velocities->SetNumberOfTuples(num_points);
 
                         if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                             this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
@@ -316,9 +306,7 @@ namespace
 
                     MPI_Bcast(in_paths->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
 
-                    MPI_Bcast(in_x_velocities->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-                    MPI_Bcast(in_y_velocities->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-                    MPI_Bcast(in_z_velocities->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
+                    MPI_Bcast(in_velocities->GetVoidPointer(0), num_points * 3, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
 
                     tpf::mpi::get_instance().broadcast(x_min, 0);
                     tpf::mpi::get_instance().broadcast(x_max, 0);
@@ -360,9 +348,10 @@ namespace
 #endif
 
                 // Output dataset information
-                const auto* vx_range = in_x_velocities->GetValueRange();
-                const auto* vy_range = in_y_velocities->GetValueRange();
-                const auto* vz_range = in_z_velocities->GetValueRange();
+                std::array<double, 2> vx_range{}, vy_range{}, vz_range{};
+                in_velocities->GetValueRange(vx_range.data(), 0);
+                in_velocities->GetValueRange(vy_range.data(), 1);
+                in_velocities->GetValueRange(vz_range.data(), 2);
 
                 tpf::log::info_message(__tpf_info_message("Number of points: ", num_points));
                 tpf::log::info_message(__tpf_info_message("Domain: [", x_min, ", ", y_min, ", ", z_min, "] x [", x_max, ", ", y_max, ", ", z_max, "]"));
@@ -419,9 +408,9 @@ namespace
 
                     // Add node information
                     node_information.push_back(std::make_pair(path, Eigen::Matrix<float_t, 3, 1>(
-                        static_cast<float_t>(in_x_velocities->GetValue(p)),
-                        static_cast<float_t>(in_y_velocities->GetValue(p)),
-                        static_cast<float_t>(in_z_velocities->GetValue(p)))));
+                        static_cast<float_t>(in_velocities->GetComponent(p, 0)),
+                        static_cast<float_t>(in_velocities->GetComponent(p, 1)),
+                        static_cast<float_t>(in_velocities->GetComponent(p, 2)))));
 
                     std::array<double, 3> point;
                     points->GetPoint(p, point.data());
@@ -480,9 +469,7 @@ namespace
                 {
                     in_paths->Delete();
 
-                    in_x_velocities->Delete();
-                    in_y_velocities->Delete();
-                    in_z_velocities->Delete();
+                    in_velocities->Delete();
 
                     if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                         this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
