@@ -139,14 +139,21 @@ namespace tpf
 
                     if (is_particle_valid(particle))
                     {
-                        const auto velocity = velocities->interpolate(point_t(particle));
-                        const auto global_velocity_part = global_velocity_parts->interpolate(point_t(particle));
-
-                        const auto local_velocity = velocity - global_velocity_part;
-
-                        if (!local_velocity.isZero())
+                        try
                         {
-                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta));
+                            const auto velocity = velocities->interpolate(point_t(particle));
+                            const auto global_velocity_part = global_velocity_parts->interpolate(point_t(particle));
+
+                            const auto local_velocity = velocity - global_velocity_part;
+
+                            if (!local_velocity.isZero())
+                            {
+                                particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta));
+                            }
+                        }
+                        catch (...)
+                        {
+                            particles.invalidate_particle(index);
                         }
                     }
                     else
@@ -223,28 +230,35 @@ namespace tpf
 
                     if (is_particle_valid(original_particle))
                     {
-                        const auto velocity = velocities->interpolate(point_t(original_particle));
-                        const auto global_velocity_part = global_velocity_parts->interpolate(point_t(original_particle));
-
-                        Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - global_velocity_part;
-
-                        if (!local_velocity.isZero())
+                        try
                         {
-                            // Calculate rotation
-                            const auto previous_rotation = particles.get_last_rotation(index);
-                            const auto angular_velocity = get_angular_velocity(original_particle);
+                            const auto velocity = velocities->interpolate(point_t(original_particle));
+                            const auto global_velocity_part = global_velocity_parts->interpolate(point_t(original_particle));
 
-                            tpf::math::quaternion<float_t> quaternion;
-                            quaternion.from_axis(angular_velocity, timestep_delta);
-                            quaternion.invert();
+                            Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - global_velocity_part;
 
-                            const auto new_rotation = quaternion * previous_rotation;
+                            if (!local_velocity.isZero())
+                            {
+                                // Calculate rotation
+                                const auto previous_rotation = particles.get_last_rotation(index);
+                                const auto angular_velocity = get_angular_velocity(original_particle);
 
-                            // Calculate droplet-local velocity
-                            local_velocity = previous_rotation.rotate(local_velocity);
+                                tpf::math::quaternion<float_t> quaternion;
+                                quaternion.from_axis(angular_velocity, timestep_delta);
+                                quaternion.invert();
 
-                            particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta),
-                                tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta), new_rotation);
+                                const auto new_rotation = quaternion * previous_rotation;
+
+                                // Calculate droplet-local velocity
+                                local_velocity = previous_rotation.rotate(local_velocity);
+
+                                particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta),
+                                    tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta), new_rotation);
+                            }
+                        }
+                        catch (...)
+                        {
+                            particles.invalidate_particle(index);
                         }
                     }
                     else
@@ -358,30 +372,37 @@ namespace tpf
 
                         if (is_particle_valid(original_particle))
                         {
-                            const auto velocity = velocities->interpolate(point_t(original_particle));
-                            const auto global_velocity_part = global_velocity_parts->interpolate(point_t(original_particle));
-
-                            Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - global_velocity_part;
-
-                            if (!local_velocity.isZero())
+                            try
                             {
-                                // Calculate rotation
-                                const auto previous_rotation = particles.get_rotation(index, particle_index);
-                                const auto angular_velocity = get_angular_velocity(original_particle);
+                                const auto velocity = velocities->interpolate(point_t(original_particle));
+                                const auto global_velocity_part = global_velocity_parts->interpolate(point_t(original_particle));
 
-                                tpf::math::quaternion<float_t> quaternion;
-                                quaternion.from_axis(angular_velocity, timestep_delta);
-                                quaternion.invert();
+                                Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - global_velocity_part;
 
-                                const auto new_rotation = quaternion * previous_rotation;
+                                if (!local_velocity.isZero())
+                                {
+                                    // Calculate rotation
+                                    const auto previous_rotation = particles.get_rotation(index, particle_index);
+                                    const auto angular_velocity = get_angular_velocity(original_particle);
 
-                                // Calculate droplet-local velocity
-                                local_velocity = previous_rotation.rotate(local_velocity);
+                                    tpf::math::quaternion<float_t> quaternion;
+                                    quaternion.from_axis(angular_velocity, timestep_delta);
+                                    quaternion.invert();
 
-                                // Advect particles
-                                particles.get_particle(index, particle_index) = tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta);
-                                particles.get_original_particle(index, particle_index) = tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta);
-                                particles.get_rotation(index, particle_index) = new_rotation;
+                                    const auto new_rotation = quaternion * previous_rotation;
+
+                                    // Calculate droplet-local velocity
+                                    local_velocity = previous_rotation.rotate(local_velocity);
+
+                                    // Advect particles
+                                    particles.get_particle(index, particle_index) = tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta);
+                                    particles.get_original_particle(index, particle_index) = tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta);
+                                    particles.get_rotation(index, particle_index) = new_rotation;
+                                }
+                            }
+                            catch (const std::exception&)
+                            {
+                                particles.invalidate_particle(index);
                             }
                         }
                         else
