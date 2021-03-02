@@ -80,6 +80,12 @@ namespace tpf
         }
 
         template <typename value_t, int rows, int columns>
+        inline std::size_t array<value_t, rows, columns>::get_num_components_dynamic() const noexcept
+        {
+            return rows * columns;
+        }
+
+        template <typename value_t, int rows, int columns>
         inline constexpr std::size_t array<value_t, rows, columns>::get_num_components() const noexcept
         {
             return rows * columns;
@@ -101,6 +107,28 @@ namespace tpf
         inline std::size_t array<value_t, rows, columns>::get_size() const noexcept
         {
             return this->data.size();
+        }
+
+        template <typename value_t, int rows, int columns>
+        inline const std::vector<double>& array<value_t, rows, columns>::get_data_dynamic() const
+        {
+            return get_data_dynamic_impl();
+        }
+
+        template <typename value_t, int rows, int columns>
+        template <typename local_value_t>
+        const std::vector<double>& array<value_t, rows, columns>::get_data_dynamic_impl(
+            typename std::enable_if<std::is_same<double, local_value_t>::value>::type*) const
+        {
+            return this->data;
+        }
+
+        template <typename value_t, int rows, int columns>
+        template <typename local_value_t>
+        const std::vector<double>& array<value_t, rows, columns>::get_data_dynamic_impl(
+            typename std::enable_if<!std::is_same<double, local_value_t>::value>::type*) const
+        {
+            throw std::runtime_error(__tpf_error_message("Dynamic data access only available for double arrays."));
         }
 
         template <typename value_t, int rows, int columns>

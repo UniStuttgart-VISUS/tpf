@@ -89,6 +89,12 @@ namespace tpf
             /// Get number of components
             /// </summary>
             /// <return>Number of components</return>
+            virtual std::size_t get_num_components_dynamic() const noexcept override;
+
+            /// <summary>
+            /// Get number of components
+            /// </summary>
+            /// <return>Number of components</return>
             constexpr std::size_t get_num_components() const noexcept;
 
             /// <summary>
@@ -108,6 +114,12 @@ namespace tpf
             /// </summary>
             /// <return>Array size</return>
             std::size_t get_size() const noexcept;
+
+            /// <summary>
+            /// Get data array
+            /// </summary>
+            /// <return>Data array</return>
+            virtual const std::vector<double>& get_data_dynamic() const override;
 
             /// <summary>
             /// Access data
@@ -227,6 +239,16 @@ namespace tpf
 
             template <int _enable_rows = rows, int _enable_columns = columns>
             return_type access(std::size_t element, typename std::enable_if<(_enable_rows > 1 || _enable_columns > 1)>::type* = nullptr);
+
+            /// <summary>
+            /// Get data array
+            /// </summary>
+            /// <return>Data array</return>
+            template <typename local_value_t = value_t>
+            const std::vector<double>& get_data_dynamic_impl(typename std::enable_if<std::is_same<double, local_value_t>::value>::type* = nullptr) const;
+
+            template <typename local_value_t = value_t>
+            const std::vector<double>& get_data_dynamic_impl(typename std::enable_if<!std::is_same<double, local_value_t>::value>::type* = nullptr) const;
 
             /// Data
             std::vector<value_t> data;
