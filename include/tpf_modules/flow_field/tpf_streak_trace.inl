@@ -24,7 +24,9 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline streak_trace<floatp_t>::streak_trace(particle_seed<floatp_t>&& move) : path_trace<floatp_t>(std::move(move))
+            inline streak_trace<floatp_t>::streak_trace(particle_seed<floatp_t>&& move)
+                : path_trace<floatp_t>(std::move(move),
+                    std::vector<std::string>{}, std::vector<std::vector<std::vector<double>>>{})
             {
                 this->original_seed = particle_seed<floatp_t>::seed;
             }

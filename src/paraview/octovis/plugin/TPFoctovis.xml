@@ -254,6 +254,7 @@
                 <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="field" name="omega_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="classification_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="point" name="property_arrays" optional="1"/>
                 <Documentation>
                     Points with ID, velocities, and meta information about the grid and its rotation
                 </Documentation>
@@ -509,6 +510,20 @@
                 </Documentation>
             </StringVectorProperty>
 
+            <StringVectorProperty name="Arrays" command="GetArraySelection" number_of_elements_per_command="1" repeat_command="1" si_class="vtkSIDataArraySelectionProperty">
+                <ArrayListDomain name="array_list" input_domain_name="property_arrays">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interpolate at particle positions and store values along stream- or pathlines
+                </Documentation>
+                <Hints>
+                    <ArraySelectionWidget icon_type="point"/>
+                </Hints>
+            </StringVectorProperty>
+
             <PropertyGroup label="Point data">
                 <Property name="ID" />
                 <Property name="Velocity" />
@@ -539,6 +554,10 @@
                 <Property name="StarClassification" />
                 <Property name="StarVelocity" />
                 <Property name="StarRotation" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Property arrays">
+                <Property name="Arrays" />
             </PropertyGroup>
 
             <Hints>

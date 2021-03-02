@@ -81,7 +81,8 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts, translation, angular velocity, validity]</returns>
+        /// <returns>[Time step delta, velocities, global velocity parts, translation,
+        ///  angular velocity, validity, fields to interpolate and store at the particle positions]</returns>
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
@@ -89,7 +90,8 @@ namespace
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
-            std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)>> operator()() override
+            std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)>,
+            std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>> operator()() override
         {
             // Get data
             if (this->timesteps.size() > this->time_offset || this->original_time == this->time_offset)
@@ -260,7 +262,8 @@ namespace
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
-                    get_translation, get_angular_velocity, get_barycenter, is_valid);
+                    get_translation, get_angular_velocity, get_barycenter, is_valid,
+                    std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>{});
             }
 
             throw std::exception();
@@ -432,16 +435,11 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         // Set output
         auto output = vtkPolyData::GetData(output_vector);
 
-        auto mesh = tpf::vtk::create_mesh(lines.get_geometry());
-
-        output->SetPoints(mesh.points);
-        output->SetLines(mesh.lines);
-
-        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::CELL_DATA, *lines.template get_cell_data_as<std::size_t, 1>("ID (Advection)"));
-        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::CELL_DATA, *lines.template get_cell_data_as<std::size_t, 1>("ID (Distribution)"));
-
-        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Advection)"));
-        tpf::vtk::set_data<std::size_t>(output, tpf::data::topology_t::POINT_DATA, *lines.template get_point_data_as<std::size_t, 1>("ID (Distribution)"));
+        tpf::vtk::set_polydata(output, lines,
+            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::CELL_DATA },
+            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::CELL_DATA },
+            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::POINT_DATA });
     }
     catch (const std::exception& ex)
     {

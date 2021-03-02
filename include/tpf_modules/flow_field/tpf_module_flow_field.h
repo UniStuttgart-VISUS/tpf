@@ -5,6 +5,8 @@
 
 #include "tpf/data/tpf_polydata.h"
 
+#include "tpf/geometry/tpf_point.h"
+
 #include "tpf/module/tpf_module_base.h"
 #include "tpf/module/tpf_module_interface_callbacks.h"
 #include "tpf/module/tpf_module_interface_input.h"
@@ -13,8 +15,10 @@
 
 #include "tpf/policies/tpf_interpolatable.h"
 
+#include <functional>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace tpf
 {
@@ -32,14 +36,16 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, velocity, global velocity part, translation, angular velocity, barycenter, validity]</returns>
+                /// <returns>[Time step delta, velocity, global velocity part, translation,
+                ///  angular velocity, barycenter, validity, fields to interpolate and store at the particle positions]</returns>
                 virtual std::tuple<float_t,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
-                    std::function<bool(const point_t&)>> operator()() = 0;
+                    std::function<bool(const point_t&)>,
+                    std::vector<std::tuple<std::string, std::size_t, policies::interpolatable_base<point_t>*>>> operator()() = 0;
 
                 /// <summary>
                 /// Reset input algorithms to their beginning state

@@ -38,7 +38,10 @@ namespace tpf
                 /// Move constructor
                 /// </summary>
                 /// <param name="move">Source particle seed object to create this from</param>
-                path_trace(particle_seed<floatp_t>&& move);
+                /// <param name="property_names">Name of attached property arrays</param>
+                /// <param name="properties">Properties interpolated at the respective seed</param>
+                path_trace(particle_seed<floatp_t>&& move, std::vector<std::string>&& property_names,
+                    std::vector<std::vector<std::vector<double>>>&& properties);
 
                 /// <summary>
                 /// Return last original particle for a given trace
@@ -75,8 +78,10 @@ namespace tpf
                 /// <param name="particle">New particle</param>
                 /// <param name="original_particle">New original particle</param>
                 /// <param name="rotation">New rotation</param>
+                /// <param name="properties">Properties interpolated at the particle</param>
                 void add_particle(std::size_t index, const tpf::geometry::point<floatp_t>& particle,
-                    const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotation);
+                    const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotation,
+                    std::vector<std::vector<double>>&& properties);
 
                 /// <summary>
                 /// Sort the particle traces for length and update the number of valid particles

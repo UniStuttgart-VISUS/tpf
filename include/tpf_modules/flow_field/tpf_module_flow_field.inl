@@ -17,6 +17,7 @@
 #include "Eigen/Dense"
 
 #include <exception>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -116,8 +117,26 @@ namespace tpf
 
             const auto timestep_delta = std::get<0>(data);
 
+            const auto fields = std::get<7>(data);
+
+            // Interpolate at property fields
+            std::vector<std::vector<std::vector<double>>> properties(fields.size());
+            std::vector<std::string> property_names(fields.size());
+
+            for (std::size_t f = 0; f < fields.size(); ++f)
+            {
+                properties[f].resize(seed.get_size());
+
+                property_names[f] = std::get<0>(fields[f]);
+
+                for (std::size_t s = 0; s < seed.get_size(); ++s)
+                {
+                    properties[f][s] = std::get<2>(fields[f])->interpolate_dynamic(seed.get_seed(s));
+                }
+            }
+
             // Create particle trace
-            flow_field_aux::stream_trace<float_t> particles(std::move(seed));
+            flow_field_aux::stream_trace<float_t> particles(std::move(seed), std::move(property_names), std::move(properties));
 
             // Perform advection
             std::size_t advection = 0;
@@ -132,7 +151,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, global_velocity_parts, timestep_delta)
+                    is_particle_valid, fields, global_velocity_parts, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -148,7 +167,17 @@ namespace tpf
 
                             if (!local_velocity.isZero())
                             {
-                                particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta));
+                                const tpf::geometry::point<float_t> advected_particle(particle + local_velocity * timestep_delta);
+
+                                // Interpolate at property fields
+                                std::vector<std::vector<double>> properties(fields.size());
+
+                                for (std::size_t f = 0; f < fields.size(); ++f)
+                                {
+                                    properties[f] = std::get<2>(fields[f])->interpolate_dynamic(advected_particle);
+                                }
+
+                                particles.add_particle(index, advected_particle, std::move(properties));
                             }
                         }
                         catch (...)
@@ -205,8 +234,26 @@ namespace tpf
 
             auto timestep_delta = std::get<0>(data);
 
+            auto fields = std::get<7>(data);
+
+            // Interpolate at property fields
+            std::vector<std::vector<std::vector<double>>> properties(fields.size());
+            std::vector<std::string> property_names(fields.size());
+
+            for (std::size_t f = 0; f < fields.size(); ++f)
+            {
+                properties[f].resize(seed.get_size());
+
+                property_names[f] = std::get<0>(fields[f]);
+
+                for (std::size_t s = 0; s < seed.get_size(); ++s)
+                {
+                    properties[f][s] = std::get<2>(fields[f])->interpolate_dynamic(seed.get_seed(s));
+                }
+            }
+
             // Create particle trace
-            flow_field_aux::path_trace<float_t> particles(std::move(seed));
+            flow_field_aux::path_trace<float_t> particles(std::move(seed), std::move(property_names), std::move(properties));
 
             // Perform advection
             std::size_t advection = 0;
@@ -249,11 +296,21 @@ namespace tpf
 
                                 const auto new_rotation = quaternion * previous_rotation;
 
-                                // Calculate droplet-local velocity
+                                // Calculate droplet-local velocity and advect particles
                                 local_velocity = previous_rotation.rotate(local_velocity);
 
-                                particles.add_particle(index, tpf::geometry::point<float_t>(particle + local_velocity * timestep_delta),
-                                    tpf::geometry::point<float_t>(original_particle + velocity * timestep_delta), new_rotation);
+                                const tpf::geometry::point<float_t> advected_particle(particle + local_velocity * timestep_delta);
+                                const tpf::geometry::point<float_t> advected_original_particle(original_particle + velocity * timestep_delta);
+
+                                // Interpolate at property fields
+                                std::vector<std::vector<double>> properties(fields.size());
+
+                                for (std::size_t f = 0; f < fields.size(); ++f)
+                                {
+                                    properties[f] = std::get<2>(fields[f])->interpolate_dynamic(advected_original_particle);
+                                }
+
+                                particles.add_particle(index, advected_particle, advected_original_particle, new_rotation, std::move(properties));
                             }
                         }
                         catch (...)
@@ -303,6 +360,7 @@ namespace tpf
                             global_velocity_parts = std::get<2>(data);
                             get_angular_velocity = std::get<4>(data);
                             is_particle_valid = std::get<6>(data);
+                            fields = std::get<7>(data);
                         }
                         catch (const std::exception&)
                         {
@@ -431,7 +489,8 @@ namespace tpf
                             + (quaternion.rotate(relative_position) + barycenter) + (translation * timestep_delta));
 
                         // Insert new particle at the seed
-                        particles.add_particle(index, particles.get_seed(index), original_seed, tpf::math::quaternion<float_t>());
+                        particles.add_particle(index, particles.get_seed(index), original_seed,
+                            tpf::math::quaternion<float_t>(), std::vector<std::vector<double>>());
                     }
                     else
                     {
@@ -516,6 +575,32 @@ namespace tpf
             auto& id_particle_advection = *id_particle_advection_ref;
             auto& id_particle_distribution = *id_particle_distribution_ref;
 
+            // Create arrays for particle properties
+            const auto& particle_properties = particles.get_particle_properties();
+            const auto& particle_property_names = particles.get_particle_property_names();
+
+            std::map<std::size_t, std::shared_ptr<tpf::data::array_base>> property_map;
+
+            for (std::size_t p = 0; p < particle_property_names.size(); ++p)
+            {
+                if (particle_properties[p].front().front().size() == 1)
+                {
+                    property_map[p] = std::make_shared<tpf::data::array<double, 1>>(particle_property_names[p], particles.get_num_lines() * 2);
+                }
+                else if (particle_properties[p].front().front().size() == 3)
+                {
+                    property_map[p] = std::make_shared<tpf::data::array<double, 3>>(particle_property_names[p], particles.get_num_lines() * 2);
+                }
+                else
+                {
+                    throw std::runtime_error(__tpf_error_message("Only property arrays with 1 or 3 components supported. Components found: ",
+                        particle_properties[p].front().front().size()));
+                }
+            }
+
+            // Loop variables
+            std::size_t trace_index = 0;
+
             std::size_t line_index = 0;
             std::size_t particle_index = 0;
 
@@ -538,10 +623,42 @@ namespace tpf
                         id_particle_advection(particle_index) = i;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>(i * distribution_step);
 
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            if (property_map.at(p)->get_num_components_dynamic() == 1)
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map.at(p))->at(particle_index)
+                                    = particle_properties[p][trace_index][i].front();
+                            }
+                            else
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map.at(p))->at(particle_index) <<
+                                    particle_properties[p][trace_index][i][0],
+                                    particle_properties[p][trace_index][i][1],
+                                    particle_properties[p][trace_index][i][2];
+                            }
+                        }
+
                         ++particle_index;
 
                         id_particle_advection(particle_index) = i + 1;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>((i + 1) * distribution_step);
+
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            if (property_map[p]->get_num_components_dynamic() == 1)
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map[p])->at(particle_index)
+                                    = particle_properties[p][trace_index][i + 1].front();
+                            }
+                            else
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map[p])->at(particle_index) <<
+                                    particle_properties[p][trace_index][i + 1][0],
+                                    particle_properties[p][trace_index][i + 1][1],
+                                    particle_properties[p][trace_index][i + 1][2];
+                            }
+                        }
 
                         ++particle_index;
                     }
@@ -560,14 +677,48 @@ namespace tpf
                         id_particle_advection(particle_index) = i;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>(i * distribution_step);
 
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            if (property_map[p]->get_num_components_dynamic() == 1)
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map[p])->at(particle_index)
+                                    = particle_properties[p][trace_index][i].front();
+                            }
+                            else
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map[p])->at(particle_index) <<
+                                    particle_properties[p][trace_index][i][0],
+                                    particle_properties[p][trace_index][i][1],
+                                    particle_properties[p][trace_index][i][2];
+                            }
+                        }
+
                         ++particle_index;
 
                         id_particle_advection(particle_index) = i - 1;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>((i - 1) * distribution_step);
 
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            if (property_map[p]->get_num_components_dynamic() == 1)
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map[p])->at(particle_index)
+                                    = particle_properties[p][trace_index][i - 1].front();
+                            }
+                            else
+                            {
+                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map[p])->at(particle_index) <<
+                                    particle_properties[p][trace_index][i - 1][0],
+                                    particle_properties[p][trace_index][i - 1][1],
+                                    particle_properties[p][trace_index][i - 1][2];
+                            }
+                        }
+
                         ++particle_index;
                     }
                 }
+
+                ++trace_index;
             }
 
             // Store directional line information (IDs)
@@ -576,6 +727,11 @@ namespace tpf
 
             this->lines->add(id_particle_advection_ref, tpf::data::topology_t::POINT_DATA);
             this->lines->add(id_particle_distribution_ref, tpf::data::topology_t::POINT_DATA);
+
+            for (auto& property : property_map)
+            {
+                this->lines->add(property.second, tpf::data::topology_t::POINT_DATA);
+            }
         }
     }
 }

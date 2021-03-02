@@ -25,7 +25,9 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline path_trace<floatp_t>::path_trace(particle_seed<floatp_t>&& move) : stream_trace<floatp_t>(std::move(move))
+            inline path_trace<floatp_t>::path_trace(particle_seed<floatp_t>&& move, std::vector<std::string>&& property_names,
+                std::vector<std::vector<std::vector<double>>>&& properties)
+                : stream_trace<floatp_t>(std::move(move), std::move(property_names), std::move(properties))
             {
                 this->original_particles.resize(particle_seed<floatp_t>::seed.size());
                 this->rotations.resize(particle_seed<floatp_t>::seed.size());
@@ -63,9 +65,16 @@ namespace tpf
 
             template <typename floatp_t>
             inline void path_trace<floatp_t>::add_particle(const std::size_t index, const tpf::geometry::point<floatp_t>& particle,
-                const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotations)
+                const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotations,
+                std::vector<std::vector<double>>&& properties)
             {
                 stream_trace<floatp_t>::particles[index].push_back(particle);
+
+                for (std::size_t p = 0; p < stream_trace<floatp_t>::particle_properties.size(); ++p)
+                {
+                    stream_trace<floatp_t>::particle_properties[p][index].push_back(properties[p]);
+                }
+
                 this->original_particles[index].push_back(original_particle);
                 this->rotations[index].push_back(rotations);
             }
@@ -75,11 +84,18 @@ namespace tpf
             {
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
+                std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
                 std::vector<std::vector<geometry::point<floatp_t>>> original_particles;
                 std::vector<std::vector<math::quaternion<floatp_t>>> rotations;
 
                 seed.reserve(particle_seed<floatp_t>::seed.size());
                 particles.reserve(stream_trace<floatp_t>::particles.size());
+
+                particle_properties.resize(stream_trace<floatp_t>::particle_properties.size());
+
+                std::for_each(particle_properties.begin(), particle_properties.end(),
+                    [this](std::vector<std::vector<std::vector<double>>>& property) { property.reserve(stream_trace<floatp_t>::particles.size()); });
+
                 original_particles.reserve(this->original_particles.size());
                 rotations.reserve(this->rotations.size());
 
@@ -90,6 +106,12 @@ namespace tpf
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
+
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            particle_properties[p].push_back(stream_trace<floatp_t>::particle_properties[p][i]);
+                        }
+
                         original_particles.push_back(this->original_particles[i]);
                         rotations.push_back(this->rotations[i]);
                     }
@@ -104,6 +126,12 @@ namespace tpf
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
+
+                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                        {
+                            particle_properties[p].push_back(stream_trace<floatp_t>::particle_properties[p][i]);
+                        }
+
                         original_particles.push_back(this->original_particles[i]);
                         rotations.push_back(this->rotations[i]);
                     }
@@ -113,6 +141,12 @@ namespace tpf
                 {
                     seed.push_back(particle_seed<floatp_t>::seed[i]);
                     particles.push_back(stream_trace<floatp_t>::particles[i]);
+
+                    for (std::size_t p = 0; p < particle_properties.size(); ++p)
+                    {
+                        particle_properties[p].push_back(stream_trace<floatp_t>::particle_properties[p][i]);
+                    }
+
                     original_particles.push_back(this->original_particles[i]);
                     rotations.push_back(this->rotations[i]);
                 }
@@ -120,6 +154,7 @@ namespace tpf
                 // Replace traces and seeds with reordered version
                 std::swap(particle_seed<floatp_t>::seed, seed);
                 std::swap(stream_trace<floatp_t>::particles, particles);
+                std::swap(stream_trace<floatp_t>::particle_properties, particle_properties);
                 std::swap(this->original_particles, original_particles);
                 std::swap(this->rotations, rotations);
 
