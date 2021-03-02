@@ -65,7 +65,19 @@ namespace tpf
             /// </summary>
             /// <return>Number of stored elements</return>
             std::size_t get_num_elements() const noexcept;
-            
+
+            /// <summary>
+            /// Get number of components
+            /// </summary>
+            /// <return>Number of stored elements</return>
+            virtual std::size_t get_num_components_dynamic() const noexcept = 0;
+
+            /// <summary>
+            /// Get data array
+            /// </summary>
+            /// <return>Data array</return>
+            virtual const std::vector<double>& get_data_dynamic() const = 0;
+
         protected:
             /// <summary>
             /// Default destructor
