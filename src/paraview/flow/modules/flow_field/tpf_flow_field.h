@@ -2,6 +2,11 @@
 
 #include "vtkPolyDataAlgorithm.h"
 
+#include "vtkDataArraySelection.h"
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+#include "vtkSmartPointer.h"
+
 class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 {
     public:
@@ -25,6 +30,8 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         vtkGetMacro(TimeStepFromData, int);
         vtkSetMacro(TimeStepFromData, int);
+
+        vtkDataArraySelection* GetArraySelection();
 
         enum class locality_method_t
         {
@@ -71,4 +78,7 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Force fixed time step
         int TimeStepFromData;
+
+        /// Selection of property arrays
+        vtkSmartPointer<vtkDataArraySelection> array_selection;
 };

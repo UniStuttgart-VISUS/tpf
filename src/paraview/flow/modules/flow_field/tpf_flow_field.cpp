@@ -22,6 +22,8 @@
 
 #include "vtkAlgorithm.h"
 #include "vtkCellData.h"
+#include "vtkCommand.h"
+#include "vtkDataArraySelection.h"
 #include "vtkFieldData.h"
 #include "vtkObjectFactory.h"
 #include "vtkInformation.h"
@@ -30,6 +32,7 @@
 #include "vtkPointData.h"
 #include "vtkPolyData.h"
 #include "vtkRectilinearGrid.h"
+#include "vtkSmartPointer.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <exception>
@@ -63,7 +66,7 @@ namespace
         /// <param name="time_from_data">Extract timestep information from data</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
             vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
-            std::optional<float_t> fixed_timestep = std::nullopt, const bool time_from_data = false)
+            vtkDataArraySelection* array_selection, std::optional<float_t> fixed_timestep = std::nullopt, const bool time_from_data = false)
         {
             this->time_offset = this->original_time = current_timestep;
             this->timesteps = timesteps;
@@ -73,6 +76,8 @@ namespace
             this->droplets_alg = droplets_alg;
 
             this->get_array_name = get_array_name;
+
+            this->array_selection = array_selection;
 
             this->fixed_timestep = fixed_timestep;
             this->time_from_data = time_from_data;
@@ -102,6 +107,50 @@ namespace
                 this->droplet_grid = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0));
                 this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
                 this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(3, 0));
+
+                // Get property arrays
+                std::vector<vtkDataArray*> property_arrays;
+
+                for (int index = 0; index < in_grid->GetPointData()->GetNumberOfArrays(); ++index)
+                {
+                    auto in_array = in_grid->GetPointData()->GetArray(index);
+
+                    if (in_array && in_array->GetName())
+                    {
+                        if (this->array_selection->ArrayIsEnabled(in_array->GetName()))
+                        {
+                            property_arrays.push_back(in_array);
+                        }
+                    }
+                }
+
+                // Create grids for property arrays
+                this->property_grids.resize(property_arrays.size());
+
+                std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>
+                    property_grids(property_arrays.size());
+
+                for (std::size_t i = 0; i < property_arrays.size(); ++i)
+                {
+                    if (property_arrays[i]->GetNumberOfComponents() == 3)
+                    {
+                        this->property_grids[i] = std::make_shared<tpf::data::grid<double, float_t, 3, 3>>(
+                            tpf::vtk::get_grid<double, float_t, 3, 3>(in_grid, tpf::data::topology_t::POINT_DATA, property_arrays[i]->GetName()));
+
+                        property_grids[i] = std::make_tuple(std::string(property_arrays[i]->GetName()), 3, this->property_grids[i].get());
+                    }
+                    else if (property_arrays[i]->GetNumberOfComponents() == 1)
+                    {
+                        this->property_grids[i] = std::make_shared<tpf::data::grid<double, float_t, 3, 1>>(
+                            tpf::vtk::get_grid<double, float_t, 3, 1>(in_grid, tpf::data::topology_t::POINT_DATA, property_arrays[i]->GetName()));
+
+                        property_grids[i] = std::make_tuple(std::string(property_arrays[i]->GetName()), 1, this->property_grids[i].get());
+                    }
+                    else
+                    {
+                        tpf::log::info_message(__tpf_warning_message("Only property arrays with 1 or 3 components are supported."));
+                    }
+                }
 
                 // Create look-up functions
                 std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation;
@@ -262,8 +311,7 @@ namespace
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
-                    get_translation, get_angular_velocity, get_barycenter, is_valid,
-                    std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>{});
+                    get_translation, get_angular_velocity, get_barycenter, is_valid, property_grids);
             }
 
             throw std::exception();
@@ -312,6 +360,9 @@ namespace
         /// Function to retrieve array names
         std::function<std::string(int, int)> get_array_name;
 
+        /// Property arrays
+        vtkDataArraySelection* array_selection;
+
         /// Fixed timestep
         std::optional<float_t> fixed_timestep;
         bool time_from_data;
@@ -319,6 +370,8 @@ namespace
         /// Data of current timestep
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
         tpf::data::grid<long long, float_t, 3, 1> droplet_grid;
+
+        std::vector<std::shared_ptr<tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>>> property_grids;
 
         /// Droplets, their angular velocity and velocity
         std::vector<std::shared_ptr<tpf::geometry::geometric_object<float_t>>> droplets;
@@ -333,9 +386,17 @@ tpf_flow_field::tpf_flow_field() : num_ghost_levels(0)
 {
     this->SetNumberOfInputPorts(2);
     this->SetNumberOfOutputPorts(1);
+
+    this->array_selection = vtkSmartPointer<vtkDataArraySelection>::New();
+    this->array_selection->AddObserver(vtkCommand::ModifiedEvent, this, &vtkObject::Modified);
 }
 
 tpf_flow_field::~tpf_flow_field() {}
+
+vtkDataArraySelection* tpf_flow_field::GetArraySelection()
+{
+    return this->array_selection;
+}
 
 int tpf_flow_field::FillInputPortInformation(int port, vtkInformation* info)
 {
@@ -392,7 +453,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
-            get_array_name, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
+            get_array_name, this->array_selection, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->TimeStepFromData != 0);
 
         // Create seed
@@ -440,6 +501,15 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::CELL_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::POINT_DATA });
+
+        for (const auto& pd : lines.get_point_data())
+        {
+            if (pd->get_name().substr(0, 2).compare("ID"))
+            {
+                tpf::vtk::set_data<double>(output, tpf::data::topology_t::POINT_DATA, pd->get_name(),
+                    pd->get_data_dynamic(), pd->get_num_components_dynamic());
+            }
+        }
     }
     catch (const std::exception& ex)
     {
