@@ -269,7 +269,7 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    is_particle_valid, get_angular_velocity, global_velocity_parts, timestep_delta)
+                    is_particle_valid, get_angular_velocity, global_velocity_parts, timestep_delta, fields)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
