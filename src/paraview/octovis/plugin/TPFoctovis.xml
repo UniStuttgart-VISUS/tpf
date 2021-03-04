@@ -587,6 +587,12 @@
                 </DataTypeDomain>
                 <InputArrayDomain attribute_type="point" name="id_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="point" name="rho_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="field" name="xmin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="xmax_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="ymin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="ymax_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="zmin_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="zmax_array" number_of_components="1"/>
                 <Documentation>
                     Points with ID, and optionally the density for the iso surface
                 </Documentation>
