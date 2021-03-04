@@ -155,22 +155,34 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         // Get input data and information
         auto in_octree = vtkPointSet::GetData(input_vector[0]);
 
+        const auto get_array_name = [this, &in_octree](const int index) -> std::string
+        {
+            const auto data = GetInputArrayToProcess(index, in_octree);
+
+            if (data != nullptr)
+            {
+                return data->GetName();
+            }
+
+            throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")."));
+        };
+
         const auto num_points = in_octree->GetPoints()->GetNumberOfPoints();
 
-        auto cell_size = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(0, in_octree));
-        auto density = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(1, in_octree));
-        auto density_accretor = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(2, in_octree));
-        auto density_donor = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(3, in_octree));
-        auto density_other = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(4, in_octree));
-        auto velocities = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(5, in_octree));
-        auto gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(6, in_octree));
+        auto cell_size = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
+        auto density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
+        auto density_accretor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(2).c_str()));
+        auto density_donor = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(3).c_str()));
+        auto density_other = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(4).c_str()));
+        auto velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str()));
+        auto gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(6).c_str()));
 
-        const double x_min = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(7, in_octree))->GetValue(0);
-        const double x_max = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(8, in_octree))->GetValue(0);
-        const double y_min = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(9, in_octree))->GetValue(0);
-        const double y_max = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(10, in_octree))->GetValue(0);
-        const double z_min = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(11, in_octree))->GetValue(0);
-        const double z_max = FLOAT_TYPE_ARRAY::SafeDownCast(GetInputArrayToProcess(12, in_octree))->GetValue(0);
+        const double x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+        const double x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+        const double y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+        const double y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
+        const double z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+        const double z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
 
         // Create stars poly data object
         tpf::data::polydata<float_t> stars;

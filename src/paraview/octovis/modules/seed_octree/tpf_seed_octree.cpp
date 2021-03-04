@@ -11,6 +11,7 @@
 #include "tpf/mpi/tpf_mpi.h"
 
 #include "tpf/vtk/tpf_data.h"
+#include "tpf/vtk/tpf_octree.h"
 #include "tpf/vtk/tpf_polydata.h"
 
 #include "vtkDoubleArray.h"
@@ -46,119 +47,35 @@ template <typename float_t>
 tpf::data::octree<float_t, float_t> load_octree(vtkPointSet* in_octree,
     const std::function<std::string(int)> get_array_name, const bool has_density)
 {
-    // Get input data
-    vtkIdType num_points;
+    ID_TYPE_ARRAY* in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
 
-    ID_TYPE_ARRAY* in_paths = nullptr;
-    FLOAT_TYPE_ARRAY* in_density = nullptr;
+    const auto x_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(2).c_str()))->GetValue(0));
+    const auto x_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(3).c_str()))->GetValue(0));
+    const auto y_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(4).c_str()))->GetValue(0));
+    const auto y_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0));
+    const auto z_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0));
+    const auto z_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0));
 
-    double x_min, x_max, y_min, y_max, z_min, z_max;
-
-    if (tpf::mpi::get_instance().get_rank() == 0)
+    if (has_density)
     {
-        num_points = in_octree->GetPoints()->GetNumberOfPoints();
+        FLOAT_TYPE_ARRAY* in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
 
-        in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
-
-        if (has_density)
-        {
-            in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
-        }
-
-        x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(2).c_str()))->GetValue(0);
-        x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(3).c_str()))->GetValue(0);
-        y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(4).c_str()))->GetValue(0);
-        y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0);
-        z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0);
-        z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-    }
-
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().check_mpi_status())
-    {
-        tpf::mpi::get_instance().broadcast(num_points, 0);
-
-        if (tpf::mpi::get_instance().get_rank() != 0)
-        {
-            in_paths = ID_TYPE_ARRAY::New();
-            in_paths->SetNumberOfComponents(1);
-            in_paths->SetNumberOfTuples(num_points);
-
-            if (has_density)
+        return tpf::vtk::get_octree<float_t, float_t, 1>(in_paths,
+            [&in_density](vtkIdType p)
             {
-                in_density = FLOAT_TYPE_ARRAY::New();
-                in_density->SetNumberOfComponents(1);
-                in_density->SetNumberOfTuples(num_points);
-            }
-        }
-
-        MPI_Bcast(in_paths->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename ID_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-
-        if (has_density)
-        {
-            MPI_Bcast(in_density->GetVoidPointer(0), num_points, tpf::mpi::mpi_t<typename FLOAT_TYPE_ARRAY::ValueType>::value, 0, tpf::mpi::get_instance().get_comm());
-        }
-
-        tpf::mpi::get_instance().broadcast(x_min, 0);
-        tpf::mpi::get_instance().broadcast(x_max, 0);
-        tpf::mpi::get_instance().broadcast(y_min, 0);
-        tpf::mpi::get_instance().broadcast(y_max, 0);
-        tpf::mpi::get_instance().broadcast(z_min, 0);
-        tpf::mpi::get_instance().broadcast(z_max, 0);
+                return static_cast<float_t>(in_density->GetValue(p));
+            },
+            std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
     }
-#endif
-
-    // Create octree with root using the bounding box from the data
-    const tpf::geometry::point<float_t> min_point(x_min, y_min, z_min);
-    const tpf::geometry::point<float_t> max_point(x_max, y_max, z_max);
-
-    auto bounding_box = std::make_shared<tpf::geometry::cuboid<float_t>>(min_point, max_point);
-    auto root = std::make_shared<typename tpf::data::octree<float_t, float_t>::node>(std::make_pair(bounding_box, 0.0f));
-
-    tpf::data::octree<float_t, float_t> octree;
-    octree.set_root(root);
-
-    // Add nodes
-    std::vector<std::pair<std::vector<tpf::data::position_t>, float_t>> node_information;
-    node_information.reserve(num_points);
-
-    for (vtkIdType p = 0; p < num_points; ++p)
+    else
     {
-        // Decode path
-        auto path_code = in_paths->GetValue(p);
-
-        std::vector<tpf::data::position_t> path(static_cast<std::size_t>(std::floor(std::log2(path_code) / std::log2(8))), tpf::data::position_t::INVALID);
-        std::size_t index = 0;
-
-        while (path_code != 1)
-        {
-            const auto turn = path_code % 8;
-
-            path[index++] = static_cast<tpf::data::position_t>(((turn & 1) ? 4 : 0) + ((turn & 2) ? 2 : 0) + ((turn & 4) ? 1 : 0));
-
-            path_code /= 8;
-        }
-
-        // Add node information
-        node_information.push_back(std::make_pair(path, static_cast<float_t>(has_density ? in_density->GetValue(p) : 0.0)));
+        return tpf::vtk::get_octree<float_t, float_t, 1>(in_paths,
+            [](vtkIdType p)
+            {
+                return static_cast<float_t>(0.0);
+            },
+            std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
     }
-
-    // Delete temporary objects
-#ifdef __tpf_use_mpi
-    if (tpf::mpi::get_instance().get_rank() != 0)
-    {
-        in_paths->Delete();
-
-        if (has_density)
-        {
-            in_density->Delete();
-        }
-    }
-#endif
-
-    octree.insert_nodes(node_information.begin(), node_information.end());
-
-    return octree;
 }
 
 /// Create seed points at all the leaves
@@ -279,7 +196,37 @@ int tpf_seed_octree::RequestData(vtkInformation *request, vtkInformationVector *
         }
 
         // Create octree
-        const auto octree = load_octree<float_t>(in_octree, get_array_name, this->SeedMethod == 1 && has_density);
+        ID_TYPE_ARRAY* in_paths = ID_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(0).c_str()));
+
+        const auto x_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(2).c_str()))->GetValue(0));
+        const auto x_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(3).c_str()))->GetValue(0));
+        const auto y_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(4).c_str()))->GetValue(0));
+        const auto y_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(5).c_str()))->GetValue(0));
+        const auto z_min = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(6).c_str()))->GetValue(0));
+        const auto z_max = static_cast<double>(FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0));
+
+        tpf::data::octree<float_t, float_t> octree;
+
+        if (this->SeedMethod == 1 && has_density)
+        {
+            FLOAT_TYPE_ARRAY* in_density = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(1).c_str()));
+
+            octree = tpf::vtk::get_octree<float_t, float_t, 1>(in_paths,
+                [&in_density](vtkIdType p)
+                {
+                    return static_cast<float_t>(in_density->GetValue(p));
+                },
+                std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
+        }
+        else
+        {
+            octree = tpf::vtk::get_octree<float_t, float_t, 1>(in_paths,
+                [](vtkIdType p)
+                {
+                    return static_cast<float_t>(0.0);
+                },
+                std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
+        }
 
         // Create seed
         tpf::data::polydata<float_t> seed;
