@@ -90,8 +90,10 @@ int tpf_binary_star::RequestDataObject(vtkInformation*, vtkInformationVector**, 
 
         if (!output)
         {
-            output = vtkSmartPointer<vtkPolyData>::New();
+            output = vtkPolyData::New();
             output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }
@@ -102,8 +104,10 @@ int tpf_binary_star::RequestDataObject(vtkInformation*, vtkInformationVector**, 
 
         if (!output)
         {
-            output = vtkSmartPointer<vtkPolyData>::New();
+            output = vtkPolyData::New();
             output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }
