@@ -384,7 +384,7 @@ vtkStandardNewMacro(tpf_flow_field);
 
 tpf_flow_field::tpf_flow_field() : num_ghost_levels(0)
 {
-    this->SetNumberOfInputPorts(2);
+    this->SetNumberOfInputPorts(3);
     this->SetNumberOfOutputPorts(1);
 
     this->array_selection = vtkSmartPointer<vtkDataArraySelection>::New();
@@ -416,6 +416,12 @@ int tpf_flow_field::FillInputPortInformation(int port, vtkInformation* info)
         info->Set(vtkAlgorithm::INPUT_IS_OPTIONAL(), 1);
         return 1;
     }
+    else if (port == 2)
+    {
+        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData");
+        info->Set(vtkAlgorithm::INPUT_IS_OPTIONAL(), 1);
+        return 1;
+    }
 
     return 0;
 }
@@ -433,7 +439,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
     {
         // Get input data
         auto in_grid = vtkRectilinearGrid::GetData(input_vector[0]);
-        auto in_droplets = vtkPolyData::GetData(input_vector[1]);
+        auto in_droplets = vtkPolyData::GetData(input_vector[2]);
 
         const auto get_array_name = [this, &in_grid, &in_droplets](const int index, const int data_index = 0) -> std::string
         {
@@ -452,26 +458,42 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_grid).second;
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
-        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
+        data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
             get_array_name, this->array_selection, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->TimeStepFromData != 0);
 
         // Create seed
         tpf::data::polydata<float_t> seed;
 
-        for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+        if (this->SeedInCells != 0)
         {
-            for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
+            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
-                for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
+                for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                 {
-                    const tpf::data::coords3_t coords(x, y, z);
-
-                    if (vof(coords) > 0.0)
+                    for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
                     {
-                        seed.insert(std::make_shared<tpf::geometry::point<float_t>>(vof.get_cell_coordinates(coords)));
+                        const tpf::data::coords3_t coords(x, y, z);
+
+                        if (vof(coords) > 0.0)
+                        {
+                            seed.insert(std::make_shared<tpf::geometry::point<float_t>>(vof.get_cell_coordinates(coords)));
+                        }
                     }
                 }
+            }
+        }
+        else
+        {
+            auto in_seed = vtkPolyData::GetData(input_vector[1]);
+
+            if (in_seed != nullptr)
+            {
+                seed = tpf::vtk::get_polydata<float_t>(in_seed);
+            }
+            else
+            {
+                throw std::runtime_error(__tpf_error_message("No input seed available."));
             }
         }
 

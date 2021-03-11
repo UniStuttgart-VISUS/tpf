@@ -16,6 +16,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(Method, int);
         vtkSetMacro(Method, int);
 
+        vtkGetMacro(SeedInCells, int);
+        vtkSetMacro(SeedInCells, int);
+
         vtkGetMacro(SeedPerCell, int);
         vtkSetMacro(SeedPerCell, int);
 
@@ -61,11 +64,14 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         /// Number of ghost levels
         std::size_t num_ghost_levels;
 
-        /// Method to use: 0 - streamlines, 1 - streaklines, 2 - pathlines
-        int Method;
+        /// Seed in cells instead of using the input seed
+        int SeedInCells;
 
         /// Number of seed particles per cell
         int SeedPerCell;
+
+        /// Method to use: 0 - streamlines, 1 - streaklines, 2 - pathlines
+        int Method;
 
         /// Number of advections
         int NumAdvections;

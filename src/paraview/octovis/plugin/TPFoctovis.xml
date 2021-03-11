@@ -455,12 +455,13 @@
                 </Documentation>
             </DoubleVectorProperty>
             <StringVectorProperty name="StarClassification" label="Star Classification" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="12">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="classification_array">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="classification_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
                 <Hints>
+                    <NoDefault />
                     <PropertyWidgetDecorator type="CompositeDecorator">
                         <Expression type="or">
                             <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="LocalityMethod" value="2" />
