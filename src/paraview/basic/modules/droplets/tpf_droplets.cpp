@@ -76,6 +76,8 @@ int tpf_droplets::RequestDataObject(vtkInformation*, vtkInformationVector**, vtk
         {
             output = vtkRectilinearGrid::New();
             output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }
@@ -88,6 +90,8 @@ int tpf_droplets::RequestDataObject(vtkInformation*, vtkInformationVector**, vtk
         {
             output = vtkPolyData::New();
             output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }

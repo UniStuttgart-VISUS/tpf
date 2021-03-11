@@ -33,6 +33,8 @@ namespace
         {
             output = T::New();
             output_info->GetInformationObject(index)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             output_algorithm->GetOutputPortInformation(index)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }
