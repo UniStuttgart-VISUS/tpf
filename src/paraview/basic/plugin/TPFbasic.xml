@@ -91,11 +91,14 @@
                 </Documentation>
             </StringVectorProperty>
             <StringVectorProperty name="Velocity" label="Velocity field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Velocity field
                 </Documentation>
@@ -207,11 +210,14 @@
                 </Documentation>
             </StringVectorProperty>
             <StringVectorProperty name="Interface Gradient" label="Interface gradient" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="gradients_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Input" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Interface gradients
                 </Documentation>
