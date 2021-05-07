@@ -410,9 +410,9 @@ namespace tpf
             using stencil_t = data::stencil<const float_t, float_t, 3, 1>;
             const stencil_t stencil(f, coords, 3, stencil_t::behavior_t::REPEAT);
 
-            for (std::size_t i = 0; i < 2; ++i) {
-                for (std::size_t j = 0; j < 2; ++j) {
-                    for (std::size_t k = 0; k < 2; ++k) {
+            for (int i = 0; i <= 2; ++i) {
+                for (int j = 0; j <= 2; ++j) {
+                    for (int k = 0; k <= 2; ++k) {
                         if (i == 1 && j == 1 && k == 1) {
                             continue;
                         }
