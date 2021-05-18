@@ -8,6 +8,6 @@ else()
 endif()
 
 pv_plugin(${PROJECT_NAME}
-  "tpf_correct_vof;tpf_droplets;tpf_fluid_position;tpf_fs3d_reader;tpf_fs3d_writer;tpf_interface_curvature;tpf_interface_gradient;tpf_plic;tpf_plic3;tpf_stl_reader;tpf_surface_tension;tpf_test_data"
+  "tpf_correct_vof;tpf_droplets;tpf_dynamic_droplets;tpf_fluid_position;tpf_fs3d_reader;tpf_fs3d_writer;tpf_interface_curvature;tpf_interface_gradient;tpf_plic;tpf_plic3;tpf_stl_reader;tpf_surface_tension;tpf_test_data"
   "${parameters}"
 )
