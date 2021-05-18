@@ -42,6 +42,9 @@
 #define __tpf_nested_warning_message(inner, ...) __tpf_warning_message(__VA_ARGS__, "\n ", inner)
 #define __tpf_nested_info_message(inner, ...) __tpf_info_message(__VA_ARGS__, "\n ", inner)
 
+/// Defines for development debugging
+#define __tpf_dev_debug_output tpf::log::info_message(__tpf_info_message(__FILE__, " ~ ", __LINE__));
+
 namespace tpf
 {
     namespace log

@@ -58,6 +58,18 @@ namespace tpf
         /// </summary>
         template <typename T>
         T* get_or_default(std::optional<std::reference_wrapper<T>> parameter, T* default_value = nullptr);
+
+        /// <summary>
+        /// Set an optional parameter or provide nothing
+        /// </summary>
+        template <typename T>
+        std::optional<std::reference_wrapper<T>> set_or_default(T& parameter, bool set);
+
+        /// <summary>
+        /// Set an optional parameter or provide nothing
+        /// </summary>
+        template <typename T>
+        std::optional<std::reference_wrapper<T>> set_or_default(T* parameter);
     }
 }
 
