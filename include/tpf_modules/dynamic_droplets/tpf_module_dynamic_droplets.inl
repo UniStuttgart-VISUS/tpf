@@ -197,7 +197,7 @@ namespace tpf
             }
 
             // Create array
-            auto path_ids_ref = std::make_shared<data::array<std::size_t, 1>>("Time ID", num_paths);
+            auto path_ids_ref = std::make_shared<data::array<std::size_t, 1>>("Time ID", 2 * num_paths);
             auto& path_ids = *path_ids_ref;
 
             // Create map of last targets, which act as new path origins and are initialized
@@ -246,13 +246,14 @@ namespace tpf
                     next_map_to_last_target[target] = new_target;
 
                     path_ids(axis_index++) = time_index;
+                    path_ids(axis_index++) = time_index + 1;
                 }
 
                 std::swap(map_to_last_target, next_map_to_last_target);
                 next_map_to_last_target.clear();
             }
 
-            this->paths->add(path_ids_ref, data::topology_t::CELL_DATA);
+            this->paths->add(path_ids_ref, data::topology_t::POINT_DATA);
         }
 
         template <typename float_t>

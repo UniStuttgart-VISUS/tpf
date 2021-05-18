@@ -216,30 +216,38 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             // Set output
             auto output = vtkMultiBlockDataSet::GetData(output_vector);
 
-            auto save_lines = [](const tpf::data::polydata<float_t>& lines, vtkMultiBlockDataSet* output, const unsigned int index, const std::string& name)
+            unsigned int block_index = 0;
+
+            if (this->ShowTranslationPaths)
             {
-                auto mesh = tpf::vtk::create_mesh(lines.get_geometry());
+                auto mesh = tpf::vtk::create_mesh(paths.get_geometry());
 
                 auto block = vtkSmartPointer<vtkPolyData>::New();
                 block->SetPoints(mesh.points);
                 block->SetLines(mesh.lines);
 
-                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::CELL_DATA, *lines.template get_cell_data_as<std::size_t, 1>("Time ID"));
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::POINT_DATA, *paths.template get_point_data_as<std::size_t, 1>("Time ID"));
 
-                output->SetBlock(index, block);
-                output->GetMetaData(index)->Set(vtkCompositeDataSet::NAME(), name);
-            };
+                output->SetBlock(block_index, block);
+                output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "translation paths");
 
-            unsigned int block_index = 0;
-
-            if (this->ShowTranslationPaths)
-            {
-                save_lines(paths, output, block_index++, "translation paths");
+                ++block_index;
             }
 
             if (this->ShowRotationAxes)
             {
-                save_lines(axes, output, block_index++, "rotation axes");
+                auto mesh = tpf::vtk::create_mesh(axes.get_geometry());
+
+                auto block = vtkSmartPointer<vtkPolyData>::New();
+                block->SetPoints(mesh.points);
+                block->SetLines(mesh.lines);
+
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::CELL_DATA, *axes.template get_cell_data_as<std::size_t, 1>("Time ID"));
+
+                output->SetBlock(block_index, block);
+                output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "rotation axes");
+
+                ++block_index;
             }
 
             if (this->ShowRotationRibbons)
