@@ -39,7 +39,7 @@ namespace tpf
             /// Clone object (deep copy)
             /// </summary>
             /// <returns>Deep copy</returns>
-            virtual std::shared_ptr<geometric_object> clone(const math::transformer<floatp_t, 3>& trafo) const = 0;
+            virtual std::shared_ptr<geometric_object> clone(const math::transformer<floatp_t, 3>& trafo = math::transformer<floatp_t, 3>::unit()) const = 0;
 
             /// <summary>
             /// Transform this object using a transformer
