@@ -6,11 +6,13 @@
 #include "tpf/module/tpf_module_interface_output.h"
 #include "tpf/module/tpf_module_interface_parameters.h"
 
+#include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
 
 #include <functional>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -31,8 +33,8 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, droplets]</returns>
-                virtual std::pair<float_t, data::polydata<float_t>> operator()() = 0;
+                /// <returns>[Time step delta, droplets, droplet IDs]</returns>
+                virtual std::tuple<float_t, data::polydata<float_t>, data::grid<long long, float_t, 3, 1>> operator()() = 0;
 
                 /// <summary>
                 /// Reset input algorithms to their beginning state
@@ -48,7 +50,9 @@ namespace tpf
         template <typename float_t>
         class dynamic_droplets : public module_base<
             interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>,
-            interface_input<const data::polydata<float_t>&>,
+            interface_input<
+                const data::polydata<float_t>&,
+                const data::grid<long long, float_t, 3, 1>&>,
             interface_output<
                 opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>,
@@ -57,7 +61,9 @@ namespace tpf
         {
         public:
             using callbacks_t = interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>;
-            using input_t = interface_input<const data::polydata<float_t>&>;
+            using input_t = interface_input<
+                const data::polydata<float_t>&,
+                const data::grid<long long, float_t, 3, 1>&>;
             using output_t = interface_output<
                 opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>,
@@ -95,7 +101,9 @@ namespace tpf
             /// Set input
             /// </summary>
             /// <param name="droplets">Input droplets</param>
-            virtual void set_algorithm_input(const tpf::data::polydata<float_t>& droplets) override;
+            /// <param name="droplet_ids">Input droplet IDs</param>
+            virtual void set_algorithm_input(const tpf::data::polydata<float_t>& droplets,
+                const data::grid<long long, float_t, 3, 1>& droplet_ids) override;
 
             /// <summary>
             /// Set output
@@ -154,6 +162,7 @@ namespace tpf
 
             /// Droplets
             const tpf::data::polydata<float_t>* droplets;
+            const tpf::data::grid<long long, float_t, 3, 1>* droplet_ids;
 
             /// Translation paths
             data::polydata<float_t>* paths;

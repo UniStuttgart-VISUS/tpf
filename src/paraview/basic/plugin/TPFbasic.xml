@@ -199,6 +199,19 @@
                     Extracted droplets with information about rotation and translation
                 </Documentation>
             </InputProperty>
+            <InputProperty name="Grid" port_index="1" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="id_array" number_of_components="1"/>
+                <Documentation>
+                    Grid containing droplet IDs
+                </Documentation>
+            </InputProperty>
             
             <StringVectorProperty name="Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array">
@@ -228,6 +241,17 @@
                 </ArrayListDomain>
                 <Documentation>
                     Approximate radius of the droplet
+                </Documentation>
+            </StringVectorProperty>
+            
+            <StringVectorProperty name="DropletIDs" label="Droplet IDs" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
+                    <RequiredProperties>
+                        <Property name="Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    IDs of the droplets
                 </Documentation>
             </StringVectorProperty>
             
@@ -264,7 +288,7 @@
                     Scaling for the rotation axes
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="RotationAxisTranslation" command="SetRotationAxisTranslation" label="Show rotation at the origin" number_of_elements="1" default_values="1">
+            <IntVectorProperty name="RotationAxisTranslation" command="SetRotationAxisTranslation" label="Show rotation at the origin" number_of_elements="1" default_values="1" panel_visibility="advanced">
                 <BooleanDomain name="bool"/>
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ShowRotationAxes" value="1" />

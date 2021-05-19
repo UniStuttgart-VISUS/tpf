@@ -8,6 +8,7 @@
 #include "tpf_modules/dynamic_droplets/tpf_module_dynamic_droplets.h"
 
 #include "tpf/vtk/tpf_data.h"
+#include "tpf/vtk/tpf_grid.h"
 #include "tpf/vtk/tpf_log.h"
 #include "tpf/vtk/tpf_polydata.h"
 #include "tpf/vtk/tpf_time.h"
@@ -17,6 +18,7 @@
 #include "vtkInformationVector.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkPolyData.h"
+#include "vtkRectilinearGrid.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
@@ -41,29 +43,33 @@ namespace
         /// <param name="timesteps">Available time steps</param>
         /// <param name="request">Original request that will be modified for requesting different time frames</param>
         /// <param name="droplets_alg">Algorithm producing droplet data</param>
+        /// <param name="droplet_ids_alg">Algorithm producing droplet ID data</param>
         /// <param name="translation_name">Name of the input translation array</param>
         /// <param name="rotation_name">Name of the input rotation array</param>
         /// <param name="radius_name">Name of the input radius array</param>
+        /// <param name="droplet_ids_name">Name of the input droplet ID array</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
-            vtkInformation* request, vtkAlgorithm* droplets_alg, std::string translation_name,
-            std::string rotation_name, std::string radius_name)
+            vtkInformation* request, vtkAlgorithm* droplets_alg, vtkAlgorithm* droplet_ids_alg, std::string translation_name,
+            std::string rotation_name, std::string radius_name, std::string droplet_ids_name)
         {
             this->time_offset = this->original_time = current_timestep;
             this->timesteps = timesteps;
 
             this->request = request;
             this->droplets_alg = droplets_alg;
+            this->droplet_ids_alg = droplet_ids_alg;
 
             this->translation_name = translation_name;
             this->rotation_name = rotation_name;
             this->radius_name = radius_name;
+            this->droplet_ids_name = droplet_ids_name;
         }
 
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
         /// <returns>[Time step delta, droplets]</returns>
-        std::pair<float_t, tpf::data::polydata<float_t>> operator()()
+        std::tuple<float_t, tpf::data::polydata<float_t>, tpf::data::grid<long long, float_t, 3, 1>> operator()()
         {
             // Check if next time step is available
             ++this->time_offset;
@@ -74,19 +80,24 @@ namespace
                 request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
                 this->droplets_alg->Update(request);
+                this->droplet_ids_alg->Update(request);
 
                 // Get data
                 auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
+                auto in_droplet_ids = vtkRectilinearGrid::SafeDownCast(this->droplet_ids_alg->GetOutputDataObject(0));
 
                 auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
                     tpf::data::data_information<float_t, 3> { this->translation_name, tpf::data::topology_t::POINT_DATA },
                     tpf::data::data_information<float_t, 3> { this->rotation_name, tpf::data::topology_t::POINT_DATA },
                     tpf::data::data_information<float_t, 1> { this->radius_name, tpf::data::topology_t::POINT_DATA });
 
+                const auto droplet_ids = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_droplet_ids,
+                    tpf::data::topology_t::CELL_DATA, this->droplet_ids_name);
+
                 // Set time step delta and return
                 float_t timestep_delta = this->timesteps[this->time_offset] - this->timesteps[this->time_offset - 1];
 
-                return std::make_pair(timestep_delta, droplets);
+                return std::make_tuple(timestep_delta, droplets, droplet_ids);
             }
 
             throw std::exception();
@@ -103,6 +114,7 @@ namespace
             request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
             this->droplets_alg->Update(request);
+            this->droplet_ids_alg->Update(request);
         }
 
     private:
@@ -120,11 +132,13 @@ namespace
 
         /// Droplet algorithm
         vtkAlgorithm* droplets_alg;
+        vtkAlgorithm* droplet_ids_alg;
 
         /// Array names
         std::string translation_name;
         std::string rotation_name;
         std::string radius_name;
+        std::string droplet_ids_name;
     };
 }
 
@@ -132,7 +146,7 @@ vtkStandardNewMacro(tpf_dynamic_droplets);
 
 tpf_dynamic_droplets::tpf_dynamic_droplets()
 {
-    this->SetNumberOfInputPorts(1);
+    this->SetNumberOfInputPorts(2);
     this->SetNumberOfOutputPorts(1);
 }
 
@@ -165,12 +179,14 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
     {
         // Get input data
         auto in_droplets = vtkPolyData::GetData(input_vector[0]);
+        auto in_droplet_ids = vtkRectilinearGrid::GetData(input_vector[1]);
 
         auto translation_arr = GetInputArrayToProcess(0, in_droplets);
         auto rotation_arr = GetInputArrayToProcess(1, in_droplets);
         auto radius_arr = GetInputArrayToProcess(2, in_droplets);
+        auto ids_arr = GetInputArrayToProcess(3, in_droplet_ids);
 
-        if (translation_arr == nullptr || rotation_arr == nullptr || radius_arr == nullptr)
+        if (translation_arr == nullptr || rotation_arr == nullptr || radius_arr == nullptr || ids_arr == nullptr)
         {
             throw std::runtime_error(__tpf_error_message("Not all input arrays are provided."));
         }
@@ -179,6 +195,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             tpf::data::data_information<float_t, 3>{ translation_arr->GetName(), tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 3>{ rotation_arr->GetName(), tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<float_t, 1>{ radius_arr->GetName(), tpf::data::topology_t::POINT_DATA });
+
+        const auto droplet_ids = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_droplet_ids, tpf::data::topology_t::CELL_DATA, ids_arr);
 
         // Create output data
         tpf::data::polydata<float_t> paths, axes, ribbons;
@@ -191,7 +209,7 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             // Set input, output and parameters
             tpf::modules::dynamic_droplets<float_t> dynamic_droplets_module;
 
-            dynamic_droplets_module.set_input(droplets);
+            dynamic_droplets_module.set_input(droplets, droplet_ids);
             dynamic_droplets_module.set_output(
                 tpf::modules::set_or_default(paths, this->ShowTranslationPaths),
                 tpf::modules::set_or_default(axes, this->ShowRotationAxes),
@@ -205,8 +223,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_droplets).second;
             const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
-            data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0),
-                translation_arr->GetName(), rotation_arr->GetName(), radius_arr->GetName());
+            data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(1, 0),
+                translation_arr->GetName(), rotation_arr->GetName(), radius_arr->GetName(), ids_arr->GetName());
 
             dynamic_droplets_module.set_callbacks(&call_back_loader);
 

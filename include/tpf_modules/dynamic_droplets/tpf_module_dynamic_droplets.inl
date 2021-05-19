@@ -2,6 +2,7 @@
 
 #include "tpf/data/tpf_array.h"
 #include "tpf/data/tpf_data_information.h"
+#include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
 
 #include "tpf/geometry/tpf_line.h"
@@ -53,9 +54,11 @@ namespace tpf
         }
 
         template <typename float_t>
-        inline void dynamic_droplets<float_t>::set_algorithm_input(const data::polydata<float_t>& droplets)
+        inline void dynamic_droplets<float_t>::set_algorithm_input(const data::polydata<float_t>& droplets,
+            const data::grid<long long, float_t, 3, 1>& droplet_ids)
         {
             this->droplets = &droplets;
+            this->droplet_ids = &droplet_ids;
         }
 
         template <typename float_t>
@@ -101,13 +104,17 @@ namespace tpf
             }
 
             // Collect droplets for all time steps
+            std::vector<float_t> timesteps;
+            timesteps.reserve(this->num_timesteps);
+            timesteps.push_back(this->timestep);
+
             std::vector<data::polydata<float_t>> droplets;
             droplets.reserve(this->num_timesteps);
             droplets.push_back(*this->droplets);
 
-            std::vector<float_t> timesteps;
-            timesteps.reserve(this->num_timesteps);
-            timesteps.push_back(this->timestep);
+            std::vector<data::grid<long long, float_t, 3, 1>> droplet_ids;
+            droplet_ids.reserve(this->num_timesteps);
+            droplet_ids.push_back(*this->droplet_ids);
 
             for (std::size_t timestep = 0; timestep < this->num_timesteps; ++timestep)
             {
@@ -124,8 +131,9 @@ namespace tpf
                             auto next_data = (*this->next_time_frame_callback)();
 
                             // Get complete data: [Time step delta, droplets]
-                            timesteps.push_back(next_data.first);
-                            droplets.push_back(next_data.second);
+                            timesteps.push_back(std::get<0>(next_data));
+                            droplets.push_back(std::get<1>(next_data));
+                            droplet_ids.push_back(std::get<2>(next_data));
                         }
                         catch (const std::exception&)
                         {
@@ -195,19 +203,18 @@ namespace tpf
                     // Create map from future to current droplet
                     for (std::size_t i = 0; i < droplets[timestep - 1].get_num_objects(); ++i)
                     {
-                        if (droplets_over_time[i].second == 0)
+                        if (map_to_original.find(i) != map_to_original.end() && droplets_over_time[map_to_original.at(i)].second == 0)
                         {
                             const auto advected_position = std::dynamic_pointer_cast<geometry::point<float_t>>((*position)[i])->get_vertex()
                                 + timesteps[timestep - 1] * (*translation)(i);
 
-                            for (std::size_t j = 0; j < droplets[timestep].get_num_objects(); ++j)
-                            {
-                                const auto next_pos = std::dynamic_pointer_cast<geometry::point<float_t>>((*next_position)[j])->get_vertex();
+                            const auto cell = droplet_ids[timestep].find_cell(advected_position);
 
-                                if ((advected_position - next_pos).norm() < (*next_radius)(j))
-                                {
-                                    forw_adv_backw_mapping[j].push_back(i);
-                                }
+                            if (cell && droplet_ids[timestep](*cell) >= 0)
+                            {
+                                const auto droplet_id = droplet_ids[timestep](*cell);
+
+                                forw_adv_backw_mapping[droplet_id].push_back(i);
                             }
                         }
                     }
@@ -223,16 +230,15 @@ namespace tpf
                         const auto advected_position = std::dynamic_pointer_cast<geometry::point<float_t>>((*next_position)[i])->get_vertex()
                             - timesteps[timestep] * (*next_translation)(i);
 
-                        for (std::size_t j = 0; j < droplets[timestep - 1].get_num_objects(); ++j)
-                        {
-                            if (droplets_over_time[j].second == 0)
-                            {
-                                const auto pos = std::dynamic_pointer_cast<geometry::point<float_t>>((*position)[j])->get_vertex();
+                        const auto cell = droplet_ids[timestep - 1].find_cell(advected_position);
 
-                                if ((advected_position - pos).norm() < (*radius)(j))
-                                {
-                                    backw_adv_forw_mapping[j].push_back(i);
-                                }
+                        if (cell && droplet_ids[timestep - 1](*cell) >= 0)
+                        {
+                            const auto droplet_id = droplet_ids[timestep - 1](*cell);
+
+                            if (map_to_original.find(droplet_id) != map_to_original.end())
+                            {
+                                backw_adv_forw_mapping[droplet_id].push_back(i);
                             }
                         }
                     }
@@ -246,7 +252,7 @@ namespace tpf
                     // Breakup
                     if (breakup_map.second.size() > 1)
                     {
-                        droplets_over_time[map_to_original[breakup_map.first]].second = 1;
+                        droplets_over_time[map_to_original.at(breakup_map.first)].second = 1;
                     }
                 }
 
@@ -257,13 +263,13 @@ namespace tpf
                     {
                         for (std::size_t i = 0; i < collision_map.second.size(); ++i)
                         {
-                            droplets_over_time[map_to_original[collision_map.second[i]]].second = 2;
+                            droplets_over_time[map_to_original.at(collision_map.second[i])].second = 2;
                         }
                     }
                     else
                     {
                         // No topological change: add droplet
-                        const auto original_droplet = map_to_original[collision_map.second.front()];
+                        const auto original_droplet = map_to_original.at(collision_map.second.front());
                         new_map_to_original[collision_map.first] = original_droplet;
 
                         droplets_over_time[original_droplet].first.push_back(droplet_t
