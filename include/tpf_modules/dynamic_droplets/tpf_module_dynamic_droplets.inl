@@ -93,6 +93,13 @@ namespace tpf
                 return;
             }
 
+            if (this->num_timesteps <= 1 || this->droplets->get_num_objects() == 0)
+            {
+                log::info_message(__tpf_info_message("No data. Nothing to do."));
+
+                return;
+            }
+
             // Collect droplets for all time steps
             std::vector<data::polydata<float_t>> droplets;
             droplets.reserve(this->num_timesteps);
@@ -149,6 +156,152 @@ namespace tpf
                     log::info_message(__tpf_info_message("Completed loading all time steps."));
                 }
             }
+
+
+
+
+            // Map droplets from different time steps, and record topological changes
+            std::vector<std::pair<std::vector<droplet_t>, std::size_t>> droplets_over_time(this->droplets->get_num_objects());
+
+            std::map<std::size_t, std::size_t> map_to_original;
+
+            auto position = &this->droplets->get_geometry();
+            auto translation = this->droplets->get_point_data_as<float_t, 3>(this->translation_name);
+            auto rotation = this->droplets->get_point_data_as<float_t, 3>(this->rotation_name);
+            auto radius = this->droplets->get_point_data_as<float_t, 1>(this->radius_name);
+
+            for (std::size_t i = 0; i < droplets_over_time.size(); ++i)
+            {
+                droplets_over_time[i].first.push_back(droplet_t
+                    { std::dynamic_pointer_cast<geometry::point<float_t>>((*position)[i])->get_vertex(),
+                    (*translation)(i), (*rotation)(i), (*radius)(i) });
+
+                droplets_over_time[i].second = 0;
+
+                map_to_original[i] = i;
+            }
+
+            for (std::size_t timestep = 1; timestep < this->num_timesteps; ++timestep)
+            {
+                auto next_position = &droplets[timestep].get_geometry();
+                auto next_translation = droplets[timestep].get_point_data_as<float_t, 3>(this->translation_name);
+                auto next_rotation = droplets[timestep].get_point_data_as<float_t, 3>(this->rotation_name);
+                auto next_radius = droplets[timestep].get_point_data_as<float_t, 1>(this->radius_name);
+
+                // Find corresponding future droplets by forward advection -> detects collision
+                std::map<std::size_t, std::vector<std::size_t>> forw_adv_backw_mapping;
+
+                {
+                    // Create map from future to current droplet
+                    for (std::size_t i = 0; i < droplets[timestep - 1].get_num_objects(); ++i)
+                    {
+                        if (droplets_over_time[i].second == 0)
+                        {
+                            const auto advected_position = std::dynamic_pointer_cast<geometry::point<float_t>>((*position)[i])->get_vertex()
+                                + timesteps[timestep - 1] * (*translation)(i);
+
+                            for (std::size_t j = 0; j < droplets[timestep].get_num_objects(); ++j)
+                            {
+                                const auto next_pos = std::dynamic_pointer_cast<geometry::point<float_t>>((*next_position)[j])->get_vertex();
+
+                                if ((advected_position - next_pos).norm() < (*next_radius)(j))
+                                {
+                                    forw_adv_backw_mapping[j].push_back(i);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Find corresponding current droplets by backward advection -> detects breakup
+                std::map<std::size_t, std::vector<std::size_t>> backw_adv_forw_mapping;
+
+                {
+                    // Create map from current to future droplet
+                    for (std::size_t i = 0; i < droplets[timestep].get_num_objects(); ++i)
+                    {
+                        const auto advected_position = std::dynamic_pointer_cast<geometry::point<float_t>>((*next_position)[i])->get_vertex()
+                            - timesteps[timestep] * (*next_translation)(i);
+
+                        for (std::size_t j = 0; j < droplets[timestep - 1].get_num_objects(); ++j)
+                        {
+                            if (droplets_over_time[j].second == 0)
+                            {
+                                const auto pos = std::dynamic_pointer_cast<geometry::point<float_t>>((*position)[j])->get_vertex();
+
+                                if ((advected_position - pos).norm() < (*radius)(j))
+                                {
+                                    backw_adv_forw_mapping[j].push_back(i);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Classify topology changes: 0 - none, 1 - breakup, 2 - collision
+                std::map<std::size_t, std::size_t> new_map_to_original;
+
+                for (const auto& breakup_map : backw_adv_forw_mapping)
+                {
+                    // Breakup
+                    if (breakup_map.second.size() > 1)
+                    {
+                        droplets_over_time[map_to_original[breakup_map.first]].second = 1;
+                    }
+                }
+
+                for (const auto& collision_map : forw_adv_backw_mapping)
+                {
+                    // Collision
+                    if (collision_map.second.size() > 1)
+                    {
+                        for (std::size_t i = 0; i < collision_map.second.size(); ++i)
+                        {
+                            droplets_over_time[map_to_original[collision_map.second[i]]].second = 2;
+                        }
+                    }
+                    else
+                    {
+                        // No topological change: add droplet
+                        const auto original_droplet = map_to_original[collision_map.second.front()];
+                        new_map_to_original[collision_map.first] = original_droplet;
+
+                        droplets_over_time[original_droplet].first.push_back(droplet_t
+                            { dynamic_cast<geometry::point<float_t>&>(*(*next_position)[collision_map.first]),
+                            (*next_translation)(collision_map.first), (*next_rotation)(collision_map.first), (*next_radius)(collision_map.first) });
+                    }
+                }
+
+                // Prepare for next time step
+                position = next_position;
+                translation = next_translation;
+                rotation = next_rotation;
+                radius = next_radius;
+
+                std::swap(map_to_original, new_map_to_original);
+            }
+
+
+
+
+            this->paths->add(std::make_shared<data::array<std::size_t>>("Time ID"), data::topology_t::POINT_DATA);
+
+            for (const auto& droplet_track : droplets_over_time)
+            {
+                const auto topology = droplet_track.second;
+
+                for (std::size_t i = 0; i < droplet_track.first.size() - 1; ++i)
+                {
+                    this->paths->insert(std::make_shared<geometry::line<float_t>>(
+                        droplet_track.first[i].position, droplet_track.first[i + 1].position),
+                        data::polydata_element<std::size_t, 1>("Time ID", data::topology_t::POINT_DATA, { topology, topology }));
+                }
+            }
+
+            return;
+
+
+
 
             // Create output
             if (this->paths != nullptr)

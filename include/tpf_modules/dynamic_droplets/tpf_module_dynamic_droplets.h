@@ -122,6 +122,15 @@ namespace tpf
             void run_algorithm() override;
 
         private:
+            /// Droplet information
+            struct droplet_t
+            {
+                Eigen::Matrix<float_t, 3, 1> position;
+                Eigen::Matrix<float_t, 3, 1> translation;
+                Eigen::Matrix<float_t, 3, 1> rotation;
+                float_t radius;
+            };
+
             /// <summary>
             /// Create and save translation paths
             /// </summary>
