@@ -199,7 +199,7 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
         const auto droplet_ids = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_droplet_ids, tpf::data::topology_t::CELL_DATA, ids_arr);
 
         // Create output data
-        tpf::data::polydata<float_t> paths, axes, ribbons;
+        tpf::data::polydata<float_t> droplet_tracks, paths, axes, ribbons;
 
         if (this->ShowTranslationPaths || this->ShowRotationAxes || this->ShowRotationRibbons)
         {
@@ -210,7 +210,7 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             tpf::modules::dynamic_droplets<float_t> dynamic_droplets_module;
 
             dynamic_droplets_module.set_input(droplets, droplet_ids);
-            dynamic_droplets_module.set_output(
+            dynamic_droplets_module.set_output(droplet_tracks,
                 tpf::modules::set_or_default(paths, this->ShowTranslationPaths),
                 tpf::modules::set_or_default(axes, this->ShowRotationAxes),
                 tpf::modules::set_or_default(ribbons, this->ShowRotationRibbons));
@@ -236,6 +236,22 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
 
             unsigned int block_index = 0;
 
+            {
+                auto mesh = tpf::vtk::create_mesh(droplet_tracks.get_geometry());
+
+                auto block = vtkSmartPointer<vtkPolyData>::New();
+                block->SetPoints(mesh.points);
+                block->SetLines(mesh.lines);
+
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::CELL_DATA,
+                    *droplet_tracks.template get_cell_data_as<std::size_t, 1>("Topology information"));
+
+                output->SetBlock(block_index, block);
+                output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "droplet tracks");
+
+                ++block_index;
+            }
+
             if (this->ShowTranslationPaths)
             {
                 auto mesh = tpf::vtk::create_mesh(paths.get_geometry());
@@ -244,7 +260,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
                 block->SetPoints(mesh.points);
                 block->SetLines(mesh.lines);
 
-                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::POINT_DATA, *paths.template get_point_data_as<std::size_t, 1>("Time ID"));
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::POINT_DATA,
+                    *paths.template get_point_data_as<std::size_t, 1>("Time ID"));
 
                 output->SetBlock(block_index, block);
                 output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "translation paths");
@@ -260,7 +277,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
                 block->SetPoints(mesh.points);
                 block->SetLines(mesh.lines);
 
-                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::CELL_DATA, *axes.template get_cell_data_as<std::size_t, 1>("Time ID"));
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::CELL_DATA,
+                    *axes.template get_cell_data_as<std::size_t, 1>("Time ID"));
 
                 output->SetBlock(block_index, block);
                 output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "rotation axes");
@@ -276,7 +294,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
                 block->SetPoints(mesh.points);
                 block->SetPolys(mesh.polygonals);
 
-                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::POINT_DATA, *ribbons.template get_point_data_as<std::size_t, 1>("Time ID"));
+                tpf::vtk::set_data<std::size_t>(block, tpf::data::topology_t::POINT_DATA,
+                    *ribbons.template get_point_data_as<std::size_t, 1>("Time ID"));
 
                 output->SetBlock(block_index, block);
                 output->GetMetaData(block_index)->Set(vtkCompositeDataSet::NAME(), "rotation ribbons");
