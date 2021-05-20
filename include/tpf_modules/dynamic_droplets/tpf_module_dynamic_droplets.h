@@ -55,12 +55,13 @@ namespace tpf
                 const data::grid<long long, float_t, 3, 1>&>,
             interface_output<
                 data::polydata<float_t>&,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>>,
-            interface_parameters<std::size_t, float_t, float_t, bool, std::string, std::string, std::string>>
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&>,
+            interface_parameters<std::size_t, float_t, float_t, bool, float_t, bool, std::string, std::string, std::string>>
         {
         public:
             using callbacks_t = interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>;
@@ -69,12 +70,13 @@ namespace tpf
                 const data::grid<long long, float_t, 3, 1>&>;
             using output_t = interface_output<
                 data::polydata<float_t>&,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>,
-                opt_arg<data::polydata<float_t>>>;
-            using parameters_t = interface_parameters<std::size_t, float_t, float_t,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&,
+                data::polydata<float_t>&>;
+            using parameters_t = interface_parameters<std::size_t, float_t, float_t, bool, float_t,
                 bool, std::string, std::string, std::string>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
@@ -115,24 +117,27 @@ namespace tpf
             /// Set output
             /// </summary>
             /// <param name="tracks">Output droplet tracking information</param>
+            /// <param name="summary">Output droplet summary</param>
             /// <param name="paths">Output translation paths</param>
             /// <param name="axes">Output rotation axes</param>
             /// <param name="ribbons">Output rotation ribbons</param>
             /// <param name="rotation_paths">Output rotation paths</param>
             /// <param name="coordinate_axes">Output transforming coordinate axes</param>
-            virtual void set_algorithm_output(data::polydata<float_t>& tracks, opt_arg<data::polydata<float_t>> paths,
-                opt_arg<data::polydata<float_t>> axes, opt_arg<data::polydata<float_t>> ribbons,
-                opt_arg<data::polydata<float_t>> rotation_paths, opt_arg<data::polydata<float_t>> coordinate_axes) override;
+            virtual void set_algorithm_output(data::polydata<float_t>& tracks, data::polydata<float_t>& summary,
+                data::polydata<float_t>& paths, data::polydata<float_t>& axes, data::polydata<float_t>& ribbons,
+                data::polydata<float_t>& rotation_paths, data::polydata<float_t>& coordinate_axes) override;
 
             /// <summary>
             /// Set parameters
             /// </summary>
             /// <param name="num_timesteps">Number of time steps</param>
             /// <param name="timestep">Time step</param>
+            /// <param name="ribbon_scale">Scale factor for ribbons</param>
             /// <param name="axis_scale">Scale factor for rotation axes</param>
             /// <param name="axis_translation">Translate axis back to its origin</param>
-            virtual void set_algorithm_parameters(std::size_t num_timesteps, float_t timestep, float_t axis_scale,
-                bool axis_translation, std::string translation_name, std::string rotation_name, std::string radius_name) override;
+            virtual void set_algorithm_parameters(std::size_t num_timesteps, float_t timestep, float_t ribbon_scale,
+                bool fix_axis_size, float_t axis_scale, bool axis_translation, std::string translation_name,
+                std::string rotation_name, std::string radius_name) override;
 
             /// <summary>
             /// Run module
@@ -159,7 +164,18 @@ namespace tpf
 
             using droplet_trace_t = std::pair<std::vector<droplet_t>, topology_t>;
 
+            /// <summary>
+            /// Track droplets over time and return this trace
+            /// </summary>
+            /// <returns>Droplets over time</returns>
             std::pair<std::vector<droplet_trace_t>, std::vector<float_t>> track_droplets() const;
+
+            /// <summary>
+            /// Create static droplet summary
+            /// </summary>
+            /// <param name="droplets">Droplet information over time</param>
+            /// <param name="timesteps">Time step sizes</param>
+            void create_summary(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
 
             /// <summary>
             /// Create and save translation paths
@@ -203,6 +219,9 @@ namespace tpf
             /// Droplet tracks
             data::polydata<float_t>* tracks;
 
+            /// Droplet summary
+            data::polydata<float_t>* summary;
+
             /// Translation paths
             data::polydata<float_t>* paths;
 
@@ -220,7 +239,11 @@ namespace tpf
             /// Time step
             float_t timestep;
 
+            /// Scale factor for ribbons
+            float_t ribbon_scale;
+
             /// Scale factor for rotation axes
+            bool fix_axis_size;
             float_t axis_scale;
 
             /// Translate axes back to their origin

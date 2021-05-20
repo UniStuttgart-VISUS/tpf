@@ -143,39 +143,41 @@ namespace
 
     enum class geometry_t
     {
+        point,
         line,
         polygon
     };
 
-    template <typename data_t>
-    void save_block(vtkMultiBlockDataSet* output, const std::size_t block_index, const tpf::data::polydata<float_t>& data, const bool active,
+    template <typename data_t, std::size_t components>
+    void save_block(vtkMultiBlockDataSet* output, const unsigned int block_index, const tpf::data::polydata<float_t>& data,
         const geometry_t geometry, const tpf::data::topology_t topology, const std::string& data_name, const std::string& block_name)
     {
         auto block = vtkSmartPointer<vtkPolyData>::New();
 
-        if (active)
+        auto mesh = tpf::vtk::create_mesh(data.get_geometry());
+
+        block->SetPoints(mesh.points);
+
+        if (geometry == geometry_t::point)
         {
-            auto mesh = tpf::vtk::create_mesh(data.get_geometry());
+            block->SetVerts(mesh.vertices);
+        }
+        else if (geometry == geometry_t::line)
+        {
+            block->SetLines(mesh.lines);
+        }
+        else
+        {
+            block->SetPolys(mesh.polygonals);
+        }
 
-            block->SetPoints(mesh.points);
-
-            if (geometry == geometry_t::line)
-            {
-                block->SetLines(mesh.lines);
-            }
-            else
-            {
-                block->SetPolys(mesh.polygonals);
-            }
-
-            if (topology == tpf::data::topology_t::POINT_DATA)
-            {
-                tpf::vtk::set_data<data_t>(block, topology, *data.template get_point_data_as<data_t, 1>(data_name));
-            }
-            else if (topology == tpf::data::topology_t::CELL_DATA)
-            {
-                tpf::vtk::set_data<data_t>(block, topology, *data.template get_cell_data_as<data_t, 1>(data_name));
-            }
+        if (topology == tpf::data::topology_t::POINT_DATA)
+        {
+            tpf::vtk::set_data<data_t>(block, topology, *data.template get_point_data_as<data_t, components>(data_name));
+        }
+        else if (topology == tpf::data::topology_t::CELL_DATA)
+        {
+            tpf::vtk::set_data<data_t>(block, topology, *data.template get_cell_data_as<data_t, components>(data_name));
         }
 
         output->SetBlock(block_index, block);
@@ -240,10 +242,9 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
         const auto droplet_ids = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_droplet_ids, tpf::data::topology_t::CELL_DATA, ids_arr);
 
         // Create output data
-        tpf::data::polydata<float_t> droplet_tracks, paths, axes, ribbons, rotation_paths, coordinate_axes;
+        tpf::data::polydata<float_t> droplet_tracks, summary, paths, axes, ribbons, rotation_paths, coordinate_axes;
 
-        if (this->ShowTranslationPaths || this->ShowRotationAxes || this->ShowRotationRibbons ||
-            this->ShowRotationPaths || this->ShowCoordinateAxes)
+        if (this->Compute)
         {
             // Get time step
             const auto timestep = tpf::vtk::get_timestep_delta<float_t>(input_vector[0]->GetInformationObject(0), in_droplets);
@@ -252,16 +253,11 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             tpf::modules::dynamic_droplets<float_t> dynamic_droplets_module;
 
             dynamic_droplets_module.set_input(droplets, droplet_ids);
-            dynamic_droplets_module.set_output(droplet_tracks,
-                tpf::modules::set_or_default(paths, this->ShowTranslationPaths),
-                tpf::modules::set_or_default(axes, this->ShowRotationAxes),
-                tpf::modules::set_or_default(ribbons, this->ShowRotationRibbons),
-                tpf::modules::set_or_default(rotation_paths, this->ShowRotationPaths),
-                tpf::modules::set_or_default(coordinate_axes, this->ShowCoordinateAxes));
+            dynamic_droplets_module.set_output(droplet_tracks, summary, paths, axes, ribbons, rotation_paths, coordinate_axes);
 
             dynamic_droplets_module.set_parameters(static_cast<std::size_t>(this->NumTimeSteps), static_cast<float_t>(timestep),
-                static_cast<float_t>(this->RotationAxisScale), this->RotationAxisTranslation == 1,
-                translation_arr->GetName(), rotation_arr->GetName(), radius_arr->GetName());
+                static_cast<float_t>(this->RibbonSize), this->FixRotationAxisSize == 1, static_cast<float_t>(this->RotationAxisScale),
+                this->RotationAxisTranslation == 1, translation_arr->GetName(), rotation_arr->GetName(), radius_arr->GetName());
 
             // Create call back for loading the next time frame if requested
             const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_droplets).second;
@@ -278,12 +274,15 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             // Set output
             auto output = vtkMultiBlockDataSet::GetData(output_vector);
 
-            save_block<std::size_t>(output, 0, droplet_tracks, true, geometry_t::line, tpf::data::topology_t::CELL_DATA, "Topology information", "droplet tracks");
-            save_block<std::size_t>(output, 1, paths, this->ShowTranslationPaths, geometry_t::line, tpf::data::topology_t::POINT_DATA, "Time ID", "translation paths");
-            save_block<std::size_t>(output, 2, axes, this->ShowRotationAxes, geometry_t::line, tpf::data::topology_t::CELL_DATA, "Time ID", "rotation axes");
-            save_block<std::size_t>(output, 3, ribbons, this->ShowRotationRibbons, geometry_t::polygon, tpf::data::topology_t::POINT_DATA, "Time ID", "rotation ribbons");
-            save_block<std::size_t>(output, 4, rotation_paths, this->ShowRotationPaths, geometry_t::line, tpf::data::topology_t::POINT_DATA, "Time ID", "rotation paths");
-            save_block<float_t>(output, 5, coordinate_axes, this->ShowCoordinateAxes, geometry_t::polygon, tpf::data::topology_t::POINT_DATA, "Time information", "coordinate axes");
+            unsigned int index = 0;
+
+            save_block<std::size_t, 1>(output, index++, droplet_tracks, geometry_t::line, tpf::data::topology_t::CELL_DATA, "Topology information", "droplet tracks");
+            save_block<float_t, 3>(output, index++, summary, geometry_t::point, tpf::data::topology_t::POINT_DATA, "Displacement", "translation summary");
+            save_block<std::size_t, 1>(output, index++, paths, geometry_t::line, tpf::data::topology_t::POINT_DATA, "Time ID", "translation paths");
+            save_block<std::size_t, 1>(output, index++, axes, geometry_t::line, tpf::data::topology_t::CELL_DATA, "Time ID", "rotation axes");
+            save_block<std::size_t, 1>(output, index++, ribbons, geometry_t::polygon, tpf::data::topology_t::POINT_DATA, "Time ID", "rotation ribbons");
+            save_block<std::size_t, 1>(output, index++, rotation_paths, geometry_t::line, tpf::data::topology_t::POINT_DATA, "Time ID", "rotation paths");
+            save_block<float_t, 1>(output, index++, coordinate_axes, geometry_t::polygon, tpf::data::topology_t::POINT_DATA, "Time information", "coordinate axes");
 
             // Copy time information
             for (unsigned int i = 0; i < output->GetNumberOfBlocks(); ++i)

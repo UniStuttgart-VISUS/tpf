@@ -261,40 +261,38 @@
                 </Documentation>
             </IntVectorProperty>
             
-            <IntVectorProperty name="ShowTranslationPaths" command="SetShowTranslationPaths" label="Show translation paths" number_of_elements="1" default_values="0">
+            <IntVectorProperty name="Compute" command="SetCompute" label="Compute" number_of_elements="1" default_values="0">
                 <BooleanDomain name="bool"/>
                 <Documentation>
-                    Visualize translation paths using lines
-                </Documentation>
-            </IntVectorProperty>
-            <IntVectorProperty name="ShowRotationAxes" command="SetShowRotationAxes" label="Show rotation axes" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Visualize rotation (and the change thereof) using axes
-                </Documentation>
-            </IntVectorProperty>
-            <IntVectorProperty name="ShowRotationRibbons" command="SetShowRotationRibbons" label="Show rotation ribbons" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Visualize rotation (and the change thereof) using ribbons
-                </Documentation>
-            </IntVectorProperty>
-            <IntVectorProperty name="ShowRotationPaths" command="SetShowRotationPaths" label="Show rotation paths" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Visualize rotation (and the change thereof) by rotating and tracking a particle
-                </Documentation>
-            </IntVectorProperty>
-            <IntVectorProperty name="ShowCoordinateAxes" command="SetShowCoordinateAxes" label="Show coordinate axes" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Visualize transformation by showing the change of the coordinate system
+                    Option that allows not to do the expensive computation
                 </Documentation>
             </IntVectorProperty>
             
+            <DoubleVectorProperty name="RibbonSize" command="SetRibbonSize" label="Ribbon size" number_of_elements="1" default_values="0.025">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Scaling for ribbons
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="FixRotationAxisSize" command="SetFixRotationAxisSize" label="Fix size of rotation axis" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Fix the size of the rotation axis to the droplet's representative radius
+                </Documentation>
+            </IntVectorProperty>
             <DoubleVectorProperty name="RotationAxisScale" command="SetRotationAxisScale" label="Rotation axis scale" number_of_elements="1" default_values="1.0">
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ShowRotationAxes" value="1" />
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="FixRotationAxisSize" value="0" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
                     Scaling for the rotation axes
@@ -303,7 +301,7 @@
             <IntVectorProperty name="RotationAxisTranslation" command="SetRotationAxisTranslation" label="Show rotation at the origin" number_of_elements="1" default_values="1" panel_visibility="advanced">
                 <BooleanDomain name="bool"/>
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ShowRotationAxes" value="1" />
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
                 </Hints>
                 <Documentation>
                     Show rotation axes at the original center of mass instead of at their respective position
