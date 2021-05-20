@@ -11,6 +11,7 @@
 
 #include "tpf/log/tpf_log.h"
 
+#include "tpf/math/tpf_quaternion.h"
 #include "tpf/math/tpf_vector.h"
 
 #include "tpf/stdext/tpf_comparator.h"
@@ -63,13 +64,16 @@ namespace tpf
 
         template <typename float_t>
         inline void dynamic_droplets<float_t>::set_algorithm_output(data::polydata<float_t>& tracks,
-            opt_arg<data::polydata<float_t>> paths, opt_arg<data::polydata<float_t>> axes, opt_arg<data::polydata<float_t>> ribbons)
+            opt_arg<data::polydata<float_t>> paths, opt_arg<data::polydata<float_t>> axes, opt_arg<data::polydata<float_t>> ribbons,
+            opt_arg<data::polydata<float_t>> rotation_paths, opt_arg<data::polydata<float_t>> coordinate_axes)
         {
             this->tracks = &tracks;
 
             this->paths = get_or_default<data::polydata<float_t>>(paths);
             this->axes = get_or_default<data::polydata<float_t>>(axes);
             this->ribbons = get_or_default<data::polydata<float_t>>(ribbons);
+            this->rotation_paths = get_or_default<data::polydata<float_t>>(rotation_paths);
+            this->coordinate_axes = get_or_default<data::polydata<float_t>>(coordinate_axes);
         }
 
         template <typename float_t>
@@ -91,7 +95,8 @@ namespace tpf
         inline void dynamic_droplets<float_t>::run_algorithm()
         {
             // Check if there is anything to do
-            if (this->paths == nullptr && this->axes == nullptr && this->ribbons == nullptr)
+            if (this->paths == nullptr && this->axes == nullptr && this->ribbons == nullptr &&
+                this->rotation_paths == nullptr && this->coordinate_axes == nullptr)
             {
                 log::info_message(__tpf_info_message("No output selected. Nothing to do."));
 
@@ -138,6 +143,16 @@ namespace tpf
             if (this->ribbons != nullptr)
             {
                 create_ribbons(droplets_over_time.first, droplets_over_time.second);
+            }
+
+            if (this->rotation_paths != nullptr)
+            {
+                create_rotation_paths(droplets_over_time.first, droplets_over_time.second);
+            }
+
+            if (this->coordinate_axes != nullptr)
+            {
+                create_coordinate_axes(droplets_over_time.first, droplets_over_time.second);
             }
         }
 
@@ -334,7 +349,9 @@ namespace tpf
             const std::vector<float_t>& timesteps)
         {
             // Create path segments
-            this->paths->add(std::make_shared<data::array<std::size_t, 1>>("Time ID"), data::topology_t::POINT_DATA);
+            const std::string data_name("Time ID");
+
+            this->paths->add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::POINT_DATA);
 
             for (const auto& droplet : all_droplets)
             {
@@ -347,7 +364,7 @@ namespace tpf
 
                     this->paths->insert(std::make_shared<geometry::line<float_t>>(
                         geometry::point<float_t>(droplet_position), geometry::point<float_t>(next_droplet_position)),
-                        data::polydata_element<std::size_t, 1>("Time ID", data::topology_t::POINT_DATA, { i, i + 1 }));
+                        data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i + 1 }));
 
                     droplet_position = next_droplet_position;
                 }
@@ -359,7 +376,9 @@ namespace tpf
             const std::vector<float_t>& timesteps)
         {
             // Create rotation axes
-            this->axes->add(std::make_shared<data::array<std::size_t, 1>>("Time ID"), data::topology_t::CELL_DATA);
+            const std::string data_name("Time ID");
+
+            this->axes->add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::CELL_DATA);
 
             for (const auto& droplet : all_droplets)
             {
@@ -372,7 +391,7 @@ namespace tpf
 
                     this->axes->insert(std::make_shared<geometry::line<float_t>>(
                         geometry::point<float_t>(axis_origin), geometry::point<float_t>(axis_target)),
-                        data::polydata_element<std::size_t, 1>("Time ID", data::topology_t::CELL_DATA, { i }));
+                        data::polydata_element<std::size_t, 1>(data_name, data::topology_t::CELL_DATA, { i }));
                 }
             }
         }
@@ -382,7 +401,9 @@ namespace tpf
             const std::vector<float_t>& timesteps)
         {
             // Create rotation ribbons
-            this->ribbons->add(std::make_shared<data::array<std::size_t, 1>>("Time ID"), data::topology_t::POINT_DATA);
+            const std::string data_name("Time ID");
+
+            this->ribbons->add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::POINT_DATA);
 
             for (const auto& droplet : all_droplets)
             {
@@ -403,15 +424,146 @@ namespace tpf
                         geometry::point<float_t>(current_axis_origin),
                         geometry::point<float_t>(current_axis_target),
                         geometry::point<float_t>(next_axis_target)),
-                        data::polydata_element<std::size_t, 1>("Time ID", data::topology_t::POINT_DATA, { i, i, i + 1 }));
+                        data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i, i + 1 }));
 
                     this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(current_axis_origin),
                         geometry::point<float_t>(next_axis_target),
                         geometry::point<float_t>(next_axis_origin)),
-                        data::polydata_element<std::size_t, 1>("Time ID", data::topology_t::POINT_DATA, { i, i + 1, i + 1 }));
+                        data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i + 1, i + 1 }));
 
                     droplet_position = next_droplet_position;
+                }
+            }
+        }
+
+        template <typename float_t>
+        inline void dynamic_droplets<float_t>::create_rotation_paths(const std::vector<droplet_trace_t>& all_droplets,
+            const std::vector<float_t>& timesteps)
+        {
+            // Track rotating particle
+            const std::string data_name("Time ID");
+
+            this->rotation_paths->add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::POINT_DATA);
+
+            for (const auto& droplet : all_droplets)
+            {
+                const auto translation_offset = droplet.first.front().position
+                    + droplet.first.front().radius * droplet.first.front().translation.normalized();
+
+                // TODO: Create better seed, depending on rotation axis' orientation
+                Eigen::Matrix<float_t, 3, 1> particle_position = droplet.first.front().position
+                    + droplet.first.front().radius * droplet.first.front().translation.normalized();
+
+                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                {
+                    math::quaternion<float_t> q;
+                    q.from_axis(droplet.first[i].rotation, timesteps[i]);
+
+                    Eigen::Matrix<float_t, 3, 1> next_particle_position =
+                        q.rotate(Eigen::Matrix<float_t, 3, 1>(particle_position - droplet.first.front().position));
+
+                    next_particle_position = droplet.first.front().position +
+                        droplet.first.front().radius * next_particle_position.normalized();
+
+                    this->rotation_paths->insert(std::make_shared<geometry::line<float_t>>(
+                        geometry::point<float_t>(particle_position), geometry::point<float_t>(next_particle_position)),
+                        data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i + 1 }));
+
+                    particle_position = next_particle_position;
+                }
+            }
+        }
+
+        template <typename float_t>
+        inline void dynamic_droplets<float_t>::create_coordinate_axes(const std::vector<droplet_trace_t>& all_droplets,
+            const std::vector<float_t>& timesteps)
+        {
+            // Transform coordinate system axes
+            const std::string data_name("Time information");
+
+            this->coordinate_axes->add(std::make_shared<data::array<float_t, 1>>(data_name), data::topology_t::POINT_DATA);
+
+            for (const auto& droplet : all_droplets)
+            {
+                Eigen::Matrix<float_t, 3, 1> droplet_position = droplet.first.front().position
+                    + droplet.first.front().radius * droplet.first.front().translation.normalized();
+
+                Eigen::Matrix<float_t, 3, 1> x_axis;
+                Eigen::Matrix<float_t, 3, 1> y_axis = droplet.first.front().rotation.normalized();
+                Eigen::Matrix<float_t, 3, 1> z_axis;
+
+                if (y_axis.isZero()) continue;
+
+                std::tie(x_axis, z_axis) = math::orthonormal(y_axis);
+
+                x_axis *= 0.1f * droplet.first.front().radius;
+                y_axis *= 0.1f * droplet.first.front().radius;
+                z_axis *= 0.1f * droplet.first.front().radius;
+
+                const auto time_delta = 1 / static_cast<float_t>(droplet.first.size() - 1);
+
+                float_t x_time = 0.0;
+                float_t y_time = 2.0;
+                float_t z_time = 4.0;
+
+                for (std::size_t i = 0; i < droplet.first.size() - 1; ++i)
+                {
+                    const auto next_droplet_position = droplet_position + timesteps[i] * droplet.first[i].translation;
+
+                    math::quaternion<float_t> q;
+                    q.from_axis(droplet.first[i].rotation, timesteps[i]);
+
+                    const auto next_x_axis = q.rotate(x_axis);
+                    const auto next_y_axis = q.rotate(y_axis);
+                    const auto next_z_axis = q.rotate(z_axis);
+
+                    const auto next_x_time = x_time + time_delta;
+                    const auto next_y_time = y_time + time_delta;
+                    const auto next_z_time = z_time + time_delta;
+
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position),
+                        geometry::point<float_t>(droplet_position + x_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { x_time, x_time, next_x_time }));
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position + x_axis),
+                        geometry::point<float_t>(next_droplet_position + next_x_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { x_time, next_x_time, next_x_time }));
+
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position),
+                        geometry::point<float_t>(droplet_position + y_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { y_time, y_time, next_y_time }));
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position + y_axis),
+                        geometry::point<float_t>(next_droplet_position + next_y_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { y_time, next_y_time, next_y_time }));
+
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position),
+                        geometry::point<float_t>(droplet_position + z_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { z_time, z_time, next_z_time }));
+                    this->coordinate_axes->insert(std::make_shared<geometry::triangle<float_t>>(
+                        geometry::point<float_t>(droplet_position + z_axis),
+                        geometry::point<float_t>(next_droplet_position + next_z_axis),
+                        geometry::point<float_t>(next_droplet_position)),
+                        data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { z_time, next_z_time, next_z_time }));
+
+                    droplet_position = droplet_position + timesteps[i] * droplet.first[i].translation;
+
+                    z_axis = next_z_axis;
+                    y_axis = next_y_axis;
+                    x_axis = next_x_axis;
+
+                    x_time = next_x_time;
+                    y_time = next_y_time;
+                    z_time = next_z_time;
                 }
             }
         }

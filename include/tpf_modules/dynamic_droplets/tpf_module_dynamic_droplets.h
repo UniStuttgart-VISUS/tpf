@@ -57,6 +57,8 @@ namespace tpf
                 data::polydata<float_t>&,
                 opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>,
+                opt_arg<data::polydata<float_t>>,
+                opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>>,
             interface_parameters<std::size_t, float_t, float_t, bool, std::string, std::string, std::string>>
         {
@@ -67,6 +69,8 @@ namespace tpf
                 const data::grid<long long, float_t, 3, 1>&>;
             using output_t = interface_output<
                 data::polydata<float_t>&,
+                opt_arg<data::polydata<float_t>>,
+                opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>,
                 opt_arg<data::polydata<float_t>>>;
@@ -114,8 +118,11 @@ namespace tpf
             /// <param name="paths">Output translation paths</param>
             /// <param name="axes">Output rotation axes</param>
             /// <param name="ribbons">Output rotation ribbons</param>
+            /// <param name="rotation_paths">Output rotation paths</param>
+            /// <param name="coordinate_axes">Output transforming coordinate axes</param>
             virtual void set_algorithm_output(data::polydata<float_t>& tracks, opt_arg<data::polydata<float_t>> paths,
-                opt_arg<data::polydata<float_t>> axes, opt_arg<data::polydata<float_t>> ribbons) override;
+                opt_arg<data::polydata<float_t>> axes, opt_arg<data::polydata<float_t>> ribbons,
+                opt_arg<data::polydata<float_t>> rotation_paths, opt_arg<data::polydata<float_t>> coordinate_axes) override;
 
             /// <summary>
             /// Set parameters
@@ -175,6 +182,20 @@ namespace tpf
             /// <param name="timesteps">Time step sizes</param>
             void create_ribbons(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
 
+            /// <summary>
+            /// Create and save rotation paths
+            /// </summary>
+            /// <param name="droplets">Droplet information over time</param>
+            /// <param name="timesteps">Time step sizes</param>
+            void create_rotation_paths(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
+
+            /// <summary>
+            /// Create and save transforming coordinate axes
+            /// </summary>
+            /// <param name="droplets">Droplet information over time</param>
+            /// <param name="timesteps">Time step sizes</param>
+            void create_coordinate_axes(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
+
             /// Droplets
             const tpf::data::polydata<float_t>* droplets;
             const tpf::data::grid<long long, float_t, 3, 1>* droplet_ids;
@@ -185,9 +206,13 @@ namespace tpf
             /// Translation paths
             data::polydata<float_t>* paths;
 
-            /// Rotation axes and ribbons
+            /// Rotation axes, ribbons and particles
             data::polydata<float_t>* axes;
             data::polydata<float_t>* ribbons;
+            data::polydata<float_t>* rotation_paths;
+
+            /// Coordinate system axes
+            data::polydata<float_t>* coordinate_axes;
 
             /// Number of time steps
             std::size_t num_timesteps;

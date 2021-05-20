@@ -279,6 +279,18 @@
                     Visualize rotation (and the change thereof) using ribbons
                 </Documentation>
             </IntVectorProperty>
+            <IntVectorProperty name="ShowRotationPaths" command="SetShowRotationPaths" label="Show rotation paths" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Visualize rotation (and the change thereof) by rotating and tracking a particle
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="ShowCoordinateAxes" command="SetShowCoordinateAxes" label="Show coordinate axes" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Visualize transformation by showing the change of the coordinate system
+                </Documentation>
+            </IntVectorProperty>
             
             <DoubleVectorProperty name="RotationAxisScale" command="SetRotationAxisScale" label="Rotation axis scale" number_of_elements="1" default_values="1.0">
                 <Hints>

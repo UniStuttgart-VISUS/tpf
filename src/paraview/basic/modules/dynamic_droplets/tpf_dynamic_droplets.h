@@ -13,6 +13,8 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
         vtkSetMacro(ShowTranslationPaths, bool);
         vtkSetMacro(ShowRotationAxes, bool);
         vtkSetMacro(ShowRotationRibbons, bool);
+        vtkSetMacro(ShowRotationPaths, bool);
+        vtkSetMacro(ShowCoordinateAxes, bool);
 
         vtkSetMacro(RotationAxisScale, double);
         vtkSetMacro(RotationAxisTranslation, bool);
@@ -38,7 +40,7 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
         int NumTimeSteps;
 
         /// Options for different visualizations
-        bool ShowTranslationPaths, ShowRotationAxes, ShowRotationRibbons;
+        bool ShowTranslationPaths, ShowRotationAxes, ShowRotationRibbons, ShowRotationPaths, ShowCoordinateAxes;
 
         /// Scaling factor and option for the visualization of rotation axes
         double RotationAxisScale;
