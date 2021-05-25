@@ -12,6 +12,8 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
 
         vtkSetMacro(Compute, bool);
 
+        vtkSetMacro(StaticFrameOfReference, bool);
+
         vtkSetMacro(RibbonSize, double);
         vtkSetMacro(FixRotationAxisSize, bool);
         vtkSetMacro(RotationAxisScale, double);
@@ -39,6 +41,9 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
 
         /// Option for preventing the costly computation
         bool Compute;
+
+        /// Keep the frame of reference static
+        bool StaticFrameOfReference;
 
         /// Scaling factor for the visualization of ribbons
         double RibbonSize;

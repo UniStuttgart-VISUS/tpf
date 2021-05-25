@@ -268,6 +268,13 @@
                 </Documentation>
             </IntVectorProperty>
             
+            <IntVectorProperty name="StaticFrameOfReference" command="SetStaticFrameOfReference" label="Static frame of reference" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Use a static frame of reference instead of updating the frame in each time step
+                </Documentation>
+            </IntVectorProperty>
+            
             <DoubleVectorProperty name="RibbonSize" command="SetRibbonSize" label="Ribbon size" number_of_elements="1" default_values="0.025">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />

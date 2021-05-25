@@ -78,11 +78,14 @@ namespace tpf
 
         template <typename float_t>
         inline void dynamic_droplets<float_t>::set_algorithm_parameters(const std::size_t num_timesteps,
-            const float_t timestep, const float_t ribbon_scale, const bool fix_axis_size, const float_t axis_scale,
-            const bool axis_translation, std::string translation_name, std::string rotation_name, std::string radius_name)
+            const float_t timestep, const bool static_frame_of_reference, const float_t ribbon_scale,
+            const bool fix_axis_size, const float_t axis_scale, const bool axis_translation,
+            std::string translation_name, std::string rotation_name, std::string radius_name)
         {
             this->num_timesteps = num_timesteps;
             this->timestep = timestep;
+
+            this->static_frame_of_reference = static_frame_of_reference;
             this->ribbon_scale = ribbon_scale;
             this->fix_axis_size = fix_axis_size;
             this->axis_scale = axis_scale;
@@ -269,9 +272,26 @@ namespace tpf
                                     const auto original_droplet = map_to_original.at(collision_map.second.front());
                                     new_map_to_original[collision_map.first] = original_droplet;
 
-                                    droplets_over_time[original_droplet].first.push_back(droplet_t
-                                        { dynamic_cast<geometry::point<float_t>&>(*next_position[collision_map.first]),
-                                        (*next_translation)(collision_map.first), (*next_rotation)(collision_map.first), (*next_radius)(collision_map.first) });
+                                    if (!this->static_frame_of_reference)
+                                    {
+                                        droplets_over_time[original_droplet].first.push_back(droplet_t{
+                                            std::dynamic_pointer_cast<geometry::point<float_t>>(next_position[collision_map.first])->get_vertex(),
+                                            (*next_translation)(collision_map.first),
+                                            (*next_rotation)(collision_map.first),
+                                            (*next_radius)(collision_map.first)
+                                            });
+                                    }
+                                    else
+                                    {
+                                        // Add pseudo droplet as if the frame of reference was static
+                                        droplets_over_time[original_droplet].first.push_back(droplet_t{
+                                            droplets_over_time[original_droplet].first.front().position
+                                                + timestep * timesteps.front() * droplets_over_time[original_droplet].first.front().translation,
+                                            droplets_over_time[original_droplet].first.front().translation,
+                                            droplets_over_time[original_droplet].first.front().rotation,
+                                            droplets_over_time[original_droplet].first.front().radius
+                                            });
+                                    }
                                 }
                             }
 

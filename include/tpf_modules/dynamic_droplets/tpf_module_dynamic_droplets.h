@@ -61,7 +61,7 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
                 data::polydata<float_t>&>,
-            interface_parameters<std::size_t, float_t, float_t, bool, float_t, bool, std::string, std::string, std::string>>
+            interface_parameters<std::size_t, float_t, bool, float_t, bool, float_t, bool, std::string, std::string, std::string>>
         {
         public:
             using callbacks_t = interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>;
@@ -76,7 +76,7 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
                 data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<std::size_t, float_t, float_t, bool, float_t,
+            using parameters_t = interface_parameters<std::size_t, float_t, bool, float_t, bool, float_t,
                 bool, std::string, std::string, std::string>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
@@ -132,11 +132,16 @@ namespace tpf
             /// </summary>
             /// <param name="num_timesteps">Number of time steps</param>
             /// <param name="timestep">Time step</param>
+            /// <param name="static_frame_of_reference">Static frame of reference instead of dynamic</param>
             /// <param name="ribbon_scale">Scale factor for ribbons</param>
+            /// <param name="fix_axis_size">Fix axis length to circumsphere</param>
             /// <param name="axis_scale">Scale factor for rotation axes</param>
             /// <param name="axis_translation">Translate axis back to its origin</param>
-            virtual void set_algorithm_parameters(std::size_t num_timesteps, float_t timestep, float_t ribbon_scale,
-                bool fix_axis_size, float_t axis_scale, bool axis_translation, std::string translation_name,
+            /// <param name="translation_name">Name of the array containing translation information</param>
+            /// <param name="rotation_name">Name of the array containing rotation information</param>
+            /// <param name="radius_name">Name of the array containing droplet radius information</param>
+            virtual void set_algorithm_parameters(std::size_t num_timesteps, float_t timestep, bool static_frame_of_reference,
+                float_t ribbon_scale, bool fix_axis_size, float_t axis_scale, bool axis_translation, std::string translation_name,
                 std::string rotation_name, std::string radius_name) override;
 
             /// <summary>
@@ -238,6 +243,9 @@ namespace tpf
 
             /// Time step
             float_t timestep;
+
+            /// Static frame of reference?
+            bool static_frame_of_reference;
 
             /// Scale factor for ribbons
             float_t ribbon_scale;
