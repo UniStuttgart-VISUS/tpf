@@ -86,16 +86,17 @@ These modules are sources for generating data based on input parameters.
 
 These modules are filters for manipulating input data, mostly defined on rectilinear grids.
 
-| Filter                                                                            | Description                                                                                                       |
-|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| [Correct VOF](src/paraview/basic/modules/correct_vof/Readme.md)                   | Correct the volume of fluid (VOF) field by removing isolated non-zero cells.                                      |
-| [Droplets](src/paraview/basic/modules/droplets/Readme.md)                         | Segmentation of droplets in the VOF field, and calculation of droplet-specific properties.                        |
-| [Fluid Position](src/paraview/basic/modules/fluid_position/Readme.md)             | Calculate a point per cell as the representative fluid position.                                                  |
-| [Interface Curvature](src/paraview/basic/modules/interface_curvature/Readme.md)   | Calculate the curvature at the phase interface.                                                                   |
-| [Interface Gradient](src/paraview/basic/modules/interface_gradient/Readme.md)     | Calculate the gradient at the phase interface.                                                                    |
-| [PLIC](src/paraview/basic/modules/plic/Readme.md)                                 | Reconstruct the interface between two fluid phases with PLIC.                                                     |
-| [PLIC 3](src/paraview/basic/modules/plic3/Readme.md)                              | Reconstruct the interface between two fluid phases and a solid phase with PLIC.                                   |
-| [Surface Tension](src/paraview/basic/modules/surface_tension/Readme.md)           | Calculate the surface tension force at the phase interface.                                                       |
+| Filter                                                       | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [Correct VOF](src/paraview/basic/modules/correct_vof/Readme.md) | Correct the volume of fluid (VOF) field by removing isolated non-zero cells. |
+| [Droplets](src/paraview/basic/modules/droplets/Readme.md)    | Segmentation of droplets in the VOF field, and calculation of droplet-specific properties. |
+| [Dynamic droplets](src/paraview/basic/modules/dynamic_droplets/Readme.md) | Static visualization of dynamic droplet information over multiple time steps. |
+| [Fluid Position](src/paraview/basic/modules/fluid_position/Readme.md) | Calculate a point per cell as the representative fluid position. |
+| [Interface Curvature](src/paraview/basic/modules/interface_curvature/Readme.md) | Calculate the curvature at the phase interface.              |
+| [Interface Gradient](src/paraview/basic/modules/interface_gradient/Readme.md) | Calculate the gradient at the phase interface.               |
+| [PLIC](src/paraview/basic/modules/plic/Readme.md)            | Reconstruct the interface between two fluid phases with PLIC. |
+| [PLIC 3](src/paraview/basic/modules/plic3/Readme.md)         | Reconstruct the interface between two fluid phases and a solid phase with PLIC. |
+| [Surface Tension](src/paraview/basic/modules/surface_tension/Readme.md) | Calculate the surface tension force at the phase interface.  |
 
 # License
 
