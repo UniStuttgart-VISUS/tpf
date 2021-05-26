@@ -83,6 +83,7 @@ namespace tpf
             inline std::size_t path_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles)
             {
                 std::vector<geometry::point<floatp_t>> seed;
+                std::vector<tpf::bool_t> validity;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
                 std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
                 std::vector<std::vector<geometry::point<floatp_t>>> original_particles;
@@ -105,6 +106,7 @@ namespace tpf
                     if (stream_trace<floatp_t>::validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
+                        validity.push_back(true);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -125,6 +127,7 @@ namespace tpf
                     if (!stream_trace<floatp_t>::validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
+                        validity.push_back(false);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -140,6 +143,7 @@ namespace tpf
                 for (std::size_t i = num_valid_particles; i < stream_trace<floatp_t>::particles.size(); ++i)
                 {
                     seed.push_back(particle_seed<floatp_t>::seed[i]);
+                    validity.push_back(false);
                     particles.push_back(stream_trace<floatp_t>::particles[i]);
 
                     for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -153,6 +157,7 @@ namespace tpf
 
                 // Replace traces and seeds with reordered version
                 std::swap(particle_seed<floatp_t>::seed, seed);
+                std::swap(stream_trace<floatp_t>::validity, validity);
                 std::swap(stream_trace<floatp_t>::particles, particles);
                 std::swap(stream_trace<floatp_t>::particle_properties, particle_properties);
                 std::swap(this->original_particles, original_particles);

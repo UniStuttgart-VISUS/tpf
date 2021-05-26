@@ -23,7 +23,6 @@
                 <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="id_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="cell" name="velocity_array" number_of_components="3"/>
-                <InputArrayDomain attribute_type="cell" name="global_velocity_array" number_of_components="3"/>
                 <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="point" name="property_arrays" optional="1"/>
                 <Documentation>
@@ -75,16 +74,6 @@
                 </ArrayListDomain>
                 <Documentation>
                     Velocity field
-                </Documentation>
-            </StringVectorProperty>
-            <StringVectorProperty name="Global Velocity" label="Global velocity part" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="global_velocity_array">
-                    <RequiredProperties>
-                        <Property name="Input" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Documentation>
-                    Velocity field containing the global velocity part
                 </Documentation>
             </StringVectorProperty>
 
@@ -193,6 +182,14 @@
                     <Entry value="0" text="Dynamic"/>
                     <Entry value="1" text="Static"/>
                 </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
                 <Documentation>
                     Time dependency of the frame of reference, i.e., static vs. dynamic frame of reference
                 </Documentation>
@@ -227,7 +224,6 @@
             <PropertyGroup label="Input grid">
                 <Property name="Droplet ID" />
                 <Property name="Velocity" />
-                <Property name="Global Velocity" />
             </PropertyGroup>
 
             <PropertyGroup label="Droplets">

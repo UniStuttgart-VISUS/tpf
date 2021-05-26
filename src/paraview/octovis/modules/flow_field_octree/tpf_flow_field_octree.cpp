@@ -108,7 +108,7 @@ namespace
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
-            tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
+            void*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
@@ -266,54 +266,6 @@ namespace
                     },
                     std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
 
-                this->octree_global = tpf::vtk::get_octree<float_t, float_t, 3>(in_paths,
-                    [&,this](vtkIdType p)
-                    {
-                        std::array<double, 3> point{};
-                        points->GetPoint(p, point.data());
-
-                        // Compute global velocity part
-                        Eigen::Matrix<float_t, 3, 1> tangential_velocity;
-                        tangential_velocity.setZero();
-
-                        if ((this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
-                            this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body) &&
-                            !this->angular_velocity[in_classification->GetValue(p) - 1].isZero())
-                        {
-                            const Eigen::Matrix<float_t, 3, 1> position(point[0], point[1], point[2]);
-                            const Eigen::Matrix<float_t, 3, 1> relative_position = position - this->star_position[in_classification->GetValue(p) - 1];
-                            const Eigen::Matrix<float_t, 3, 1> angular_velocity = this->angular_velocity[in_classification->GetValue(p) - 1];
-                            const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
-                                - (relative_position.dot(angular_velocity) / angular_velocity.squaredNorm()) * angular_velocity;
-
-                            tangential_velocity = angular_velocity.cross(angular_position);
-                        }
-
-                        switch (this->locality_method)
-                        {
-                        case tpf_flow_field_octree::locality_method_t::velocity:
-                            return this->star_velocity[in_classification->GetValue(p) - 1];
-
-                            break;
-                        case tpf_flow_field_octree::locality_method_t::rotation:
-                            return tangential_velocity;
-
-                            break;
-                        case tpf_flow_field_octree::locality_method_t::rigid_body:
-                            return Eigen::Matrix<float_t, 3, 1>(this->star_velocity[in_classification->GetValue(p) - 1] + tangential_velocity);
-
-                            break;
-                        case tpf_flow_field_octree::locality_method_t::none:
-                        case tpf_flow_field_octree::locality_method_t::orbit:
-                        default:
-                            return Eigen::Matrix<float_t, 3, 1>(
-                                static_cast<float_t>(-point[1] * angular_frequency),
-                                static_cast<float_t>(point[0] * angular_frequency),
-                                static_cast<float_t>(0.0));
-                        }
-                    },
-                    std::array<double, 6>{ x_min, x_max, y_min, y_max, z_min, z_max });
-
                 if (this->locality_method == tpf_flow_field_octree::locality_method_t::velocity ||
                     this->locality_method == tpf_flow_field_octree::locality_method_t::rotation ||
                     this->locality_method == tpf_flow_field_octree::locality_method_t::rigid_body)
@@ -453,7 +405,7 @@ namespace
                 //   angular velocity, initial translation (dummy), initial angular velocity (dummy), validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
-                    static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree_global),
+                    nullptr,
                     get_translation, get_angular_velocity, get_barycenter, get_translation, get_angular_velocity, is_valid, property_octrees);
             }
 
@@ -509,7 +461,7 @@ namespace
         std::optional<float_t> fixed_frequency;
 
         /// Data of current timestep
-        tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree, octree_global;
+        tpf::data::octree<float_t, Eigen::Matrix<float_t, 3, 1>> octree;
         tpf::data::octree<float_t, int> octree_classification;
 
         std::vector<std::shared_ptr<tpf::policies::interpolatable_base<tpf::geometry::point<float_t>>>> property_octrees;

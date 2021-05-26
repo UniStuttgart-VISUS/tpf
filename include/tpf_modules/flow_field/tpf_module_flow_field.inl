@@ -342,7 +342,7 @@ namespace tpf
                         {
                             const auto velocity = velocities->interpolate(point_t(original_particle));
 
-                            Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(particle),
+                            Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(original_particle),
                                 get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
                             if (!local_velocity.isZero())
@@ -511,7 +511,7 @@ namespace tpf
                             {
                                 const auto velocity = velocities->interpolate(point_t(original_particle));
 
-                                Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(particle),
+                                Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(original_particle),
                                     get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
                                 if (!local_velocity.isZero())

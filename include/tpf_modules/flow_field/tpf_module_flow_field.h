@@ -36,12 +36,12 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, velocity, global velocity part (unused), translation,
+                /// <returns>[Time step delta, velocity, global velocity part (removed), translation,
                 ///  angular velocity, barycenter, initial translation, initial angular velocity,
                 ///  validity, fields to interpolate and store at the particle positions]</returns>
                 virtual std::tuple<float_t,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
-                    policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
+                    void*,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,

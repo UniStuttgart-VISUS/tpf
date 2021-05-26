@@ -127,6 +127,7 @@ namespace tpf
             inline std::size_t stream_trace<floatp_t>::sort_and_count(const std::size_t num_valid_particles)
             {
                 std::vector<geometry::point<floatp_t>> seed;
+                std::vector<tpf::bool_t> validity;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
                 std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
 
@@ -144,6 +145,7 @@ namespace tpf
                     if (this->validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
+                        validity.push_back(true);
                         particles.push_back(this->particles[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -161,6 +163,7 @@ namespace tpf
                     if (!this->validity[i])
                     {
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
+                        validity.push_back(false);
                         particles.push_back(this->particles[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -173,6 +176,7 @@ namespace tpf
                 for (std::size_t i = num_valid_particles; i < this->particles.size(); ++i)
                 {
                     seed.push_back(particle_seed<floatp_t>::seed[i]);
+                    validity.push_back(false);
                     particles.push_back(this->particles[i]);
 
                     for (std::size_t p = 0; p < particle_properties.size(); ++p)
@@ -183,6 +187,7 @@ namespace tpf
 
                 // Replace traces and seeds with reordered version
                 std::swap(particle_seed<floatp_t>::seed, seed);
+                std::swap(this->validity, validity);
                 std::swap(this->particles, particles);
                 std::swap(this->particle_properties, particle_properties);
 

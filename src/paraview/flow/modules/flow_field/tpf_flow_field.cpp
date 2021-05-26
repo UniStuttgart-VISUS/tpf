@@ -86,12 +86,13 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts, translation,
-        ///  angular velocity, validity, fields to interpolate and store at the particle positions]</returns>
+        /// <returns>[Time step delta, velocities, global velocity parts (removed), translation,
+        ///  angular velocity, droplet barycenter, initial translation, initial angular velocity,
+        ///  validity, fields to interpolate and store at the particle positions]</returns>
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
-            tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
+            void*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
@@ -109,7 +110,6 @@ namespace
                 this->droplet_grid = std::make_shared<tpf::data::grid<long long, float_t, 3, 1>>(
                     tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0)));
                 this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
-                this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(3, 0));
 
                 // Get property arrays
                 std::vector<vtkDataArray*> property_arrays;
@@ -392,7 +392,7 @@ namespace
                 // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
-                    static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
+                    nullptr,
                     get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity, is_valid, property_grids);
             }
 
@@ -450,7 +450,7 @@ namespace
         bool time_from_data;
 
         /// Data of current timestep
-        tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
+        tpf::data::grid<float_t, float_t, 3, 3> velocity_grid;
         std::shared_ptr<tpf::data::grid<long long, float_t, 3, 1>> droplet_grid, previous_droplet_grid;
 
         std::vector<std::shared_ptr<tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>>> property_grids;
