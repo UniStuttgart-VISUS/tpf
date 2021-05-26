@@ -19,6 +19,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(SeedInCells, int);
         vtkSetMacro(SeedInCells, int);
 
+        vtkGetMacro(SeedCellType, int);
+        vtkSetMacro(SeedCellType, int);
+
         vtkGetMacro(SeedPerCell, int);
         vtkSetMacro(SeedPerCell, int);
 
@@ -67,6 +70,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Seed in cells instead of using the input seed
         int SeedInCells;
+
+        /// Type of cell in which seeds are created
+        int SeedCellType;
 
         /// Number of seed particles per cell
         int SeedPerCell;

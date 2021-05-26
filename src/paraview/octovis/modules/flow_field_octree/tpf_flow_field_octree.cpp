@@ -108,7 +108,6 @@ namespace
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
-            void*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
@@ -405,7 +404,6 @@ namespace
                 //   angular velocity, initial translation (dummy), initial angular velocity (dummy), validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
-                    nullptr,
                     get_translation, get_angular_velocity, get_barycenter, get_translation, get_angular_velocity, is_valid, property_octrees);
             }
 

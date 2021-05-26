@@ -118,6 +118,19 @@
                     Volume of fluid field
                 </Documentation>
             </StringVectorProperty>
+            <IntVectorProperty name="SeedCellType" command="SetSeedCellType" label="Cell type" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="All cells (0 &lt; f)"/>
+                    <Entry value="1" text="Interface cells (0 &lt; f &lt; 1)"/>
+                    <Entry value="2" text="Droplet cells (f = 1)"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedInCells" value="1" />
+                </Hints>
+                <Documentation>
+                    Choose in which cells seeds should be created
+                </Documentation>
+            </IntVectorProperty>
             <IntVectorProperty name="SeedPerCell" command="SetSeedPerCell" label="Seed size per cell" number_of_elements="1" default_values="1">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedInCells" value="1" />
@@ -137,7 +150,7 @@
                     Method for the computation of the flow lines
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of lines" number_of_elements="1" default_values="20">
+            <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of advections" number_of_elements="1" default_values="20">
                 <Documentation>
                     Number of advection steps
                 </Documentation>
@@ -234,6 +247,7 @@
             <PropertyGroup label="Seeding">
                 <Property name="SeedInCells" />
                 <Property name="VOF" />
+                <Property name="SeedCellType" />
                 <Property name="SeedPerCell" />
             </PropertyGroup>
 

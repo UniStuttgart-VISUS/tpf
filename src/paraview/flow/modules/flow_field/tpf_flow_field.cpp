@@ -86,13 +86,12 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts (removed), translation,
-        ///  angular velocity, droplet barycenter, initial translation, initial angular velocity,
-        ///  validity, fields to interpolate and store at the particle positions]</returns>
+        /// <returns>[Time step delta, velocities, translation, angular velocity, droplet barycenter,
+        ///  initial translation, initial angular velocity, validity,
+        ///  fields to interpolate and store at the particle positions]</returns>
         virtual std::tuple<
             float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*,
-            void*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
@@ -389,10 +388,10 @@ namespace
                     }
                 }
 
-                // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
+                // Return [Time step delta, velocities, translation, angular velocity, barycenter, initial translation,
+                //  initial angular velocity, validity, fields to interpolate and store at the particle positions]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
-                    nullptr,
                     get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity, is_valid, property_grids);
             }
 
@@ -562,7 +561,9 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
                     {
                         const tpf::data::coords3_t coords(x, y, z);
 
-                        if (vof(coords) > 0.0)
+                        if ((this->SeedCellType == 0 && vof(coords) > 0.0) ||
+                            (this->SeedCellType == 1 && vof(coords) > 0.0 && vof(coords) < 1.0) ||
+                            (this->SeedCellType == 2 && vof(coords) == 1.0))
                         {
                             seed.insert(std::make_shared<tpf::geometry::point<float_t>>(vof.get_cell_coordinates(coords)));
                         }
