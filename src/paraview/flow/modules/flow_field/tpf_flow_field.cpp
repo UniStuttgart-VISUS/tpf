@@ -509,7 +509,9 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         flow_field_module.set_output(lines);
 
         flow_field_module.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
-            static_cast<std::size_t>(this->NumAdvections));
+            static_cast<std::size_t>(this->NumAdvections),
+            static_cast<tpf::modules::flow_field_aux::time_dependency_t>(this->TimeDependency),
+            this->KeepTranslation == 1, this->KeepRotation == 1);
 
         flow_field_module.set_callbacks(&call_back_loader);
 

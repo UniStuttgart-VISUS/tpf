@@ -34,15 +34,16 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(TimeStepFromData, int);
         vtkSetMacro(TimeStepFromData, int);
 
-        vtkDataArraySelection* GetArraySelection();
+        vtkGetMacro(TimeDependency, int);
+        vtkSetMacro(TimeDependency, int);
 
-        enum class locality_method_t
-        {
-            none,
-            velocity,
-            rotation,
-            rigid_body
-        };
+        vtkGetMacro(KeepTranslation, int);
+        vtkSetMacro(KeepTranslation, int);
+
+        vtkGetMacro(KeepRotation, int);
+        vtkSetMacro(KeepRotation, int);
+
+        vtkDataArraySelection* GetArraySelection();
 
     protected:
         tpf_flow_field();
@@ -84,6 +85,13 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Force fixed time step
         int TimeStepFromData;
+
+        /// Dynamic vs. static frame of reference
+        int TimeDependency;
+
+        /// Options to keep translational and/or rotational velocity parts
+        int KeepTranslation;
+        int KeepRotation;
 
         /// Selection of property arrays
         vtkSmartPointer<vtkDataArraySelection> array_selection;

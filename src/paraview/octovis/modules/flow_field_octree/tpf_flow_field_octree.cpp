@@ -610,7 +610,7 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         flow_field.set_output(lines);
 
         flow_field.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
-            static_cast<std::size_t>(this->NumAdvections));
+            static_cast<std::size_t>(this->NumAdvections), tpf::modules::flow_field_aux::time_dependency_t::dynamic, true, true);
 
         flow_field.set_callbacks(&call_back_loader);
 

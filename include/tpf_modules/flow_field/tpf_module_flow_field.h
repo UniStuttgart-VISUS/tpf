@@ -36,7 +36,7 @@ namespace tpf
                 /// <summary>
                 /// Returns the data for the next time step if possible
                 /// </summary>
-                /// <returns>[Time step delta, velocity, global velocity part, translation,
+                /// <returns>[Time step delta, velocity, global velocity part (unused), translation,
                 ///  angular velocity, barycenter, validity, fields to interpolate and store at the particle positions]</returns>
                 virtual std::tuple<float_t,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
@@ -54,12 +54,21 @@ namespace tpf
             };
 
             /// <summary>
-            /// method_t of vector flow visualization
+            /// Method of flow visualization
             /// </summary>
             enum class method_t
             {
                 INVALID = -1,
                 STREAM, STREAK, PATH
+            };
+
+            /// <summary>
+            /// Dynamic vs. static frame of reference
+            /// </summary>
+            enum class time_dependency_t
+            {
+                dynamic,
+                static_
             };
         }
 
@@ -73,13 +82,15 @@ namespace tpf
             interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>,
             interface_input<const data::polydata<float_t>&>,
             interface_output<data::polydata<float_t>&>,
-            interface_parameters<flow_field_aux::method_t, std::size_t>>
+            interface_parameters<flow_field_aux::method_t, std::size_t,
+                flow_field_aux::time_dependency_t, bool, bool>>
         {
         public:
             using callbacks_t = interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>;
             using input_t = interface_input<const data::polydata<float_t>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
-            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t>;
+            using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t,
+                flow_field_aux::time_dependency_t, bool, bool>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
 
@@ -124,7 +135,11 @@ namespace tpf
             /// </summary>
             /// <param name="method">method_t to use: 0 - streamlines, 1 - streaklines, 2 - pathlines</param>
             /// <param name="num_advections">Number of advections</param>
-            virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections) override;
+            /// <param name="time_dependency">Dynamic vs. static frame of reference</param>
+            /// <param name="keep_translation">Keep translational velocity part</param>
+            /// <param name="keep_rotation">Keep rotational velocity part</param>
+            virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections,
+                flow_field_aux::time_dependency_t time_dependency, bool keep_translation, bool keep_rotation) override;
 
             /// <summary>
             /// Run module
@@ -132,6 +147,19 @@ namespace tpf
             void run_algorithm() override;
 
         private:
+            /// <summary>
+            /// Get global velocity parts for the particle
+            /// </summary>
+            /// <param name="particle">Particle position</param>
+            /// <param name="get_translation">Function to get translational velocity part</param>
+            /// <param name="get_angular_velocity">Function to get angular velocity</param>
+            /// <param name="get_barycenter">Function to get droplet barycenter</param>
+            /// <returns>Global velocity part</returns>
+            Eigen::Matrix<float_t, 3, 1> get_global_velocity(const point_t& particle,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_angular_velocity,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_barycenter) const;
+
             /// <summary>
             /// Compute streamlines
             /// </summary>
@@ -169,6 +197,13 @@ namespace tpf
 
             /// Number of advections
             std::size_t num_advections;
+
+            /// Dynamic vs. static frame of reference
+            flow_field_aux::time_dependency_t time_dependency;
+
+            /// Keep velocity parts?
+            bool keep_translation;
+            bool keep_rotation;
 
             /// Callback for requesting next time frame
             flow_field_aux::request_frame_call_back<float_t, point_t>* next_time_frame_callback;
