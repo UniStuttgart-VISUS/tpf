@@ -34,6 +34,8 @@ The following modules are available, most of which are wrapped in a [ParaView pl
 | ------------------- | ------------------------------------------------------------ |
 | Correct VOF         | Correct the volume of fluid (VOF) field by removing isolated non-zero cells. |
 | Droplets            | Segmentation of droplets in the VOF field, and calculation of droplet-specific properties. |
+| Dynamic Droplets    | Static glyph-based visualization of dynamic droplet information over multiple time steps. |
+| Flow Field          | Stream-, streak- and pathline computation, with emphasis on per-droplet frames of reference. |
 | Fluid Position      | Calculate a point per cell as the representative fluid position. |
 | FS3D Reader         | Read temporal FS3D files, containing VOF and other scalar fields, as well as velocity fields. |
 | FS3D Writer         | Allows to write rectilinear grids and their attached fields in the FS3D file format. |
@@ -49,9 +51,11 @@ The following modules are available, most of which are wrapped in a [ParaView pl
 
 Every module is wrapped as a filter or source for ParaView, with multiple modules bundled into a plugin.
 
-| Plugin                    | Description                                                                                           |
-|---------------------------|-------------------------------------------------------------------------------------------------------|
-| [basic](#basic-plugin)    | Basic computations, e.g., interface gradient and interface curvature, mostly on rectilinear grids.    |
+| Plugin                     | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| [basic](#basic-plugin)     | Basic computations for droplets, e.g., interface gradient and interface curvature, mostly on rectilinear grids. |
+| [flow](#flow-plugin)       | Flow visualizations, such as stream-, streak- and pathline computation. |
+| [octovis](#octovis-plugin) | Computation on octrees, for handling data from Octo Tiger, emphasizing on stellar data sets. |
 
 ### Basic plugin
 
@@ -90,13 +94,39 @@ These modules are filters for manipulating input data, mostly defined on rectili
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [Correct VOF](src/paraview/basic/modules/correct_vof/Readme.md) | Correct the volume of fluid (VOF) field by removing isolated non-zero cells. |
 | [Droplets](src/paraview/basic/modules/droplets/Readme.md)    | Segmentation of droplets in the VOF field, and calculation of droplet-specific properties. |
-| [Dynamic droplets](src/paraview/basic/modules/dynamic_droplets/Readme.md) | Static visualization of dynamic droplet information over multiple time steps. |
+| [Dynamic Droplets](src/paraview/basic/modules/dynamic_droplets/Readme.md) | Static glyph-based visualization of dynamic droplet information over multiple time steps. |
 | [Fluid Position](src/paraview/basic/modules/fluid_position/Readme.md) | Calculate a point per cell as the representative fluid position. |
 | [Interface Curvature](src/paraview/basic/modules/interface_curvature/Readme.md) | Calculate the curvature at the phase interface.              |
 | [Interface Gradient](src/paraview/basic/modules/interface_gradient/Readme.md) | Calculate the gradient at the phase interface.               |
 | [PLIC](src/paraview/basic/modules/plic/Readme.md)            | Reconstruct the interface between two fluid phases with PLIC. |
 | [PLIC 3](src/paraview/basic/modules/plic3/Readme.md)         | Reconstruct the interface between two fluid phases and a solid phase with PLIC. |
 | [Surface Tension](src/paraview/basic/modules/surface_tension/Readme.md) | Calculate the surface tension force at the phase interface.  |
+
+### Flow plugin
+
+This plugin contains the following filters.
+
+#### Filters
+
+These modules are filters for computing and visualizing flow and flow properties.
+
+| Filter                                                       | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [Flow Field](src/paraview/flow/modules/flow_field/Readme.md) | Stream-, streak- and pathline computation, with emphasis on per-droplet frames of reference. |
+
+### OctoVis plugin
+
+This plugin contains the following filters.
+
+#### Filters
+
+These modules are filters for processing stellar simulation data from Octo Tiger, represented in octrees.
+
+| Filter                                                       | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [Binary Star](src/paraview/octovis/modules/binary_star/Readme.md) | Classification of binary stars in a stellar merger, defined by physical properties. |
+| [Flow Field (Octree)](src/paraview/octovis/modules/flow_field_octree/Readme.md) | Specific version of the [Flow Field](src/paraview/flow/modules/flow_field/Readme.md) (see [Flow plugin](#flow-plugin)) to handle simulation data from a stellar merger. |
+| [Seed Octree](src/paraview/octovis/modules/seed_octree/Readme.md) | Use the octree data structure to create a seed.              |
 
 # License
 
