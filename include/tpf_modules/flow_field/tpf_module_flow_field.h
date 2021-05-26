@@ -37,10 +37,13 @@ namespace tpf
                 /// Returns the data for the next time step if possible
                 /// </summary>
                 /// <returns>[Time step delta, velocity, global velocity part (unused), translation,
-                ///  angular velocity, barycenter, validity, fields to interpolate and store at the particle positions]</returns>
+                ///  angular velocity, barycenter, initial translation, initial angular velocity,
+                ///  validity, fields to interpolate and store at the particle positions]</returns>
                 virtual std::tuple<float_t,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
                     policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, point_t>*,
+                    std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
+                    std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
                     std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)>,
@@ -154,11 +157,15 @@ namespace tpf
             /// <param name="get_translation">Function to get translational velocity part</param>
             /// <param name="get_angular_velocity">Function to get angular velocity</param>
             /// <param name="get_barycenter">Function to get droplet barycenter</param>
+            /// <param name="get_translation">Function to get initial translational velocity part</param>
+            /// <param name="get_angular_velocity">Function to get initial angular velocity</param>
             /// <returns>Global velocity part</returns>
             Eigen::Matrix<float_t, 3, 1> get_global_velocity(const point_t& particle,
                 std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation,
                 std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_angular_velocity,
-                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_barycenter) const;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_barycenter,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_initial_translation,
+                std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_initial_angular_velocity) const;
 
             /// <summary>
             /// Compute streamlines

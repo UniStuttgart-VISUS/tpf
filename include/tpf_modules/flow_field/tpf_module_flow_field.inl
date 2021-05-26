@@ -110,19 +110,38 @@ namespace tpf
         inline Eigen::Matrix<float_t, 3, 1> flow_field<float_t, point_t>::get_global_velocity(const point_t& particle,
             std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_translation,
             std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_angular_velocity,
-            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_barycenter) const
+            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_barycenter,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_initial_translation,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const point_t&)> get_initial_angular_velocity) const
         {
             Eigen::Matrix<float_t, 3, 1> global_velocity;
             global_velocity.setZero();
 
             if (!this->keep_translation)
             {
-                global_velocity += get_translation(particle);
+                if (this->time_dependency == flow_field_aux::time_dependency_t::dynamic)
+                {
+                    global_velocity += get_translation(particle);
+                }
+                else
+                {
+                    global_velocity += get_initial_translation(particle);
+                }
             }
 
             if (!this->keep_rotation)
             {
-                const auto angular_velocity = get_angular_velocity(particle);
+                decltype(get_angular_velocity(particle)) angular_velocity;
+
+                if (this->time_dependency == flow_field_aux::time_dependency_t::dynamic)
+                {
+                    angular_velocity = get_angular_velocity(particle);
+                }
+                else
+                {
+                    angular_velocity = get_initial_angular_velocity(particle);
+                }
+
                 const auto center_of_mass = get_barycenter(particle);
 
                 const Eigen::Matrix<float_t, 3, 1> relative_position = static_cast<Eigen::Matrix<float_t, 3, 1>>(particle) - center_of_mass;
@@ -149,11 +168,13 @@ namespace tpf
             const auto get_translation = std::get<3>(data);
             const auto get_angular_velocity = std::get<4>(data);
             const auto get_barycenter = std::get<5>(data);
-            const auto is_particle_valid = std::get<6>(data);
+            const auto get_initial_translation = std::get<6>(data);
+            const auto get_initial_angular_velocity = std::get<7>(data);
+            const auto is_particle_valid = std::get<8>(data);
 
             const auto timestep_delta = std::get<0>(data);
 
-            const auto fields = std::get<7>(data);
+            const auto fields = std::get<9>(data);
 
             // Interpolate at property fields
             std::vector<std::vector<std::vector<double>>> properties(fields.size());
@@ -187,7 +208,8 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    get_translation, get_angular_velocity, get_barycenter, is_particle_valid, fields, timestep_delta)
+                    get_translation, get_angular_velocity, get_barycenter, get_initial_translation, \
+                    get_initial_angular_velocity, is_particle_valid, fields, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -198,7 +220,7 @@ namespace tpf
                         {
                             const auto velocity = velocities->interpolate(point_t(particle));
                             const auto local_velocity = velocity - get_global_velocity(point_t(particle),
-                                get_translation, get_angular_velocity, get_barycenter);
+                                get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
                             if (!local_velocity.isZero())
                             {
@@ -266,11 +288,13 @@ namespace tpf
             auto get_translation = std::get<3>(data);
             auto get_angular_velocity = std::get<4>(data);
             auto get_barycenter = std::get<5>(data);
-            auto is_particle_valid = std::get<6>(data);
+            auto get_initial_translation = std::get<6>(data);
+            auto get_initial_angular_velocity = std::get<7>(data);
+            auto is_particle_valid = std::get<8>(data);
 
             auto timestep_delta = std::get<0>(data);
 
-            auto fields = std::get<7>(data);
+            auto fields = std::get<9>(data);
 
             // Interpolate at property fields
             std::vector<std::vector<std::vector<double>>> properties(fields.size());
@@ -305,7 +329,8 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    get_translation, get_angular_velocity, get_barycenter, is_particle_valid, timestep_delta, fields)
+                    get_translation, get_angular_velocity, get_barycenter, get_initial_translation, \
+                    get_initial_angular_velocity, is_particle_valid, timestep_delta, fields)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     const auto particle = particles.get_last_particle(index).get_vertex();
@@ -318,7 +343,7 @@ namespace tpf
                             const auto velocity = velocities->interpolate(point_t(original_particle));
 
                             Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(particle),
-                                get_translation, get_angular_velocity, get_barycenter);
+                                get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
                             if (!local_velocity.isZero())
                             {
@@ -329,7 +354,15 @@ namespace tpf
 
                                 if (!this->keep_rotation)
                                 {
-                                    quaternion.from_axis(get_angular_velocity(original_particle), timestep_delta);
+                                    if (this->time_dependency == flow_field_aux::time_dependency_t::dynamic)
+                                    {
+                                        quaternion.from_axis(get_angular_velocity(original_particle), timestep_delta);
+                                    }
+                                    else
+                                    {
+                                        quaternion.from_axis(get_initial_angular_velocity(original_particle), timestep_delta);
+                                    }
+
                                     quaternion.invert();
                                 }
 
@@ -399,8 +432,10 @@ namespace tpf
                             get_translation = std::get<3>(data);
                             get_angular_velocity = std::get<4>(data);
                             get_barycenter = std::get<5>(data);
-                            is_particle_valid = std::get<6>(data);
-                            fields = std::get<7>(data);
+                            get_initial_translation = std::get<6>(data);
+                            get_initial_angular_velocity = std::get<7>(data);
+                            is_particle_valid = std::get<8>(data);
+                            fields = std::get<9>(data);
                         }
                         catch (const std::exception&)
                         {
@@ -438,7 +473,9 @@ namespace tpf
             auto get_translation = std::get<3>(data);
             auto get_angular_velocity = std::get<4>(data);
             auto get_barycenter = std::get<5>(data);
-            auto is_particle_valid = std::get<6>(data);
+            auto get_initial_translation = std::get<6>(data);
+            auto get_initial_angular_velocity = std::get<7>(data);
+            auto is_particle_valid = std::get<8>(data);
 
             auto timestep_delta = std::get<0>(data);
 
@@ -459,7 +496,8 @@ namespace tpf
                     write global:    particles
                 **/
                 #pragma omp parallel for schedule(static) default(none) shared(num_valid_particles, particles, velocities, \
-                    get_translation, get_angular_velocity, get_barycenter, is_particle_valid, timestep_delta)
+                    get_translation, get_angular_velocity, get_barycenter, get_initial_translation, \
+                    get_initial_angular_velocity, is_particle_valid, timestep_delta)
                 for (long long index = 0; index < static_cast<long long>(num_valid_particles); ++index)
                 {
                     for (std::size_t particle_index = 0; particle_index < particles.get_num_particles(index); ++particle_index)
@@ -474,7 +512,7 @@ namespace tpf
                                 const auto velocity = velocities->interpolate(point_t(original_particle));
 
                                 Eigen::Matrix<float_t, 3, 1> local_velocity = velocity - get_global_velocity(point_t(particle),
-                                    get_translation, get_angular_velocity, get_barycenter);
+                                    get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
                                 if (!local_velocity.isZero())
                                 {
@@ -485,7 +523,15 @@ namespace tpf
 
                                     if (!this->keep_rotation)
                                     {
-                                        quaternion.from_axis(get_angular_velocity(original_particle), timestep_delta);
+                                        if (this->time_dependency == flow_field_aux::time_dependency_t::dynamic)
+                                        {
+                                            quaternion.from_axis(get_angular_velocity(original_particle), timestep_delta);
+                                        }
+                                        else
+                                        {
+                                            quaternion.from_axis(get_initial_angular_velocity(original_particle), timestep_delta);
+                                        }
+
                                         quaternion.invert();
                                     }
 
@@ -576,7 +622,9 @@ namespace tpf
                             get_translation = std::get<3>(data);
                             get_angular_velocity = std::get<4>(data);
                             get_barycenter = std::get<5>(data);
-                            is_particle_valid = std::get<6>(data);
+                            get_initial_translation = std::get<6>(data);
+                            get_initial_angular_velocity = std::get<7>(data);
+                            is_particle_valid = std::get<8>(data);
                         }
                         catch (const std::exception&)
                         {

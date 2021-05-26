@@ -112,6 +112,8 @@ namespace
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<bool(const tpf::geometry::point<float_t>&)>,
             std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<tpf::geometry::point<float_t>>*>>> operator()() override
         {
@@ -447,11 +449,12 @@ namespace
                     break;
                 }
 
-                // Return [Time step delta, velocities, global velocity parts, translation, angular velocity, validity]
+                // Return [Time step delta, velocities, global velocity parts, translation,
+                //   angular velocity, initial translation (dummy), initial angular velocity (dummy), validity]
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree_global),
-                    get_translation, get_angular_velocity, get_barycenter, is_valid, property_octrees);
+                    get_translation, get_angular_velocity, get_barycenter, get_translation, get_angular_velocity, is_valid, property_octrees);
             }
 
             throw std::exception();

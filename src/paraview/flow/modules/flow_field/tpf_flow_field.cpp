@@ -95,6 +95,8 @@ namespace
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
+            std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)>,
             std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>> operator()() override
         {
@@ -104,7 +106,8 @@ namespace
                 // Load input grids and droplets
                 auto in_grid = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0));
 
-                this->droplet_grid = tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0));
+                this->droplet_grid = std::make_shared<tpf::data::grid<long long, float_t, 3, 1>>(
+                    tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0)));
                 this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
                 this->global_velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(3, 0));
 
@@ -152,103 +155,6 @@ namespace
                     }
                 }
 
-                // Create look-up functions
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation;
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_angular_velocity;
-                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_barycenter;
-                std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)> is_valid;
-
-                if (this->droplets_alg != nullptr && vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0)) != nullptr)
-                {
-                    auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
-
-                    const auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
-                        tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
-                        tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
-
-                    // Store angular velocities and droplet velocities
-                    this->droplets = droplets.get_geometry();
-                    this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
-                    this->angular_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
-
-                    // Create look-up functions
-                    get_translation = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        const auto cell = this->droplet_grid.find_cell(position);
-
-                        if (cell)
-                        {
-                            const auto id = this->droplet_grid(*cell);
-
-                            return this->droplet_velocity->at(id);
-                        }
-
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    get_angular_velocity = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        const auto cell = this->droplet_grid.find_cell(position);
-
-                        if (cell)
-                        {
-                            const auto id = this->droplet_grid(*cell);
-
-                            return this->angular_velocity->at(id);
-                        }
-
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    get_barycenter = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        const auto cell = this->droplet_grid.find_cell(position);
-
-                        if (cell)
-                        {
-                            const auto id = this->droplet_grid(*cell);
-
-                            return this->droplets[id]->get_points().front();
-                        }
-
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position)
-                    {
-                        const auto cell = this->droplet_grid.find_cell(position);
-
-                        if (cell)
-                        {
-                            return this->droplet_grid(*cell) >= 0;
-                        }
-
-                        return false;
-                    };
-                }
-                else
-                {
-                    get_translation = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    get_angular_velocity = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    get_barycenter = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
-                    {
-                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
-                    };
-
-                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> bool
-                    {
-                        return static_cast<bool>(this->droplet_grid.find_cell(position));
-                    };
-                }
-
                 // Compute time step
                 float_t timestep_delta;
 
@@ -291,6 +197,182 @@ namespace
                     timestep_delta = static_cast<float_t>(1.0);
                 }
 
+                // Create look-up functions
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_translation;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_angular_velocity;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_barycenter;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_initial_translation;
+                std::function<Eigen::Matrix<float_t, 3, 1>(const Eigen::Matrix<float_t, 3, 1>&)> get_initial_angular_velocity;
+                std::function<bool(const Eigen::Matrix<float_t, 3, 1>&)> is_valid;
+
+                if (this->droplets_alg != nullptr && vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0)) != nullptr)
+                {
+                    auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
+
+                    const auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
+                        tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
+                        tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
+
+                    // Store angular velocities and droplet velocities
+                    this->droplets = droplets.get_geometry();
+                    this->droplet_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(4, 1));
+                    this->angular_velocity = droplets.template get_point_data_as<float_t, 3>(get_array_name(5, 1));
+
+                    if (this->original_time == this->time_offset)
+                    {
+                        this->previous_droplet_grid = this->droplet_grid;
+                        this->initial_droplet_velocity = this->droplet_velocity;
+                        this->initial_angular_velocity = this->angular_velocity;
+
+                        for (std::size_t i = 0; i < this->droplets.size(); ++i)
+                        {
+                            this->initial_droplet[i] = i;
+                        }
+                    }
+                    else
+                    {
+                        // Advect all droplet barycenters backwards and look up previous droplet ID
+                        std::map<long long, long long> new_mapping;
+
+                        for (std::size_t i = 0; i < this->droplets.size(); ++i)
+                        {
+                            const auto barycenter = this->droplets[i]->get_points().front();
+                            const auto advected = barycenter - timestep_delta * this->droplet_velocity->at(i);
+
+                            const auto previous_cell = this->previous_droplet_grid->find_cell(advected);
+
+                            if (previous_cell)
+                            {
+                                const auto previous_id = (*this->previous_droplet_grid)(*previous_cell);
+
+                                if (this->initial_droplet.find(previous_id) != this->initial_droplet.end())
+                                {
+                                    new_mapping[i] = this->initial_droplet.at(previous_id);
+                                }
+                            }
+                        }
+
+                        std::swap(this->initial_droplet, new_mapping);
+
+                        this->previous_droplet_grid = this->droplet_grid;
+                    }
+
+                    // Create look-up functions
+                    get_translation = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = (*this->droplet_grid)(*cell);
+
+                            return this->droplet_velocity->at(id);
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_angular_velocity = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = (*this->droplet_grid)(*cell);
+
+                            return this->angular_velocity->at(id);
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_barycenter = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = (*this->droplet_grid)(*cell);
+
+                            return this->droplets[id]->get_points().front();
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_initial_translation = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = (*this->droplet_grid)(*cell);
+
+                            return this->initial_droplet_velocity->at(this->initial_droplet.at(id));
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_initial_angular_velocity = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            const auto id = (*this->droplet_grid)(*cell);
+
+                            return this->initial_angular_velocity->at(this->initial_droplet.at(id));
+                        }
+
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position)
+                    {
+                        const auto cell = this->droplet_grid->find_cell(position);
+
+                        if (cell)
+                        {
+                            return (*this->droplet_grid)(*cell) >= 0;
+                        }
+
+                        return false;
+                    };
+                }
+                else
+                {
+                    get_translation = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_angular_velocity = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_barycenter = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_initial_translation = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    get_initial_angular_velocity = [](const Eigen::Matrix<float_t, 3, 1>& position) -> Eigen::Matrix<float_t, 3, 1>
+                    {
+                        return Eigen::Matrix<float_t, 3, 1>(0.0, 0.0, 0.0);
+                    };
+
+                    is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> bool
+                    {
+                        return static_cast<bool>(this->droplet_grid->find_cell(position));
+                    };
+                }
+
                 // Check if next time step is available
                 ++this->time_offset;
 
@@ -311,7 +393,7 @@ namespace
                 return std::make_tuple(timestep_delta,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->velocity_grid),
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, Eigen::Matrix<float_t, 3, 1>>*>(&this->global_velocity_grid),
-                    get_translation, get_angular_velocity, get_barycenter, is_valid, property_grids);
+                    get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity, is_valid, property_grids);
             }
 
             throw std::exception();
@@ -369,7 +451,7 @@ namespace
 
         /// Data of current timestep
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid, global_velocity_grid;
-        tpf::data::grid<long long, float_t, 3, 1> droplet_grid;
+        std::shared_ptr<tpf::data::grid<long long, float_t, 3, 1>> droplet_grid, previous_droplet_grid;
 
         std::vector<std::shared_ptr<tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>>> property_grids;
 
@@ -377,6 +459,11 @@ namespace
         std::vector<std::shared_ptr<tpf::geometry::geometric_object<float_t>>> droplets;
         std::shared_ptr<tpf::data::array<float_t, 3, 1>> angular_velocity;
         std::shared_ptr<tpf::data::array<float_t, 3, 1>> droplet_velocity;
+        std::shared_ptr<tpf::data::array<float_t, 3, 1>> initial_angular_velocity;
+        std::shared_ptr<tpf::data::array<float_t, 3, 1>> initial_droplet_velocity;
+
+        /// Map to initial droplet index
+        std::map<long long, long long> initial_droplet;
     };
 }
 
