@@ -34,6 +34,12 @@ namespace tpf
     namespace modules
     {
         template <typename float_t>
+        inline std::size_t plic3<float_t>::get_num_required_ghost_levels()
+        {
+            return 1;
+        }
+
+        template <typename float_t>
         inline plic3<float_t>::plic3() { }
 
         template <typename float_t>

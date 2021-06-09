@@ -58,6 +58,12 @@ namespace tpf
             };
 
             /// <summary>
+            /// Return the number of ghost levels
+            /// </summary>
+            /// <returns>Number of ghost levels</returns>
+            static std::size_t get_num_required_ghost_levels();
+
+            /// <summary>
             /// Constructor
             /// </summary>
             plic3();

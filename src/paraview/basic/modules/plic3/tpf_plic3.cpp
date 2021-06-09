@@ -7,6 +7,7 @@
 
 #include "tpf_modules/plic3/tpf_module_plic3.h"
 
+#include "tpf/vtk/tpf_ghost.h"
 #include "tpf/vtk/tpf_grid.h"
 #include "tpf/vtk/tpf_log.h"
 #include "tpf/vtk/tpf_polydata.h"
@@ -20,7 +21,7 @@
 
 vtkStandardNewMacro(tpf_plic3);
 
-tpf_plic3::tpf_plic3()
+tpf_plic3::tpf_plic3() : num_ghost_levels(0)
 {
     this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
@@ -37,6 +38,14 @@ int tpf_plic3::FillInputPortInformation(int port, vtkInformation *info)
     }
     info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
     return 1;
+}
+
+int tpf_plic3::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
+{
+    this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
+        std::max(this->num_ghost_levels, tpf::modules::plic3<float_t>::get_num_required_ghost_levels()));
+
+  return 1;
 }
 
 int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
