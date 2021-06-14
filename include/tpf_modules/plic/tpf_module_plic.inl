@@ -48,10 +48,11 @@ namespace tpf
 
         template <typename float_t>
         inline void plic<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
-            const data::grid<float_t, float_t, 3, 3>& gradients)
+            const data::grid<float_t, float_t, 3, 3>& gradients, const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type)
         {
             this->fractions = &fractions;
             this->gradients = &gradients;
+            this->ghost_type = &ghost_type;
         }
 
         template <typename float_t>
@@ -74,6 +75,7 @@ namespace tpf
             // Get input and output
             const data::grid<float_t, float_t, 3, 1>& fractions = *this->fractions;
             const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
+            const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type = *this->ghost_type;
 
             data::polydata<float_t>& plic_interface = *this->plic_interface;
 
@@ -94,6 +96,12 @@ namespace tpf
                     for (auto x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
                         const data::coords3_t coords(x, y, z);
+
+                        if (ghost_type.has_value()) {
+                            if (ghost_type.value()(coords)) {
+                                continue;
+                            }
+                        }
 
                         if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                         {

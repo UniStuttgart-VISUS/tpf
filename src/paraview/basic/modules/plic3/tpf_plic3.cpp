@@ -65,13 +65,14 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         const auto f = tpf::vtk::get_grid<float_t, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, data_array_f->GetName());
         const auto f3 = tpf::vtk::get_grid<float_t, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, data_array_f3->GetName());
         const auto f_norm_3ph = tpf::vtk::get_grid<float_t, float_t, 3, 3>(grid, tpf::data::topology_t::CELL_DATA, data_array_f_norm_3ph->GetName());
+        const auto ghost_type = (grid->GetCellGhostArray() != nullptr) ? std::make_optional(tpf::vtk::get_grid<unsigned char, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, grid->GetCellGhostArray())) : std::nullopt;
 
         // Create output data
         tpf::data::polydata<float_t> plic3_interface;
 
         // Run PLIC module
         tpf::modules::plic3<float_t> plic3_module;
-        plic3_module.set_input(f, f3, f_norm_3ph);
+        plic3_module.set_input(f, f3, f_norm_3ph, ghost_type);
         plic3_module.set_output(plic3_interface);
         plic3_module.set_parameters(this->Epsilon, this->ErrorMarginPlic, this->ErrorMarginPlic3, this->NumIterationsPlic,
             this->NumIterationsPlic3, this->Perturbation, static_cast<bool>(this->HideErrorCubes));

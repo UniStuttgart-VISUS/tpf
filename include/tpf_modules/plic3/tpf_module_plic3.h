@@ -28,12 +28,12 @@ namespace tpf
         template <typename float_t>
         class plic3 : public module_base<
             interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&>,
+                const data::grid<float_t, float_t, 3, 3>&, const std::optional<data::grid<unsigned char, float_t, 3, 1>>&>,
             interface_output<data::polydata<float_t>&>,
             interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>>
         {
             using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 1>&,
-                const data::grid<float_t, float_t, 3, 3>&>;
+                const data::grid<float_t, float_t, 3, 3>&, const std::optional<data::grid<unsigned char, float_t, 3, 1>>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
             using parameters_t = interface_parameters<float_t, float_t, float_t, std::size_t, std::size_t, std::optional<float_t>, std::optional<bool>>;
 
@@ -82,7 +82,7 @@ namespace tpf
             /// <param name="f3">Input f3-field</param>
             /// <param name="f_norm_3ph">Input normal</param>
             virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& f, const data::grid<float_t, float_t, 3, 1>& f3,
-                const data::grid<float_t, float_t, 3, 3>& f_norm_3ph) override;
+                const data::grid<float_t, float_t, 3, 3>& f_norm_3ph, const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type) override;
 
             /// <summary>
             /// Set output
@@ -133,6 +133,9 @@ namespace tpf
 
             /// f_norm_3ph-field
             const data::grid<float_t, float_t, 3, 3>* f_norm_3ph;
+
+            /// Ghost type
+            const std::optional<data::grid<unsigned char, float_t, 3, 1>>* ghost_type;
 
             /// PLIC3 interface
             data::polydata<float_t>* plic3_interface;
