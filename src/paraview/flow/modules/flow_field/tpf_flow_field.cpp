@@ -71,7 +71,7 @@ namespace
             vtkDataArraySelection* array_selection, const bool forward, std::optional<float_t> fixed_timestep = std::nullopt,
             const bool time_from_data = false)
         {
-            this->time_offset = this->original_time = current_timestep;
+            this->time_offset = static_cast<int>(this->original_time = current_timestep);
             this->timesteps = timesteps;
 
             this->request = request;
@@ -110,8 +110,6 @@ namespace
                 // Load input grids and droplets
                 auto in_grid = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0));
 
-                this->droplet_grid = std::make_shared<tpf::data::grid<long long, float_t, 3, 1>>(
-                    tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0)));
                 this->velocity_grid = tpf::vtk::get_grid<float_t, float_t, 3, 3>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(2, 0));
 
                 // Get property arrays
@@ -217,6 +215,8 @@ namespace
                 {
                     auto in_droplets = vtkPolyData::SafeDownCast(this->droplets_alg->GetOutputDataObject(0));
 
+                    this->droplet_grid = std::make_shared<tpf::data::grid<long long, float_t, 3, 1>>(
+                        tpf::vtk::get_grid<long long, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(1, 0)));
                     const auto droplets = tpf::vtk::get_polydata<float_t>(in_droplets,
                         tpf::data::data_information<float_t, 3>{ get_array_name(4, 1), tpf::data::topology_t::POINT_DATA },
                         tpf::data::data_information<float_t, 3>{ get_array_name(5, 1), tpf::data::topology_t::POINT_DATA });
@@ -377,7 +377,7 @@ namespace
 
                     is_valid = [this](const Eigen::Matrix<float_t, 3, 1>& position) -> bool
                     {
-                        return static_cast<bool>(this->droplet_grid->find_cell(position));
+                        return static_cast<bool>(this->velocity_grid.find_cell(position));
                     };
                 }
 
@@ -413,7 +413,7 @@ namespace
         virtual void reset() override
         {
             // Request update to original time step
-            this->time_offset = this->original_time;
+            this->time_offset = static_cast<int>(this->original_time);
 
             if (!this->timesteps.empty())
             {
@@ -551,8 +551,6 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")"));
         };
 
-        auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(0, 0));
-
         const auto current_timestep = tpf::vtk::get_timestep<float_t>(input_vector[0]->GetInformationObject(0), in_grid).second;
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
@@ -566,6 +564,8 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
 
         if (this->SeedInCells != 0)
         {
+            auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, get_array_name(0, 0));
+
             for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
             {
                 for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)

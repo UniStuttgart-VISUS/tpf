@@ -78,21 +78,27 @@
             </StringVectorProperty>
 
             <StringVectorProperty name="Droplet Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Droplets" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Translation of the droplet at its center of mass
                 </Documentation>
             </StringVectorProperty>
             <StringVectorProperty name="Droplet Rotation" label="Droplet rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
-                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array" none_string="None">
                     <RequiredProperties>
                         <Property name="Droplets" function="Input" />
                     </RequiredProperties>
                 </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
                 <Documentation>
                     Rotation of the droplet around its axis of rotation, given as angular velocity
                 </Documentation>
