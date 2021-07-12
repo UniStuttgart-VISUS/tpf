@@ -168,19 +168,22 @@ namespace tpf
                 cell_coordinates[2] - std::copysign(cell_size_half[2], gradient[2]));
 
             Eigen::Matrix<float_t, 3, 1> normal = static_cast<float_t>(-1.0) * gradient.normalized();
-            // TODO Calculation of orthonormal in plane constructor will throw exception if normal is zero
-            //  and __tpf_sanity_checks is defined. Catch this case already here as plane is marked noexcept.
-#ifdef __tpf_sanity_checks
-            if (normal.isZero())
-            {
-                throw std::runtime_error(__tpf_error_message("Normal is zero."));
-            }
-#endif
 
             // Perform binary search
             std::shared_ptr<geometry::polygon<float_t>> plic = nullptr;
             float_t error = static_cast<float_t>(0.0);
             std::size_t iterations = 0;
+
+            // TODO Calculation of orthonormal in plane constructor will throw exception if normal is zero
+            //  and __tpf_sanity_checks is defined. Catch this case already here as plane is marked noexcept.
+#ifdef __tpf_sanity_checks
+            if (normal.isZero())
+            {
+                log::warning_message(__tpf_warning_message("Found interface cell with zero normal. Treating cell as full/empty."));
+
+                return std::make_tuple(plic, error, iterations);
+            }
+#endif
 
             for (std::size_t i = 0; i < num_iterations; ++i)
             {
@@ -212,7 +215,7 @@ namespace tpf
                     }
                     catch (...)
                     {
-                        // Assume co-planar points and thus a minimal velocity
+                        // Assume co-planar points and thus a minimal volume
                         volume = static_cast<float_t>(0.0);
                     }
                 }
