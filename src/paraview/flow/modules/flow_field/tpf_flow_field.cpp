@@ -62,11 +62,14 @@ namespace
         /// <param name="grid_alg">Algorithm producing the velocity field and additional information</param>
         /// <param name="droplets_alg">Algorithm producing droplet data</param>
         /// <param name="get_array_name">Function to query the respective array names</param>
+        /// <param name="array_selection">Selection of property arrays to interpolate and store at particle positions</param>
+        /// <param name="forward">Forward or reverse integration, where true indicates forward, and false reverse direction</param>
         /// <param name="fixed_timestep">Optional fixed timestep</param>
         /// <param name="time_from_data">Extract timestep information from data</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
             vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
-            vtkDataArraySelection* array_selection, std::optional<float_t> fixed_timestep = std::nullopt, const bool time_from_data = false)
+            vtkDataArraySelection* array_selection, const bool forward, std::optional<float_t> fixed_timestep = std::nullopt,
+            const bool time_from_data = false)
         {
             this->time_offset = this->original_time = current_timestep;
             this->timesteps = timesteps;
@@ -79,6 +82,7 @@ namespace
 
             this->array_selection = array_selection;
 
+            this->forward = forward;
             this->fixed_timestep = fixed_timestep;
             this->time_from_data = time_from_data;
         }
@@ -101,7 +105,7 @@ namespace
             std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<Eigen::Matrix<float_t, 3, 1>>*>>> operator()() override
         {
             // Get data
-            if (this->timesteps.size() > this->time_offset || this->original_time == this->time_offset)
+            if ((this->time_offset >= 0 && this->time_offset < this->timesteps.size()) || this->original_time == this->time_offset)
             {
                 // Load input grids and droplets
                 auto in_grid = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0));
@@ -194,6 +198,11 @@ namespace
                 if (timestep_delta == 0.0)
                 {
                     timestep_delta = static_cast<float_t>(1.0);
+                }
+
+                if (!this->forward)
+                {
+                    timestep_delta *= -static_cast<float_t>(1.0);
                 }
 
                 // Create look-up functions
@@ -424,7 +433,7 @@ namespace
         std::size_t original_time;
 
         /// Last requested timestep
-        std::size_t time_offset;
+        int time_offset;
 
         /// Available timesteps
         std::vector<float_t> timesteps;
@@ -443,6 +452,9 @@ namespace
 
         /// Property arrays
         vtkDataArraySelection* array_selection;
+
+        /// Time direction
+        bool forward;
 
         /// Fixed timestep
         std::optional<float_t> fixed_timestep;
@@ -545,7 +557,8 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
-            get_array_name, this->array_selection, this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
+            get_array_name, this->array_selection, this->Direction == 0,
+            this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->TimeStepFromData != 0);
 
         // Create seed

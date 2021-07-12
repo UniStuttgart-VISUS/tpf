@@ -16,6 +16,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(Method, int);
         vtkSetMacro(Method, int);
 
+        vtkGetMacro(Direction, int);
+        vtkSetMacro(Direction, int);
+
         vtkGetMacro(SeedInCells, int);
         vtkSetMacro(SeedInCells, int);
 
@@ -79,6 +82,9 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Method to use: 0 - streamlines, 1 - streaklines, 2 - pathlines
         int Method;
+
+        /// Time direction: 0 - forward, 1 - reverse
+        int Direction;
 
         /// Number of advections
         int NumAdvections;
