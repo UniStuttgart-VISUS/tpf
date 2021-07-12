@@ -382,9 +382,9 @@ namespace
                 }
 
                 // Check if next time step is available
-                ++this->time_offset;
+                this->forward ? ++this->time_offset : --this->time_offset;
 
-                if (this->timesteps.size() > this->time_offset)
+                if (this->time_offset >= 0 && this->time_offset < this->timesteps.size())
                 {
                     // Request update
                     this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
