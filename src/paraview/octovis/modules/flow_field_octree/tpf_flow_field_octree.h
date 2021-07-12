@@ -16,6 +16,9 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         vtkGetMacro(Method, int);
         vtkSetMacro(Method, int);
 
+        vtkGetMacro(Direction, int);
+        vtkSetMacro(Direction, int);
+
         vtkGetMacro(NumAdvections, int);
         vtkSetMacro(NumAdvections, int);
 
@@ -63,7 +66,7 @@ class VTK_EXPORT tpf_flow_field_octree : public vtkPolyDataAlgorithm
         using float_t = double;
 
         /// Integration parameters
-        int Method, NumAdvections, ForceFixedTimeStep;
+        int Method, Direction, NumAdvections, ForceFixedTimeStep;
         double StreamTimeStep;
 
         /// Locality parameters

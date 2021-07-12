@@ -76,11 +76,12 @@ namespace
         /// <param name="get_array_name">Function to retrieve the array names</param>
         /// <param name="locality_method">Method for defining the locality of the stars</param>
         /// <param name="array_selection">Selection of property arrays to interpolate and store at particle positions</param>
+        /// <param name="forward">Forward or reverse integration, where true indicates forward, and false reverse direction</param>
         /// <param name="fixed_timestep">Optional fixed timestep</param>
         /// <param name="fixed_frequency">Optional fixed grid angular frequency</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps, vtkInformation* request,
             vtkAlgorithm* velocity_alg, vtkAlgorithm* stars_alg, std::function<std::string(int, int)> get_array_name,
-            const tpf_flow_field_octree::locality_method_t locality_method, vtkDataArraySelection* array_selection,
+            const tpf_flow_field_octree::locality_method_t locality_method, vtkDataArraySelection* array_selection, const bool forward,
             std::optional<float_t> fixed_timestep = std::nullopt, std::optional<float_t> fixed_frequency = std::nullopt)
         {
             this->time_offset = this->original_time = current_timestep;
@@ -96,6 +97,7 @@ namespace
 
             this->array_selection = array_selection;
 
+            this->forward = forward;
             this->fixed_timestep = fixed_timestep;
             this->fixed_frequency = fixed_frequency;
         }
@@ -117,7 +119,7 @@ namespace
             std::vector<std::tuple<std::string, std::size_t, tpf::policies::interpolatable_base<tpf::geometry::point<float_t>>*>>> operator()() override
         {
             // Get data
-            if (this->timesteps.size() > this->time_offset || this->original_time == this->time_offset)
+            if ((this->time_offset >= 0 && this->time_offset < this->timesteps.size()) || this->original_time == this->time_offset)
             {
                 ID_TYPE_ARRAY* in_classification;
                 vtkDataArray* in_star_velocities, * in_star_angular_velocity;
@@ -317,9 +319,9 @@ namespace
                 }
 
                 // Check if next time step is available
-                ++this->time_offset;
+                this->forward ? ++this->time_offset : --this->time_offset;
 
-                if (this->timesteps.size() > this->time_offset)
+                if (this->time_offset >= 0 && this->time_offset < this->timesteps.size())
                 {
                     // Request update
                     this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
@@ -329,19 +331,16 @@ namespace
                 }
 
                 // Calculate time difference
-                double next_time;
+                auto in_next_grid = vtkPointSet::SafeDownCast(this->velocity_alg->GetOutputDataObject(0));
 
-                if (tpf::mpi::get_instance().get_rank() == 0)
-                {
-                    auto in_next_grid = vtkPointSet::SafeDownCast(this->velocity_alg->GetOutputDataObject(0));
-                    next_time = FLOAT_TYPE_ARRAY::SafeDownCast(in_next_grid->GetFieldData()->GetArray(get_array_name(10, 0).c_str()))->GetValue(0);
-                }
+                const auto next_time = static_cast<float_t>(FLOAT_TYPE_ARRAY::SafeDownCast(
+                    in_next_grid->GetFieldData()->GetArray(get_array_name(10, 0).c_str()))->GetValue(0));
 
                 float_t timestep_delta;
 
                 if (this->fixed_timestep)
                 {
-                    timestep_delta = *this->fixed_timestep;
+                    timestep_delta = this->forward ? *this->fixed_timestep : -*this->fixed_timestep;
                 }
                 else
                 {
@@ -350,7 +349,7 @@ namespace
 
                 if (timestep_delta == 0.0)
                 {
-                    timestep_delta = static_cast<float_t>(1.0);
+                    timestep_delta = this->forward ? static_cast<float_t>(1.0) : static_cast<float_t>(-1.0);
                 }
 
                 tpf::log::info_message(__tpf_info_message("Initial time step size: ", timestep_delta));
@@ -429,7 +428,7 @@ namespace
         std::size_t original_time;
 
         /// Last requested timestep
-        std::size_t time_offset;
+        int time_offset;
 
         /// Available timesteps
         std::vector<float_t> timesteps;
@@ -451,6 +450,9 @@ namespace
 
         /// Property arrays
         vtkDataArraySelection* array_selection;
+
+        /// Time direction
+        bool forward;
 
         /// Fixed timestep
         std::optional<float_t> fixed_timestep;
@@ -546,7 +548,7 @@ int tpf_flow_field_octree::RequestData(vtkInformation *request, vtkInformationVe
         const auto timesteps = tpf::vtk::get_timesteps<float_t>(input_vector[0]->GetInformationObject(0));
 
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
-            get_array_name, static_cast<locality_method_t>(this->LocalityMethod), this->array_selection,
+            get_array_name, static_cast<locality_method_t>(this->LocalityMethod), this->array_selection, this->Direction == 0,
             this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
             this->ForceFixedFrequency ? std::make_optional(static_cast<float_t>(this->FrequencyOmega)) : std::nullopt);
 
