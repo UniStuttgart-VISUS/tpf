@@ -84,7 +84,7 @@ namespace
             const tpf_flow_field_octree::locality_method_t locality_method, vtkDataArraySelection* array_selection, const bool forward,
             std::optional<float_t> fixed_timestep = std::nullopt, std::optional<float_t> fixed_frequency = std::nullopt)
         {
-            this->time_offset = this->original_time = current_timestep;
+            this->time_offset = static_cast<int>(this->original_time = current_timestep);
             this->timesteps = timesteps;
 
             this->request = request;
@@ -415,7 +415,7 @@ namespace
         virtual void reset() override
         {
             // Request update to original time step
-            this->time_offset = this->original_time;
+            this->time_offset = static_cast<int>(this->original_time);
 
             request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
