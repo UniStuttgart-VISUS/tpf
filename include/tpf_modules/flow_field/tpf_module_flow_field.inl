@@ -142,13 +142,16 @@ namespace tpf
                     angular_velocity = get_initial_angular_velocity(particle);
                 }
 
-                const auto center_of_mass = get_barycenter(particle);
+                if (angular_velocity.squaredNorm() != 0.0)
+                {
+                    const auto center_of_mass = get_barycenter(particle);
 
-                const Eigen::Matrix<float_t, 3, 1> relative_position = static_cast<Eigen::Matrix<float_t, 3, 1>>(particle) - center_of_mass;
-                const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
-                    - (relative_position.dot(angular_velocity) / angular_velocity.squaredNorm()) * angular_velocity;
+                    const Eigen::Matrix<float_t, 3, 1> relative_position = static_cast<Eigen::Matrix<float_t, 3, 1>>(particle) - center_of_mass;
+                    const Eigen::Matrix<float_t, 3, 1> angular_position = relative_position
+                        - (relative_position.dot(angular_velocity) / angular_velocity.squaredNorm()) * angular_velocity;
 
-                global_velocity += angular_velocity.cross(angular_position);
+                    global_velocity += angular_velocity.cross(angular_position);
+                }
             }
 
             return global_velocity;
