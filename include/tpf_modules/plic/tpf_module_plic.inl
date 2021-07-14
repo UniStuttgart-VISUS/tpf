@@ -274,7 +274,7 @@ namespace tpf
                             perturbated_intersections.emplace_back(perturbated_vertex);
                         }
 
-                        plic = std::make_shared<geometry::polygon<float_t>>(perturbated_intersections, true);
+                        plic = std::make_shared<geometry::polygon<float_t>>(perturbated_intersections, normal, true);
                     }
 
                     break;
