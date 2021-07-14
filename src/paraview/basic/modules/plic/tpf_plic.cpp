@@ -101,7 +101,8 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
         tpf::vtk::set_polydata(output, plic_interface,
             tpf::data::data_information<int, 3>{ "coords", tpf::data::topology_t::OBJECT_DATA },
             tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
-            tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
+            tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA },
+            tpf::data::data_information<float_t, 1>{ "f", tpf::data::topology_t::OBJECT_DATA });
     }
     catch (const std::exception& ex)
     {
