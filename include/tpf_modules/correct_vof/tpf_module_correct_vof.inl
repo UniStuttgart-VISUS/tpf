@@ -64,37 +64,48 @@ namespace tpf
                 {
                     for (auto x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        correct_fractions(coords) = fractions(coords);
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
-                            fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                        try
                         {
-                            // Look at neighbors
-                            bool valid_neighbor = false;
+                            const data::coords3_t coords(x, y, z);
 
-                            for (long long k = -1; k <= 1; ++k)
+                            correct_fractions(coords) = fractions(coords);
+
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
+                                fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
-                                for (long long j = -1; j <= 1; ++j)
-                                {
-                                    for (long long i = -1; i <= 1; ++i)
-                                    {
-                                        if (i != 0 || j != 0 || k != 0)
-                                        {
-                                            const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+                                // Look at neighbors
+                                bool valid_neighbor = false;
 
-                                            valid_neighbor |= fractions(neighbor_coords) > static_cast<float_t>(0.0L);
+                                for (long long k = -1; k <= 1; ++k)
+                                {
+                                    for (long long j = -1; j <= 1; ++j)
+                                    {
+                                        for (long long i = -1; i <= 1; ++i)
+                                        {
+                                            if (i != 0 || j != 0 || k != 0)
+                                            {
+                                                const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+
+                                                valid_neighbor |= fractions(neighbor_coords) > static_cast<float_t>(0.0L);
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // If all neighbors are gaseous, set own fraction to zero
-                            if (!valid_neighbor)
-                            {
-                                correct_fractions(coords) = static_cast<float_t>(0.0L);
+                                // If all neighbors are gaseous, set own fraction to zero
+                                if (!valid_neighbor)
+                                {
+                                    correct_fractions(coords) = static_cast<float_t>(0.0L);
+                                }
                             }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to correct the VOF value for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to correct the VOF value for a cell."));
                         }
                     }
                 }
