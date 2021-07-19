@@ -96,7 +96,9 @@ namespace tpf
                 {
                     for (auto x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
+                        try
+                        {
+                            const data::coords3_t coords(x, y, z);
 
                         if (ghost_type.has_value()) {
                             if (ghost_type.value()(coords)) {
@@ -104,28 +106,37 @@ namespace tpf
                             }
                         }
 
-                        if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
-                        {
-                            // Create PLIC interface
-                            auto reconstruction = reconstruct_interface(fractions(coords), gradients(coords),
-                                fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->error_margin, this->num_iterations, this->perturbation);
-
-                            if (std::get<0>(reconstruction) != nullptr)
+                            if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
-                                plic_interface.insert(std::get<0>(reconstruction));
-                                array_coords->push_back(coords.cast<int>());
-                                array_error->push_back(std::get<1>(reconstruction));
-                                array_iterations->push_back(std::get<2>(reconstruction));
+                                // Create PLIC interface
+                                auto reconstruction = reconstruct_interface(fractions(coords), gradients(coords),
+                                    fractions.get_cell_coordinates(coords), fractions.get_cell_sizes(coords), this->error_margin, this->num_iterations, this->perturbation);
+
+                                if (std::get<0>(reconstruction) != nullptr)
+                                {
+                                    plic_interface.insert(std::get<0>(reconstruction));
+                                    array_coords->push_back(coords.cast<int>());
+                                    array_error->push_back(std::get<1>(reconstruction));
+                                    array_iterations->push_back(std::get<2>(reconstruction));
                                 array_f->push_back(fractions(coords));
-                            }
+                                }
 #ifdef __tpf_debug
-                            else
-                            {
-                                ++illegal_cells;
-                            }
+                                else
+                                {
+                                    ++illegal_cells;
+                                }
 
-                            ++interface_cells;
+                                ++interface_cells;
 #endif
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute PLIC for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute PLIC for a cell."));
                         }
                     }
                 }

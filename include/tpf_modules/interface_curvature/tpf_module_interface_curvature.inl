@@ -82,93 +82,104 @@ namespace tpf
                 {
                     for (std::size_t x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        curvature(coords) = static_cast<float_t>(0.0L);
-
-                        if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
-                            fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                        try
                         {
-                            const float_t delta = std::min(fractions.get_cell_sizes(coords, 0),
-                                std::min(fractions.get_cell_sizes(coords, 1), fractions.get_cell_sizes(coords, 2))) / static_cast<float_t>(2.0L);
+                            const data::coords3_t coords(x, y, z);
 
-                            // Calculate normal and best fitting directions
-                            const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+                            curvature(coords) = static_cast<float_t>(0.0L);
 
-                            const auto fitting_directions = math::get_fitting_directions<float_t, 3>(normal);
-
-                            const math::vec3_t<float_t> direction_map(1, 2, 3);
-                            const std::array<direction_t, 3> directions = {
-                                static_cast<direction_t>(static_cast<int>(fitting_directions[0].dot(direction_map))),
-                                static_cast<direction_t>(static_cast<int>(fitting_directions[1].dot(direction_map))),
-                                static_cast<direction_t>(static_cast<int>(fitting_directions[2].dot(direction_map))) };
-
-                            // For each direction
-                            bool consistent = false;
-
-                            std::vector<math::vec3_t<float_t>> interface_positions;
-                            interface_positions.reserve(24);
-
-                            for (std::size_t i = 0; i < 3 && !consistent; ++i)
+                            if (fractions.is_local(coords, get_num_required_ghost_levels()) &&
+                                fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
-                                // Compute the interface height and interface positions
-                                const auto curv = height_function_curvature(coords, directions[i], global_fractions);
-                                consistent = curv.first;
+                                const float_t delta = std::min(fractions.get_cell_sizes(coords, 0),
+                                    std::min(fractions.get_cell_sizes(coords, 1), fractions.get_cell_sizes(coords, 2))) / static_cast<float_t>(2.0L);
 
-                                // If the height function returned a valid result, the curvature is set. Else the interface positions returned are added to the set
+                                // Calculate normal and best fitting directions
+                                const math::vec3_t<float_t> normal = -gradients(coords).normalized();
+
+                                const auto fitting_directions = math::get_fitting_directions<float_t, 3>(normal);
+
+                                const math::vec3_t<float_t> direction_map(1, 2, 3);
+                                const std::array<direction_t, 3> directions = {
+                                    static_cast<direction_t>(static_cast<int>(fitting_directions[0].dot(direction_map))),
+                                    static_cast<direction_t>(static_cast<int>(fitting_directions[1].dot(direction_map))),
+                                    static_cast<direction_t>(static_cast<int>(fitting_directions[2].dot(direction_map))) };
+
+                                // For each direction
+                                bool consistent = false;
+
+                                std::vector<math::vec3_t<float_t>> interface_positions;
+                                interface_positions.reserve(24);
+
+                                for (std::size_t i = 0; i < 3 && !consistent; ++i)
+                                {
+                                    // Compute the interface height and interface positions
+                                    const auto curv = height_function_curvature(coords, directions[i], global_fractions);
+                                    consistent = curv.first;
+
+                                    // If the height function returned a valid result, the curvature is set. Else the interface positions returned are added to the set
+                                    if (!consistent)
+                                    {
+                                        interface_positions.insert(interface_positions.end(), curv.second.second.begin(), curv.second.second.end());
+                                    }
+                                    else
+                                    {
+                                        curvature(coords) = curv.second.first;
+                                    }
+                                }
+
                                 if (!consistent)
                                 {
-                                    interface_positions.insert(interface_positions.end(), curv.second.second.begin(), curv.second.second.end());
-                                }
-                                else
-                                {
-                                    curvature(coords) = curv.second.first;
-                                }
-                            }
+                                    // If the number of independent positions is smaller than 6
+                                    std::size_t num_independent_positions = calculate_num_independent_positions(interface_positions, delta);
 
-                            if (!consistent)
-                            {
-                                // If the number of independent positions is smaller than 6
-                                std::size_t num_independent_positions = calculate_num_independent_positions(interface_positions, delta);
-
-                                if (num_independent_positions < 6)
-                                {
-                                    // Replace interface positions with the set of interface positions built from the barycenters of the
-                                    // reconstructed interface fragments in a 3 x 3 x 3 stencil
-                                    interface_positions.clear();
-
-                                    for (long long i = -1; i <= 1; ++i)
+                                    if (num_independent_positions < 6)
                                     {
-                                        for (long long j = -1; j <= 1; ++j)
-                                        {
-                                            for (long long k = -1; k <= 1; ++k)
-                                            {
-                                                if (i != 0 || j != 0 || k != 0)
-                                                {
-                                                    const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+                                        // Replace interface positions with the set of interface positions built from the barycenters of the
+                                        // reconstructed interface fragments in a 3 x 3 x 3 stencil
+                                        interface_positions.clear();
 
-                                                    if (fractions(neighbor_coords) > static_cast<float_t>(0.0L) && fractions(neighbor_coords) < static_cast<float_t>(1.0L))
+                                        for (long long i = -1; i <= 1; ++i)
+                                        {
+                                            for (long long j = -1; j <= 1; ++j)
+                                            {
+                                                for (long long k = -1; k <= 1; ++k)
+                                                {
+                                                    if (i != 0 || j != 0 || k != 0)
                                                     {
-                                                        interface_positions.push_back(positions(neighbor_coords));
+                                                        const data::coords3_t neighbor_coords = coords + data::coords3_t(i, j, k);
+
+                                                        if (fractions(neighbor_coords) > static_cast<float_t>(0.0L) && fractions(neighbor_coords) < static_cast<float_t>(1.0L))
+                                                        {
+                                                            interface_positions.push_back(positions(neighbor_coords));
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
+
+                                        num_independent_positions = calculate_num_independent_positions(interface_positions, delta);
                                     }
 
-                                    num_independent_positions = calculate_num_independent_positions(interface_positions, delta);
-                                }
-
-                                // If the number of independent positions is still too small set a curvature of 0, else apply paraboloid-fitting
-                                if (num_independent_positions < 6)
-                                {
-                                    curvature(coords) = static_cast<float_t>(0.0L);
-                                }
-                                else
-                                {
-                                    curvature(coords) = paraboloid_fitted_curvature(normal, interface_positions, positions(coords));
+                                    // If the number of independent positions is still too small set a curvature of 0, else apply paraboloid-fitting
+                                    if (num_independent_positions < 6)
+                                    {
+                                        curvature(coords) = static_cast<float_t>(0.0L);
+                                    }
+                                    else
+                                    {
+                                        curvature(coords) = paraboloid_fitted_curvature(normal, interface_positions, positions(coords));
+                                    }
                                 }
                             }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute interface curvature for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute interface curvature for a cell."));
                         }
                     }
                 }

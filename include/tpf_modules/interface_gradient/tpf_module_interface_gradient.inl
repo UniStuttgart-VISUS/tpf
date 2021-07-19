@@ -68,13 +68,24 @@ namespace tpf
                 {
                     for (auto x = fractions.get_extent()[0].first; x <= fractions.get_extent()[0].second; ++x)
                     {
-                        const data::coords3_t coords(x, y, z);
-
-                        gradients(coords).setZero();
-
-                        if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                        try
                         {
-                            gradients(coords) = calculate_gradient(coords, fractions);
+                            const data::coords3_t coords(x, y, z);
+
+                            gradients(coords).setZero();
+
+                            if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
+                            {
+                                gradients(coords) = calculate_gradient(coords, fractions);
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            log::warning_message(__tpf_nested_warning_message(e.what(), "Unable to compute the interface gradient for a cell."));
+                        }
+                        catch (...)
+                        {
+                            log::warning_message(__tpf_warning_message("Unable to compute the interface gradient for a cell."));
                         }
                     }
                 }
