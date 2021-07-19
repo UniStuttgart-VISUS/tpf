@@ -64,6 +64,7 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
         // Get input data
         auto in_grid = vtkRectilinearGrid::GetData(input_vector[0]);
         const auto vof = tpf::vtk::get_grid<float_t, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, this->GetInputArrayToProcess(0, in_grid));
+        const auto ghost_type = (in_grid->GetCellGhostArray() != nullptr) ? std::make_optional(tpf::vtk::get_grid<unsigned char, float_t, 3, 1>(in_grid, tpf::data::topology_t::CELL_DATA, in_grid->GetCellGhostArray())) : std::nullopt;
 
         // Create output data
         auto plic_interface = tpf::data::polydata<float_t>();
@@ -89,7 +90,7 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
         // Run PLIC module
         tpf::modules::plic<float_t> plic_module;
 
-        plic_module.set_input(vof, gradients);
+        plic_module.set_input(vof, gradients, ghost_type);
         plic_module.set_output(plic_interface);
         plic_module.set_parameters(static_cast<float_t>(this->ErrorMargin), this->NumIterations, static_cast<float_t>(this->Perturbation));
         plic_module.run();
@@ -100,7 +101,8 @@ int tpf_plic::RequestData(vtkInformation*, vtkInformationVector** input_vector, 
         tpf::vtk::set_polydata(output, plic_interface,
             tpf::data::data_information<int, 3>{ "coords", tpf::data::topology_t::OBJECT_DATA },
             tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
-            tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
+            tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA },
+            tpf::data::data_information<float_t, 1>{ "f", tpf::data::topology_t::OBJECT_DATA });
     }
     catch (const std::exception& ex)
     {

@@ -38,6 +38,8 @@ protected:
 
     int FillInputPortInformation(int port, vtkInformation *info) override;
 
+    int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+
     int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
 private:
@@ -46,6 +48,9 @@ private:
 
     /// Using data types
     using float_t = float;
+
+    /// Number of ghost levels
+    std::size_t num_ghost_levels;
 
     /// Epsilon
     double Epsilon;

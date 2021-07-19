@@ -34,6 +34,12 @@ namespace tpf
     namespace modules
     {
         template <typename float_t>
+        inline std::size_t plic3<float_t>::get_num_required_ghost_levels()
+        {
+            return 1;
+        }
+
+        template <typename float_t>
         inline plic3<float_t>::plic3() { }
 
         template <typename float_t>
@@ -44,11 +50,12 @@ namespace tpf
 
         template <typename float_t>
         inline void plic3<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& f,
-            const data::grid<float_t, float_t, 3, 1>& f3, const data::grid<float_t, float_t, 3, 3>& f_norm_3ph)
+            const data::grid<float_t, float_t, 3, 1>& f3, const data::grid<float_t, float_t, 3, 3>& f_norm_3ph, const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type)
         {
             this->f = &f;
             this->f3 = &f3;
             this->f_norm_3ph = &f_norm_3ph;
+            this->ghost_type = &ghost_type;
         }
 
         template <typename float_t>
@@ -78,6 +85,7 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 1>& f = *this->f;
             const data::grid<float_t, float_t, 3, 1>& f3 = *this->f3;
             const data::grid<float_t, float_t, 3, 3>& f_norm_3ph = *this->f_norm_3ph;
+            const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type = *this->ghost_type;
 
             data::polydata<float_t>& plic3_interface = *this->plic3_interface;
             auto array_coords = std::make_shared<data::array<int, 3>>("coords");
@@ -99,6 +107,12 @@ namespace tpf
                 for (auto y = extent[1].first; y <= extent[1].second; ++y) {
                     for (auto x = extent[0].first; x <= extent[0].second; ++x) {
                         const data::coords3_t coords(x, y, z);
+
+                        if (ghost_type.has_value()) {
+                            if (ghost_type.value()(coords)) {
+                                continue;
+                            }
+                        }
 
                         auto f_value = f(coords);
                         auto f3_value = f3(coords);
@@ -410,9 +424,9 @@ namespace tpf
             using stencil_t = data::stencil<const float_t, float_t, 3, 1>;
             const stencil_t stencil(f, coords, 3, stencil_t::behavior_t::REPEAT);
 
-            for (std::size_t i = 0; i < 2; ++i) {
-                for (std::size_t j = 0; j < 2; ++j) {
-                    for (std::size_t k = 0; k < 2; ++k) {
+            for (int i = 0; i <= 2; ++i) {
+                for (int j = 0; j <= 2; ++j) {
+                    for (int k = 0; k <= 2; ++k) {
                         if (i == 1 && j == 1 && k == 1) {
                             continue;
                         }
