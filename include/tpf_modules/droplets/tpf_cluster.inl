@@ -111,16 +111,13 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_rotation_mechanics() const
+            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_angular_velocity_mechanics() const
             {
-                math::vec3_t<floatp_t> rotation_axis;
-                rotation_axis.setZero();
+                math::vec3_t<floatp_t> angular_velocity;
+                angular_velocity.setZero();
 
                 floatp_t rotation_energy = static_cast<floatp_t>(0.0L);
                 floatp_t local_energy = static_cast<floatp_t>(0.0L);
-
-                const auto barycenter = get_position();
-                const auto translation = get_velocity().first;
 
                 // Compute inertia and angular momentum and use it to solve for the rotation axis
                 const std::size_t num_entries = this->positions.size();
@@ -133,30 +130,30 @@ namespace tpf
                         const auto inertia = get_inertia();
                         const auto angular_momentum = get_angular_momentum();
 
-                        rotation_axis = inertia.inverse() * angular_momentum;
+                        angular_velocity = inertia.inverse() * angular_momentum;
 
                         // Calculate rotational energy and resulting local energy
-                        const auto energies = calculate_energies(rotation_axis);
+                        const auto energies = calculate_energies(angular_velocity);
 
                         rotation_energy = energies.first;
                         local_energy = energies.second;
                     }
                     catch (const std::bad_alloc & ex)
                     {
-                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Rotation for large droplet of ", num_entries, " cells could not be calculated."));
+                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Angular velocity for large droplet of ", num_entries, " cells could not be calculated."));
 
-                        rotation_axis.setZero();
+                        angular_velocity.setZero();
                     }
                 }
 
-                return std::make_tuple(rotation_axis, static_cast<floatp_t>(0.5L)* rotation_energy, static_cast<floatp_t>(0.5L)* local_energy);
+                return std::make_tuple(angular_velocity, static_cast<floatp_t>(0.5L)* rotation_energy, static_cast<floatp_t>(0.5L)* local_energy);
             }
 
             template <typename floatp_t>
-            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_rotation_velocities() const
+            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_angular_velocity_velocities() const
             {
-                math::vec3_t<floatp_t> rotation_axis;
-                rotation_axis.setZero();
+                math::vec3_t<floatp_t> angular_velocity;
+                angular_velocity.setZero();
 
                 floatp_t rotation_energy = static_cast<floatp_t>(0.0L);
                 floatp_t local_energy = static_cast<floatp_t>(0.0L);
@@ -187,30 +184,30 @@ namespace tpf
                         }
 
                         // Solve minimization problem
-                        rotation_axis = algorithm::template least_squares(X, y);
+                        angular_velocity = algorithm::template least_squares(X, y);
 
                         // Calculate rotational energy and resulting local energy
-                        const auto energies = calculate_energies(rotation_axis);
+                        const auto energies = calculate_energies(angular_velocity);
 
                         rotation_energy = energies.first;
                         local_energy = energies.second;
                     }
                     catch (const std::bad_alloc& ex)
                     {
-                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Rotation for large droplet of ", num_entries, " cells could not be calculated."));
+                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Angular velocity for large droplet of ", num_entries, " cells could not be calculated."));
 
-                        rotation_axis.setZero();
+                        angular_velocity.setZero();
                     }
                 }
 
-                return std::make_tuple(rotation_axis, static_cast<floatp_t>(0.5L) * rotation_energy, static_cast<floatp_t>(0.5L) * local_energy);
+                return std::make_tuple(angular_velocity, static_cast<floatp_t>(0.5L) * rotation_energy, static_cast<floatp_t>(0.5L) * local_energy);
             }
 
             template <typename floatp_t>
-            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_rotation_pca() const
+            inline std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> cluster<floatp_t>::get_angular_velocity_pca() const
             {
-                math::vec3_t<floatp_t> rotation_axis;
-                rotation_axis.setZero();
+                math::vec3_t<floatp_t> angular_velocity;
+                angular_velocity.setZero();
 
                 floatp_t rotation_energy = static_cast<floatp_t>(0.0L);
                 floatp_t local_energy = static_cast<floatp_t>(0.0L);
@@ -271,24 +268,24 @@ namespace tpf
                         }
 
                         // Pick the largest axis
-                        rotation_axis = (eigenvectors[0].norm() > eigenvectors[1].norm() && eigenvectors[0].norm() > eigenvectors[2].norm()) ? eigenvectors[0] :
+                        angular_velocity = (eigenvectors[0].norm() > eigenvectors[1].norm() && eigenvectors[0].norm() > eigenvectors[2].norm()) ? eigenvectors[0] :
                             ((eigenvectors[1].norm() > eigenvectors[2].norm()) ? eigenvectors[1] : eigenvectors[2]);
 
                         // Calculate rotational energy
-                        const auto energies = calculate_energies(rotation_axis);
+                        const auto energies = calculate_energies(angular_velocity);
 
                         rotation_energy = energies.first;
                         local_energy = energies.second;
                     }
                     catch (const std::bad_alloc & ex)
                     {
-                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Rotation for large droplet of ", num_entries, " cells could not be calculated."));
+                        log::warning_message(__tpf_nested_warning_message(ex.what(), "Angular velocity for large droplet of ", num_entries, " cells could not be calculated."));
 
-                        rotation_axis.setZero();
+                        angular_velocity.setZero();
                     }
                 }
 
-                return std::make_tuple(rotation_axis, static_cast<floatp_t>(0.5L) * rotation_energy, static_cast<floatp_t>(0.5L) * local_energy);
+                return std::make_tuple(angular_velocity, static_cast<floatp_t>(0.5L) * rotation_energy, static_cast<floatp_t>(0.5L) * local_energy);
             }
 
             template <typename floatp_t>
@@ -355,7 +352,7 @@ namespace tpf
             }
 
             template <typename floatp_t>
-            std::pair<floatp_t, floatp_t> cluster<floatp_t>::calculate_energies(const math::vec3_t<floatp_t>& rotation_axis) const
+            std::pair<floatp_t, floatp_t> cluster<floatp_t>::calculate_energies(const math::vec3_t<floatp_t>& angular_velocity) const
             {
                 const std::size_t num_entries = this->positions.size();
 
@@ -369,7 +366,7 @@ namespace tpf
                 {
                     const auto position = this->positions[entry_index] - barycenter;
 
-                    const auto rotation_velocity = rotation_axis.cross(position);
+                    const auto rotation_velocity = angular_velocity.cross(position);
                     const auto local_velocity = this->velocities[entry_index] - translation - rotation_velocity;
 
                     rotation_energy += this->volumes[entry_index] * rotation_velocity.squaredNorm();

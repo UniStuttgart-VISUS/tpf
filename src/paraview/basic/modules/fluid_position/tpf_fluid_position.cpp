@@ -20,7 +20,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
+#include <exception>
 
 namespace
 {
@@ -33,6 +33,8 @@ namespace
         {
             output = T::New();
             output_info->GetInformationObject(index)->Set(vtkDataObject::DATA_OBJECT(), output);
+            output->FastDelete();
+
             output_algorithm->GetOutputPortInformation(index)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
         }
     }
@@ -174,7 +176,7 @@ int tpf_fluid_position::RequestData(vtkInformation*, vtkInformationVector** inpu
 
         tpf::vtk::set_polydata(output_positions, positions_points);
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Fluid Position' failed."));
 

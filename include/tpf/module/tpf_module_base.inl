@@ -88,5 +88,27 @@ namespace tpf
 
             return default_value;
         }
+
+        template <typename T>
+        inline std::optional<std::reference_wrapper<T>> set_or_default(T& parameter, bool set)
+        {
+            if (set)
+            {
+                return parameter;
+            }
+
+            return std::nullopt;
+        }
+
+        template <typename T>
+        inline std::optional<std::reference_wrapper<T>> set_or_default(T* parameter)
+        {
+            if (parameter != nullptr)
+            {
+                return *parameter;
+            }
+
+            return std::nullopt;
+        }
     }
 }

@@ -17,7 +17,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
+#include <exception>
 
 vtkStandardNewMacro(tpf_surface_tension);
 
@@ -82,7 +82,7 @@ int tpf_surface_tension::RequestData(vtkInformation*, vtkInformationVector** inp
         output->ShallowCopy(in_grid);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, surface_tension.get_name(), surface_tension.get_data(), surface_tension.get_num_components());
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Surface Tension' failed."));
 

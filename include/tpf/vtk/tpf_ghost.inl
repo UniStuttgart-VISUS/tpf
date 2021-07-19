@@ -7,6 +7,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
+#include <exception>
 #include <stdexcept>
 
 namespace tpf
@@ -33,7 +34,7 @@ namespace tpf
 
                 return num_ghost_cells;
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Failed to set ghost levels."));
             }

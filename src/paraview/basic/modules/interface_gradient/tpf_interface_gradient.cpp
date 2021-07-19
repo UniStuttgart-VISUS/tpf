@@ -17,7 +17,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <algorithm>
-#include <stdexcept>
+#include <exception>
 
 vtkStandardNewMacro(tpf_interface_gradient);
 
@@ -78,7 +78,7 @@ int tpf_interface_gradient::RequestData(vtkInformation*, vtkInformationVector** 
         output->ShallowCopy(in_vof);
         tpf::vtk::set_data<float_t>(output, tpf::data::topology_t::CELL_DATA, gradients.get_name(), gradients.get_data(), gradients.get_num_components());
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'Interface Gradient' failed."));
 

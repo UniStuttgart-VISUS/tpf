@@ -93,7 +93,7 @@ namespace tpf
             /// <returns>Rotated vector</returns>
             /// <template name="U">Value type of the vector</template>
             template <typename U>
-            Eigen::Matrix<U, 3, 1> operator*(const Eigen::Matrix<U, 3, 1>& vec) const;
+            Eigen::Matrix<U, 3, 1> rotate(const Eigen::Matrix<U, 3, 1>& vec) const;
 
             /// <summary>
             /// Equality operator
@@ -195,8 +195,9 @@ namespace tpf
             /// <summary>
             /// Create quaternion from axis representation
             /// </summary>
-            /// <param name="axis">Rotation axis</returns>
-            void from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis);
+            /// <param name="axis">Rotation axis</param>
+            /// <param name="scaling">Scaling factor to adjust rotation angle to achieve smaller or larger rotations</param>
+            void from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis, floatp_t scaling = static_cast<floatp_t>(1.0));
 
         private:
             /// Real part
@@ -206,15 +207,6 @@ namespace tpf
             Eigen::Matrix<floatp_t, 3, 1> imaginary;
         };
 
-        /// <summary>
-        /// Create quaternion by adding a scalar and a vector
-        /// </summary>
-        /// <param name="real">Real part</returns>
-        /// <param name="imaginary">Imaginary part</returns>
-        /// <template name="floatp_t">Value type of the vector and the resulting quaternion</template>
-        template <typename floatp_t>
-        quaternion<floatp_t> operator+(floatp_t real, const Eigen::Matrix<floatp_t, 3, 1>& imaginary);
-        
         /// <summary>
         /// Output quaternion to stream
         /// </summary>

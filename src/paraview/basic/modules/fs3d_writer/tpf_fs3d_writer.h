@@ -2,6 +2,9 @@
 
 #include "vtkRectilinearGridAlgorithm.h"
 
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+
 class VTK_EXPORT tpf_fs3d_writer : public vtkRectilinearGridAlgorithm
 {
 public:

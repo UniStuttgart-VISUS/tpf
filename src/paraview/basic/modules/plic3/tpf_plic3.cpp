@@ -7,6 +7,7 @@
 
 #include "tpf_modules/plic3/tpf_module_plic3.h"
 
+#include "tpf/vtk/tpf_ghost.h"
 #include "tpf/vtk/tpf_grid.h"
 #include "tpf/vtk/tpf_log.h"
 #include "tpf/vtk/tpf_polydata.h"
@@ -16,12 +17,11 @@
 #include "vtkPolyData.h"
 #include "vtkRectilinearGrid.h"
 
-#include <stdexcept>
-#include <tuple>
+#include <exception>
 
 vtkStandardNewMacro(tpf_plic3);
 
-tpf_plic3::tpf_plic3()
+tpf_plic3::tpf_plic3() : num_ghost_levels(0)
 {
     this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
@@ -38,6 +38,14 @@ int tpf_plic3::FillInputPortInformation(int port, vtkInformation *info)
     }
     info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkRectilinearGrid");
     return 1;
+}
+
+int tpf_plic3::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
+{
+    this->num_ghost_levels = tpf::vtk::set_ghost_levels(input_vector, output_vector, this->GetNumberOfInputPorts(),
+        std::max(this->num_ghost_levels, tpf::modules::plic3<float_t>::get_num_required_ghost_levels()));
+
+  return 1;
 }
 
 int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
@@ -57,13 +65,14 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
         const auto f = tpf::vtk::get_grid<float_t, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, data_array_f->GetName());
         const auto f3 = tpf::vtk::get_grid<float_t, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, data_array_f3->GetName());
         const auto f_norm_3ph = tpf::vtk::get_grid<float_t, float_t, 3, 3>(grid, tpf::data::topology_t::CELL_DATA, data_array_f_norm_3ph->GetName());
+        const auto ghost_type = (grid->GetCellGhostArray() != nullptr) ? std::make_optional(tpf::vtk::get_grid<unsigned char, float_t, 3, 1>(grid, tpf::data::topology_t::CELL_DATA, grid->GetCellGhostArray())) : std::nullopt;
 
         // Create output data
         tpf::data::polydata<float_t> plic3_interface;
 
         // Run PLIC module
         tpf::modules::plic3<float_t> plic3_module;
-        plic3_module.set_input(f, f3, f_norm_3ph);
+        plic3_module.set_input(f, f3, f_norm_3ph, ghost_type);
         plic3_module.set_output(plic3_interface);
         plic3_module.set_parameters(this->Epsilon, this->ErrorMarginPlic, this->ErrorMarginPlic3, this->NumIterationsPlic,
             this->NumIterationsPlic3, this->Perturbation, static_cast<bool>(this->HideErrorCubes));
@@ -83,7 +92,7 @@ int tpf_plic3::RequestData(vtkInformation*, vtkInformationVector** input_vector,
                 tpf::data::data_information<float_t, 1>{ "error", tpf::data::topology_t::OBJECT_DATA },
                 tpf::data::data_information<int, 1>{ "iterations", tpf::data::topology_t::OBJECT_DATA });
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'PLIC3' failed."));
 

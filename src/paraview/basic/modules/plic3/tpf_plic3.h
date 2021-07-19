@@ -1,7 +1,9 @@
 #pragma once
 
-#include "vtkInformation.h"
 #include "vtkPolyDataAlgorithm.h"
+
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
 
 class VTK_EXPORT tpf_plic3 : public vtkPolyDataAlgorithm
 {
@@ -36,6 +38,8 @@ protected:
 
     int FillInputPortInformation(int port, vtkInformation *info) override;
 
+    int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+
     int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
 
 private:
@@ -44,6 +48,9 @@ private:
 
     /// Using data types
     using float_t = float;
+
+    /// Number of ghost levels
+    std::size_t num_ghost_levels;
 
     /// Epsilon
     double Epsilon;

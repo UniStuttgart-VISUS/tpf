@@ -17,7 +17,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <memory>
-#include <stdexcept>
+#include <exception>
 
 vtkStandardNewMacro(tpf_stl_reader);
 
@@ -52,7 +52,7 @@ int tpf_stl_reader::RequestInformation(vtkInformation*, vtkInformationVector**, 
         // Set data provided
         this->num_triangles = info.datasets[0].second;
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Information request to plugin 'STL Reader' failed."));
 
@@ -92,7 +92,7 @@ int tpf_stl_reader::RequestData(vtkInformation*, vtkInformationVector**, vtkInfo
 #endif
         );
     }
-    catch (const std::runtime_error& ex)
+    catch (const std::exception& ex)
     {
         tpf::log::error_message(__tpf_nested_error_message(ex.what(), "Execution of plugin 'STL Reader' failed."));
 

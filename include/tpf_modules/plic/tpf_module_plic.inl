@@ -48,10 +48,11 @@ namespace tpf
 
         template <typename float_t>
         inline void plic<float_t>::set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
-            const data::grid<float_t, float_t, 3, 3>& gradients)
+            const data::grid<float_t, float_t, 3, 3>& gradients, const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type)
         {
             this->fractions = &fractions;
             this->gradients = &gradients;
+            this->ghost_type = &ghost_type;
         }
 
         template <typename float_t>
@@ -74,12 +75,14 @@ namespace tpf
             // Get input and output
             const data::grid<float_t, float_t, 3, 1>& fractions = *this->fractions;
             const data::grid<float_t, float_t, 3, 3>& gradients = *this->gradients;
+            const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type = *this->ghost_type;
 
             data::polydata<float_t>& plic_interface = *this->plic_interface;
 
             auto array_coords = std::make_shared<data::array<int, 3>>("coords");
             auto array_error = std::make_shared<data::array<float_t, 1>>("error");
             auto array_iterations = std::make_shared<data::array<int, 1>>("iterations");
+            auto array_f = std::make_shared<data::array<float_t, 1>>("f");
 
             // Calculate PLIC at all interface cells and store the error
 #ifdef __tpf_debug
@@ -97,6 +100,12 @@ namespace tpf
                         {
                             const data::coords3_t coords(x, y, z);
 
+                        if (ghost_type.has_value()) {
+                            if (ghost_type.value()(coords)) {
+                                continue;
+                            }
+                        }
+
                             if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
                                 // Create PLIC interface
@@ -109,6 +118,7 @@ namespace tpf
                                     array_coords->push_back(coords.cast<int>());
                                     array_error->push_back(std::get<1>(reconstruction));
                                     array_iterations->push_back(std::get<2>(reconstruction));
+                                array_f->push_back(fractions(coords));
                                 }
 #ifdef __tpf_debug
                                 else
@@ -135,6 +145,7 @@ namespace tpf
             plic_interface.add(array_coords, tpf::data::topology_t::OBJECT_DATA);
             plic_interface.add(array_error, tpf::data::topology_t::OBJECT_DATA);
             plic_interface.add(array_iterations, tpf::data::topology_t::OBJECT_DATA);
+            plic_interface.add(array_f, tpf::data::topology_t::OBJECT_DATA);
 
 #ifdef __tpf_debug
             log::info_message(__tpf_info_message("Number of illegal cells: ", illegal_cells, " out of ", interface_cells, " interface cells."));
@@ -179,19 +190,22 @@ namespace tpf
                 cell_coordinates[2] - std::copysign(cell_size_half[2], gradient[2]));
 
             Eigen::Matrix<float_t, 3, 1> normal = static_cast<float_t>(-1.0) * gradient.normalized();
-            // TODO Calculation of orthonormal in plane constructor will throw exception if normal is zero
-            //  and __tpf_sanity_checks is defined. Catch this case already here as plane is marked noexcept.
-#ifdef __tpf_sanity_checks
-            if (normal.isZero())
-            {
-                throw std::runtime_error(__tpf_error_message("Normal is zero."));
-            }
-#endif
 
             // Perform binary search
             std::shared_ptr<geometry::polygon<float_t>> plic = nullptr;
             float_t error = static_cast<float_t>(0.0);
             std::size_t iterations = 0;
+
+            // TODO Calculation of orthonormal in plane constructor will throw exception if normal is zero
+            //  and __tpf_sanity_checks is defined. Catch this case already here as plane is marked noexcept.
+#ifdef __tpf_sanity_checks
+            if (normal.isZero())
+            {
+                log::warning_message(__tpf_warning_message("Found interface cell with zero normal. Treating cell as full/empty."));
+
+                return std::make_tuple(plic, error, iterations);
+            }
+#endif
 
             for (std::size_t i = 0; i < num_iterations; ++i)
             {
@@ -223,7 +237,7 @@ namespace tpf
                     }
                     catch (...)
                     {
-                        // Assume co-planar points and thus a minimal velocity
+                        // Assume co-planar points and thus a minimal volume
                         volume = static_cast<float_t>(0.0);
                     }
                 }
@@ -277,7 +291,7 @@ namespace tpf
                             perturbated_intersections.emplace_back(perturbated_vertex);
                         }
 
-                        plic = std::make_shared<geometry::polygon<float_t>>(perturbated_intersections, true);
+                        plic = std::make_shared<geometry::polygon<float_t>>(perturbated_intersections, normal, true);
                     }
 
                     break;

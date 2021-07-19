@@ -28,11 +28,11 @@ namespace tpf
         /// <template name="float_t">Floating point type</template>
         template <typename float_t>
         class plic : public module_base<
-            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>,
+            interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&, const std::optional<data::grid<unsigned char, float_t, 3, 1>>&>,
             interface_output<data::polydata<float_t>&>,
             interface_parameters<float_t, std::size_t, std::optional<float_t>>>
         {
-            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&>;
+            using input_t = interface_input<const data::grid<float_t, float_t, 3, 1>&, const data::grid<float_t, float_t, 3, 3>&, const std::optional<data::grid<unsigned char, float_t, 3, 1>>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
             using parameters_t = interface_parameters<float_t, std::size_t, std::optional<float_t>>;
 
@@ -63,7 +63,7 @@ namespace tpf
             /// <param name="fractions">Input fractions</param>
             /// <param name="gradients">Input gradients</param>
             virtual void set_algorithm_input(const data::grid<float_t, float_t, 3, 1>& fractions,
-                const data::grid<float_t, float_t, 3, 3>& gradients) override;
+                const data::grid<float_t, float_t, 3, 3>& gradients, const std::optional<data::grid<unsigned char, float_t, 3, 1>>& ghost_type) override;
 
             /// <summary>
             /// Set output
@@ -106,6 +106,9 @@ namespace tpf
 
             /// Gradients
             const data::grid<float_t, float_t, 3, 3>* gradients;
+
+            /// Ghost type
+            const std::optional<data::grid<unsigned char, float_t, 3, 1>>* ghost_type;
 
             /// PLIC interface
             data::polydata<float_t>* plic_interface;

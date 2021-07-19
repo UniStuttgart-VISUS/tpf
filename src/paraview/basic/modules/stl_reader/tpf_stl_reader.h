@@ -2,6 +2,9 @@
 
 #include "vtkPolyDataAlgorithm.h"
 
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+
 #include "tpf/module/tpf_generic_module_base.h"
 
 #include <memory>

@@ -86,20 +86,20 @@ namespace tpf
                 /// <summary>
                 /// Return the rotation of this cluster, using inertia and angular momentum
                 /// </summary>
-                /// <returns>Rotation axis, its rotation energy and resulting local energy</returns>
-                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_rotation_mechanics() const;
+                /// <returns>Angular velocity, its rotation energy and resulting local energy</returns>
+                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_angular_velocity_mechanics() const;
 
                 /// <summary>
                 /// Return the rotation of this cluster, minimizing velocities
                 /// </summary>
-                /// <returns>Rotation axis, its rotation energy and resulting local energy</returns>
-                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_rotation_velocities() const;
+                /// <returns>Angular velocity, its rotation energy and resulting local energy</returns>
+                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_angular_velocity_velocities() const;
 
                 /// <summary>
                 /// Return the rotation of this cluster, using PCA
                 /// </summary>
-                /// <returns>Rotation axis, its rotation energy and resulting local energy</returns>
-                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_rotation_pca() const;
+                /// <returns>Angular velocity, its rotation energy and resulting local energy</returns>
+                std::tuple<math::vec3_t<floatp_t>, floatp_t, floatp_t> get_angular_velocity_pca() const;
 
                 /// <summary>
                 /// Return the inertia of this cluster
@@ -123,8 +123,9 @@ namespace tpf
                 /// <summary>
                 /// Calculate the rotational and local energy
                 /// </summary>
+                /// <param name="angular_velocity">Angular velocity of the cluster</param>
                 /// <returns>Rotation energy and resulting local energy</returns>
-                std::pair<floatp_t, floatp_t> calculate_energies(const math::vec3_t<floatp_t>& rotation_axis) const;
+                std::pair<floatp_t, floatp_t> calculate_energies(const math::vec3_t<floatp_t>& angular_velocity) const;
 
                 /// Coordinates of cells in this cluster
                 std::vector<data::coords3_t> coordinates;

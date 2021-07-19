@@ -10,6 +10,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 
 #include <cmath>
+#include <exception>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -45,7 +46,7 @@ namespace tpf
                     return std::vector<float_t>();
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error getting time steps."));
             }
@@ -93,7 +94,7 @@ namespace tpf
                     return std::make_pair(static_cast<float_t>(0.0L), static_cast<std::size_t>(0));
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error getting current time step."));
             }
@@ -112,7 +113,7 @@ namespace tpf
 
                 return static_cast<float_t>(time_steps[timestep_index]);
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error getting time step."));
             }
@@ -138,7 +139,7 @@ namespace tpf
                     return true;
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error checking for first time step."));
             }
@@ -164,7 +165,7 @@ namespace tpf
                     return true;
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error checking for last time step."));
             }
@@ -195,7 +196,7 @@ namespace tpf
                     return get_timestep<float_t>(info, timestep.second + 1) - timestep.first;
                 }
             }
-            catch (const std::runtime_error& ex)
+            catch (const std::exception& ex)
             {
                 throw std::runtime_error(__tpf_nested_error_message(ex.what(), "Error getting time step delta."));
             }

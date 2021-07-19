@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -210,9 +211,9 @@ namespace tpf
                 return fluid.calculate_centroid().get_vertex();
             }
 #ifdef __tpf_debug
-            catch (const std::runtime_error& e)
+            catch (const std::exception& e)
 #else
-            catch (const std::runtime_error&)
+            catch (const std::exception&)
 #endif
             {
 #ifdef __tpf_debug
