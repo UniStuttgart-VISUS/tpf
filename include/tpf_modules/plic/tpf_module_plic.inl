@@ -100,11 +100,11 @@ namespace tpf
                         {
                             const data::coords3_t coords(x, y, z);
 
-                        if (ghost_type.has_value()) {
-                            if (ghost_type.value()(coords)) {
-                                continue;
+                            if (ghost_type.has_value()) {
+                                if (ghost_type.value()(coords)) {
+                                    continue;
+                                }
                             }
-                        }
 
                             if (fractions(coords) > static_cast<float_t>(0.0L) && fractions(coords) < static_cast<float_t>(1.0L))
                             {
@@ -118,7 +118,7 @@ namespace tpf
                                     array_coords->push_back(coords.cast<int>());
                                     array_error->push_back(std::get<1>(reconstruction));
                                     array_iterations->push_back(std::get<2>(reconstruction));
-                                array_f->push_back(fractions(coords));
+                                    array_f->push_back(fractions(coords));
                                 }
 #ifdef __tpf_debug
                                 else
