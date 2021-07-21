@@ -510,7 +510,7 @@ namespace tpf
             glyph_t min_strip;
             glyph_t max_strip;
 
-            auto strip_tex_coords = std::make_shared<std::vector<Eigen::Matrix<float_t, 2, 1>>>(2 * (radial_resolution + 1));
+            auto strip_tex_coords = std::make_shared<std::vector<Eigen::Matrix<float_t, 2, 1>>>(4 * (radial_resolution + 1));
             std::fill(strip_tex_coords->begin(), strip_tex_coords->end(), Eigen::Matrix<float_t, 2, 1>(0.0, 0.0));
 
             {
