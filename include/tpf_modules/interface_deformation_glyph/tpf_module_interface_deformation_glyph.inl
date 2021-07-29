@@ -313,9 +313,9 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& velocities = *this->velocities;
 
             // Iterate over all interface cells
-            std::size_t num_interface_cells = 0;
-
-            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+            #pragma omp parallel for schedule(dynamic) default(none) shared(arrow_scalar, arrow_fixed_scalar)
+            for (long long z = static_cast<long long>(vof.get_extent()[2].first);
+                z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
                 for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                 {
@@ -377,13 +377,18 @@ namespace tpf
                             const math::transformer<float_t, 3> trafo(translation_matrix * rotation_matrix * scale_matrix);
 
                             // Instantiate glyph
-                            this->velocity_glyphs->insert(glyph_template->clone(trafo));
+                            auto glyph_instance = glyph_template->clone(trafo);
 
-                            ++num_interface_cells;
+                            #pragma omp critical
+                            {
+                                this->velocity_glyphs->insert(glyph_instance);
+                            }
                         }
                     }
                 }
             }
+
+            const std::size_t num_interface_cells = this->velocity_glyphs->get_num_objects();
 
             // Create data array
             auto magnitudes = std::make_shared<data::array<float_t>>("Velocity Magnitude");
@@ -616,13 +621,13 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& stretching_direction_max = *this->stretching_max;
 
             // Iterate over all interface cells
-            std::size_t num_interface_cells = 0;
-
             this->stretching_glyph_rings->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
             this->stretching_glyph_references->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
             this->stretching_glyph_strips->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
 
-            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, exponent)
+            for (long long z = static_cast<long long>(vof.get_extent()[2].first);
+                z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
                 for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                 {
@@ -647,8 +652,10 @@ namespace tpf
                             scale_matrix.setIdentity();
                             reference_scale_matrix.setIdentity();
 
-                            scale_matrix(0, 0) = size_scalar * average_cell_size * std::pow(stretching_min.norm(), exponent);
-                            scale_matrix(1, 1) = size_scalar * average_cell_size * std::pow(stretching_max.norm(), exponent);
+                            scale_matrix(0, 0) = size_scalar * average_cell_size * stretching_min.norm()
+                                * ((stretching_min.norm() > 1.0) ? exponent : 1.0 / exponent);
+                            scale_matrix(1, 1) = size_scalar * average_cell_size * stretching_max.norm()
+                                * ((stretching_max.norm() > 1.0) ? exponent : 1.0 / exponent);
                             scale_matrix(2, 2) = size_scalar * average_cell_size;
 
                             reference_scale_matrix(0, 0) = size_scalar * average_cell_size;
@@ -660,35 +667,56 @@ namespace tpf
                             math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
 
                             // Instantiate glyph
-                            this->stretching_glyph_rings->insert(std::get<0>(glyph_template).first->clone(trafo),
-                                data::polydata_element<float_t, 2>("Texture Coordinates",
-                                    data::topology_t::TEXTURE_COORDINATES, *std::get<0>(glyph_template).second));
+                            auto stretching_glyph_ring_instance = std::get<0>(glyph_template).first->clone(trafo);
+
+                            std::shared_ptr<geometry::geometric_object<float_t>>
+                                stretching_glyph_strip_1_instance, stretching_glyph_strip_2_instance,
+                                stretching_glyph_reference_1_instance, stretching_glyph_reference_2_instance;
 
                             if (show_strips)
                             {
-                                this->stretching_glyph_strips->insert(std::get<1>(glyph_template).first->clone(trafo),
-                                    data::polydata_element<float_t, 2>("Texture Coordinates",
-                                        data::topology_t::TEXTURE_COORDINATES, *std::get<1>(glyph_template).second));
-                                this->stretching_glyph_strips->insert(std::get<2>(glyph_template).first->clone(trafo),
-                                    data::polydata_element<float_t, 2>("Texture Coordinates",
-                                        data::topology_t::TEXTURE_COORDINATES, *std::get<2>(glyph_template).second));
+                                stretching_glyph_strip_1_instance = std::get<1>(glyph_template).first->clone(trafo);
+                                stretching_glyph_strip_2_instance = std::get<2>(glyph_template).first->clone(trafo);
                             }
 
                             if (show_reference)
                             {
-                                this->stretching_glyph_references->insert(std::get<3>(glyph_template).first->clone(trafo_ref),
-                                    data::polydata_element<float_t, 2>("Texture Coordinates",
-                                        data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
-                                this->stretching_glyph_references->insert(std::get<3>(glyph_template).first->clone(trafo),
-                                    data::polydata_element<float_t, 2>("Texture Coordinates",
-                                        data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
+                                stretching_glyph_reference_1_instance = std::get<3>(glyph_template).first->clone(trafo_ref);
+                                stretching_glyph_reference_2_instance = std::get<3>(glyph_template).first->clone(trafo);
                             }
 
-                            ++num_interface_cells;
+                            #pragma omp critical
+                            {
+                                this->stretching_glyph_rings->insert(stretching_glyph_ring_instance,
+                                    data::polydata_element<float_t, 2>("Texture Coordinates",
+                                        data::topology_t::TEXTURE_COORDINATES, *std::get<0>(glyph_template).second));
+
+                                if (show_strips)
+                                {
+                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_1_instance,
+                                        data::polydata_element<float_t, 2>("Texture Coordinates",
+                                            data::topology_t::TEXTURE_COORDINATES, *std::get<1>(glyph_template).second));
+                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_2_instance,
+                                        data::polydata_element<float_t, 2>("Texture Coordinates",
+                                            data::topology_t::TEXTURE_COORDINATES, *std::get<2>(glyph_template).second));
+                                }
+
+                                if (show_reference)
+                                {
+                                    this->stretching_glyph_references->insert(stretching_glyph_reference_1_instance,
+                                        data::polydata_element<float_t, 2>("Texture Coordinates",
+                                            data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
+                                    this->stretching_glyph_references->insert(stretching_glyph_reference_2_instance,
+                                        data::polydata_element<float_t, 2>("Texture Coordinates",
+                                            data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            const std::size_t num_interface_cells = this->stretching_glyph_rings->get_num_objects();
 
             // Create data array
             auto stretching_rings = std::make_shared<data::array<float_t>>("Stretching");
@@ -903,9 +931,9 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& bending_polynomial = *this->bending_polynomial;
 
             // Iterate over all interface cells
-            std::size_t num_interface_cells = 0;
-
-            for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
+            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, scalar)
+            for (long long z = static_cast<long long>(vof.get_extent()[2].first);
+                z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
                 for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
                 {
@@ -972,19 +1000,33 @@ namespace tpf
                             trafo.set_preprocessing(bend);
 
                             // Instantiate glyph
-                            this->bending_glyph_discs->insert(std::get<0>(glyph_template)->clone(trafo));
+                            auto bending_glyph_disc_instance = std::get<0>(glyph_template)->clone(trafo);
+
+                            std::shared_ptr<geometry::geometric_object<float_t>>
+                                bending_glyph_strip_1_instance, bending_glyph_strip_2_instance;
 
                             if (show_strips)
                             {
-                                this->bending_glyph_strips->insert(std::get<1>(glyph_template)->clone(trafo));
-                                this->bending_glyph_strips->insert(std::get<2>(glyph_template)->clone(trafo));
+                                bending_glyph_strip_1_instance = std::get<1>(glyph_template)->clone(trafo);
+                                bending_glyph_strip_2_instance = std::get<2>(glyph_template)->clone(trafo);
                             }
 
-                            ++num_interface_cells;
+                            #pragma omp critical
+                            {
+                                this->bending_glyph_discs->insert(bending_glyph_disc_instance);
+
+                                if (show_strips)
+                                {
+                                    this->bending_glyph_strips->insert(bending_glyph_strip_1_instance);
+                                    this->bending_glyph_strips->insert(bending_glyph_strip_2_instance);
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            const std::size_t num_interface_cells = this->bending_glyph_discs->get_num_objects();
 
             // Create data array
             auto bending_discs = std::make_shared<data::array<float_t>>("Bending");
