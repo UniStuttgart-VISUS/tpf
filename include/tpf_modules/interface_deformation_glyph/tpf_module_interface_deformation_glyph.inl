@@ -312,6 +312,9 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& positions = *this->positions;
             const data::grid<float_t, float_t, 3, 3>& velocities = *this->velocities;
 
+            // Create output data arrays
+            auto magnitudes = std::make_shared<data::array<float_t>>("Velocity Magnitude");
+
             // Iterate over all interface cells
             #pragma omp parallel for schedule(dynamic) default(none) shared(arrow_scalar, arrow_fixed_scalar)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
@@ -379,34 +382,11 @@ namespace tpf
                             // Instantiate glyph
                             auto glyph_instance = glyph_template->clone(trafo);
 
+                            const auto magnitude = velocities(coords).norm();
+
                             #pragma omp critical
                             {
                                 this->velocity_glyphs->insert(glyph_instance);
-                            }
-                        }
-                    }
-                }
-            }
-
-            const std::size_t num_interface_cells = this->velocity_glyphs->get_num_objects();
-
-            // Create data array
-            auto magnitudes = std::make_shared<data::array<float_t>>("Velocity Magnitude");
-            magnitudes->reserve(num_interface_cells);
-
-            if (num_interface_cells != 0)
-            {
-                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
-                {
-                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
-                    {
-                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
-                        {
-                            const data::coords3_t coords(x, y, z);
-
-                            if (vof(coords) > 0 && vof(coords) < 1)
-                            {
-                                const auto magnitude = velocities(coords).norm();
 
                                 magnitudes->push_back(magnitude);
                             }
@@ -620,11 +600,20 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& stretching_direction_min = *this->stretching_min;
             const data::grid<float_t, float_t, 3, 3>& stretching_direction_max = *this->stretching_max;
 
-            // Iterate over all interface cells
-            this->stretching_glyph_rings->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
-            this->stretching_glyph_references->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
-            this->stretching_glyph_strips->add(std::make_shared<data::array<float_t, 2>>("Texture Coordinates"), data::topology_t::POINT_DATA);
+            // Create output data arrays
+            auto tex_coords_rings = std::make_shared<data::array<float_t, 2>>("Texture Coordinates");
+            auto stretching_rings = std::make_shared<data::array<float_t>>("Stretching");
+            auto relevance_rings = std::make_shared<data::array<float_t>>("Relevance");
 
+            auto tex_coords_strips = std::make_shared<data::array<float_t, 2>>("Texture Coordinates");
+            auto stretching_strips = std::make_shared<data::array<float_t>>("Stretching");
+            auto relevance_strips = std::make_shared<data::array<float_t>>("Relevance");
+
+            auto tex_coords_references = std::make_shared<data::array<float_t, 2>>("Texture Coordinates");
+            auto stretching_references = std::make_shared<data::array<float_t>>("Stretching");
+            auto relevance_references = std::make_shared<data::array<float_t>>("Relevance");
+
+            // Iterate over all interface cells
             #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, exponent)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
                 z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
@@ -643,6 +632,9 @@ namespace tpf
                             const auto stretching_min = stretching_direction_min(coords);
                             const auto stretching_max = stretching_direction_max(coords);
 
+                            const auto min = stretching_min.norm();
+                            const auto max = stretching_max.norm();
+
                             // Rotate into basis defined by the interface normal and the eigenvectors
                             const math::transformer<float_t, 3> translation_and_rotation(origin,
                                 stretching_min.normalized(), stretching_max.normalized(), normal);
@@ -652,10 +644,8 @@ namespace tpf
                             scale_matrix.setIdentity();
                             reference_scale_matrix.setIdentity();
 
-                            scale_matrix(0, 0) = size_scalar * average_cell_size * stretching_min.norm()
-                                * ((stretching_min.norm() > 1.0) ? exponent : 1.0 / exponent);
-                            scale_matrix(1, 1) = size_scalar * average_cell_size * stretching_max.norm()
-                                * ((stretching_max.norm() > 1.0) ? exponent : 1.0 / exponent);
+                            scale_matrix(0, 0) = size_scalar * average_cell_size * min * ((min > 1.0) ? exponent : (1.0 / exponent));
+                            scale_matrix(1, 1) = size_scalar * average_cell_size * max * ((max > 1.0) ? exponent : (1.0 / exponent));
                             scale_matrix(2, 2) = size_scalar * average_cell_size;
 
                             reference_scale_matrix(0, 0) = size_scalar * average_cell_size;
@@ -663,8 +653,8 @@ namespace tpf
                             reference_scale_matrix(2, 2) = size_scalar * average_cell_size;
 
                             // Create object matrix
-                            math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
-                            math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
+                            const math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
+                            const math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
 
                             // Instantiate glyph
                             auto stretching_glyph_ring_instance = std::get<0>(glyph_template).first->clone(trafo);
@@ -685,78 +675,25 @@ namespace tpf
                                 stretching_glyph_reference_2_instance = std::get<3>(glyph_template).first->clone(trafo);
                             }
 
+                            const auto min_abs_exp = (min < 1.0) ? (static_cast<float_t>(1.0) / min) : min;
+                            const auto max_abs_exp = (max < 1.0) ? (static_cast<float_t>(1.0) / max) : max;
+
                             #pragma omp critical
                             {
-                                this->stretching_glyph_rings->insert(stretching_glyph_ring_instance,
-                                    data::polydata_element<float_t, 2>("Texture Coordinates",
-                                        data::topology_t::TEXTURE_COORDINATES, *std::get<0>(glyph_template).second));
+                                this->stretching_glyph_rings->insert(stretching_glyph_ring_instance);
 
-                                if (show_strips)
-                                {
-                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_1_instance,
-                                        data::polydata_element<float_t, 2>("Texture Coordinates",
-                                            data::topology_t::TEXTURE_COORDINATES, *std::get<1>(glyph_template).second));
-                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_2_instance,
-                                        data::polydata_element<float_t, 2>("Texture Coordinates",
-                                            data::topology_t::TEXTURE_COORDINATES, *std::get<2>(glyph_template).second));
-                                }
-
-                                if (show_reference)
-                                {
-                                    this->stretching_glyph_references->insert(stretching_glyph_reference_1_instance,
-                                        data::polydata_element<float_t, 2>("Texture Coordinates",
-                                            data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
-                                    this->stretching_glyph_references->insert(stretching_glyph_reference_2_instance,
-                                        data::polydata_element<float_t, 2>("Texture Coordinates",
-                                            data::topology_t::TEXTURE_COORDINATES, *std::get<3>(glyph_template).second));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            const std::size_t num_interface_cells = this->stretching_glyph_rings->get_num_objects();
-
-            // Create data array
-            auto stretching_rings = std::make_shared<data::array<float_t>>("Stretching");
-            auto relevance_rings = std::make_shared<data::array<float_t>>("Relevance");
-            stretching_rings->reserve(num_interface_cells);
-            relevance_rings->reserve(num_interface_cells);
-
-            auto stretching_references = std::make_shared<data::array<float_t>>("Stretching");
-            auto relevance_references = std::make_shared<data::array<float_t>>("Relevance");
-            stretching_references->reserve(num_interface_cells * (show_reference ? 2 : 0));
-            relevance_references->reserve(num_interface_cells * (show_reference ? 2 : 0));
-
-            auto stretching_strips = std::make_shared<data::array<float_t>>("Stretching");
-            auto relevance_strips = std::make_shared<data::array<float_t>>("Relevance");
-            stretching_strips->reserve(num_interface_cells * (show_strips ? 2 : 0));
-            relevance_strips->reserve(num_interface_cells * (show_strips ? 2 : 0));
-
-            if (num_interface_cells != 0)
-            {
-                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
-                {
-                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
-                    {
-                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
-                        {
-                            const data::coords3_t coords(x, y, z);
-
-                            if (vof(coords) > 0 && vof(coords) < 1)
-                            {
-                                const auto min = stretching_direction_min(coords).norm();
-                                const auto max = stretching_direction_max(coords).norm();
-
-                                const auto min_abs_exp = (min < 1.0) ? (static_cast<float_t>(1.0) / min) : min;
-                                const auto max_abs_exp = (min < 1.0) ? (static_cast<float_t>(1.0) / min) : min;
-
+                                tex_coords_rings->insert_back(std::get<0>(glyph_template).second->begin(), std::get<0>(glyph_template).second->end());
                                 stretching_rings->push_back(1.0);
                                 relevance_rings->push_back(min_abs_exp * max_abs_exp);
 
                                 if (show_strips)
                                 {
+                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_1_instance);
+                                    this->stretching_glyph_strips->insert(stretching_glyph_strip_2_instance);
+
+                                    tex_coords_strips->insert_back(std::get<1>(glyph_template).second->begin(), std::get<1>(glyph_template).second->end());
+                                    tex_coords_strips->insert_back(std::get<2>(glyph_template).second->begin(), std::get<2>(glyph_template).second->end());
+
                                     stretching_strips->push_back(min);
                                     stretching_strips->push_back(max);
 
@@ -766,8 +703,14 @@ namespace tpf
 
                                 if (show_reference)
                                 {
-                                    stretching_references->push_back(std::numeric_limits<float_t>::infinity());
-                                    stretching_references->push_back(std::numeric_limits<float_t>::quiet_NaN());
+                                    this->stretching_glyph_references->insert(stretching_glyph_reference_1_instance);
+                                    this->stretching_glyph_references->insert(stretching_glyph_reference_2_instance);
+
+                                    tex_coords_references->insert_back(std::get<3>(glyph_template).second->begin(), std::get<3>(glyph_template).second->end());
+                                    tex_coords_references->insert_back(std::get<3>(glyph_template).second->begin(), std::get<3>(glyph_template).second->end());
+
+                                    stretching_references->push_back(std::numeric_limits<float_t>::infinity());     // TODO
+                                    stretching_references->push_back(std::numeric_limits<float_t>::quiet_NaN());    // TODO
 
                                     relevance_references->push_back(min_abs_exp * max_abs_exp);
                                     relevance_references->push_back(min_abs_exp * max_abs_exp);
@@ -778,14 +721,17 @@ namespace tpf
                 }
             }
 
+            this->stretching_glyph_rings->add(tex_coords_rings, data::topology_t::TEXTURE_COORDINATES);
             this->stretching_glyph_rings->add(stretching_rings, data::topology_t::OBJECT_DATA);
             this->stretching_glyph_rings->add(relevance_rings, data::topology_t::OBJECT_DATA);
 
-            this->stretching_glyph_references->add(stretching_references, data::topology_t::OBJECT_DATA);
-            this->stretching_glyph_references->add(relevance_references, data::topology_t::OBJECT_DATA);
-
+            this->stretching_glyph_strips->add(tex_coords_strips, data::topology_t::TEXTURE_COORDINATES);
             this->stretching_glyph_strips->add(stretching_strips, data::topology_t::OBJECT_DATA);
             this->stretching_glyph_strips->add(relevance_strips, data::topology_t::OBJECT_DATA);
+
+            this->stretching_glyph_references->add(tex_coords_references, data::topology_t::TEXTURE_COORDINATES);
+            this->stretching_glyph_references->add(stretching_references, data::topology_t::OBJECT_DATA);
+            this->stretching_glyph_references->add(relevance_references, data::topology_t::OBJECT_DATA);
         }
 
         template <typename float_t>
@@ -930,6 +876,13 @@ namespace tpf
             const data::grid<float_t, float_t, 3, 3>& bending_direction_max = *this->bending_direction_max;
             const data::grid<float_t, float_t, 3, 3>& bending_polynomial = *this->bending_polynomial;
 
+            // Create output data arrays
+            auto bending_discs = std::make_shared<data::array<float_t>>("Bending");
+            auto relevance_discs = std::make_shared<data::array<float_t>>("Relevance");
+
+            auto bending_strips = std::make_shared<data::array<float_t>>("Bending");
+            auto relevance_strips = std::make_shared<data::array<float_t>>("Relevance");
+
             // Iterate over all interface cells
             #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, scalar)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
@@ -946,6 +899,8 @@ namespace tpf
                             // Get necessary information
                             const auto origin = positions(coords);
                             const auto normal = -gradients(coords).normalized();
+                            const auto min = bending_min(coords);
+                            const auto max = bending_max(coords);
                             const auto direction_min = bending_direction_min(coords).normalized();
                             const auto direction_max = bending_direction_max(coords).normalized();
                             const auto polynomial = bending_polynomial(coords);
@@ -1015,50 +970,14 @@ namespace tpf
                             {
                                 this->bending_glyph_discs->insert(bending_glyph_disc_instance);
 
-                                if (show_strips)
-                                {
-                                    this->bending_glyph_strips->insert(bending_glyph_strip_1_instance);
-                                    this->bending_glyph_strips->insert(bending_glyph_strip_2_instance);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            const std::size_t num_interface_cells = this->bending_glyph_discs->get_num_objects();
-
-            // Create data array
-            auto bending_discs = std::make_shared<data::array<float_t>>("Bending");
-            auto relevance_discs = std::make_shared<data::array<float_t>>("Relevance");
-            bending_discs->reserve(num_interface_cells);
-            relevance_discs->reserve(num_interface_cells);
-
-            auto bending_strips = std::make_shared<data::array<float_t>>("Bending");
-            auto relevance_strips = std::make_shared<data::array<float_t>>("Relevance");
-            bending_strips->reserve(num_interface_cells * (show_strips ? 2 : 0));
-            relevance_strips->reserve(num_interface_cells * (show_strips ? 2 : 0));
-
-            if (num_interface_cells != 0)
-            {
-                for (auto z = vof.get_extent()[2].first; z <= vof.get_extent()[2].second; ++z)
-                {
-                    for (auto y = vof.get_extent()[1].first; y <= vof.get_extent()[1].second; ++y)
-                    {
-                        for (auto x = vof.get_extent()[0].first; x <= vof.get_extent()[0].second; ++x)
-                        {
-                            const data::coords3_t coords(x, y, z);
-
-                            if (vof(coords) > 0 && vof(coords) < 1)
-                            {
-                                const auto min = bending_min(coords);
-                                const auto max = bending_max(coords);
-
                                 bending_discs->push_back(0.0);
                                 relevance_discs->push_back(std::abs(min) + std::abs(max));
 
                                 if (show_strips)
                                 {
+                                    this->bending_glyph_strips->insert(bending_glyph_strip_1_instance);
+                                    this->bending_glyph_strips->insert(bending_glyph_strip_2_instance);
+
                                     bending_strips->push_back(min);
                                     bending_strips->push_back(max);
 
