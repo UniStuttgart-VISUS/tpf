@@ -395,12 +395,12 @@
                     Create a disc glyph to visualize the stretching
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="StretchingExponent" command="SetStretchingExponent" label="Exponent" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="StretchingExponent" command="SetStretchingExponent" label="Scalar" number_of_elements="1" default_values="1.0">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
                 <Documentation>
-                    Exponent for increasing the deformation caused by the stretching
+                    Scalar for increasing the deformation of the glyph caused by the stretching
                 </Documentation>
             </DoubleVectorProperty>
             <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.4">
