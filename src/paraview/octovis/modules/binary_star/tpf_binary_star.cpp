@@ -55,66 +55,6 @@ tpf_binary_star::tpf_binary_star()
 
 tpf_binary_star::~tpf_binary_star() { }
 
-int tpf_binary_star::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
-{
-    // Create an output object of the correct type.
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA_OBJECT()))
-    {
-        return this->RequestDataObject(request, input_vector, output_vector);
-    }
-
-    // Generate the data
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_INFORMATION()))
-    {
-        return this->RequestInformation(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA()))
-    {
-        return this->RequestData(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT()))
-    {
-        return this->RequestUpdateExtent(request, input_vector, output_vector);
-    }
-
-    return this->Superclass::ProcessRequest(request, input_vector, output_vector);
-}
-
-int tpf_binary_star::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
-{
-    // Octree
-    {
-        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = vtkPolyData::New();
-            output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
-            output->FastDelete();
-
-            this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-
-    // Stars
-    {
-        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = vtkPolyData::New();
-            output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
-            output->FastDelete();
-
-            this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-
-    return 1;
-}
-
 int tpf_binary_star::FillInputPortInformation(int port, vtkInformation* info)
 {
     if (port == 0)
@@ -124,32 +64,6 @@ int tpf_binary_star::FillInputPortInformation(int port, vtkInformation* info)
     }
 
     return 0;
-}
-
-int tpf_binary_star::FillOutputPortInformation(int port, vtkInformation* info)
-{
-    if (port == 0)
-    {
-        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
-        return 1;
-    }
-    else if (port == 1)
-    {
-        info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkPolyData");
-        return 1;
-    }
-
-    return 1;
-}
-
-int tpf_binary_star::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*)
-{
-    return 1;
-}
-
-int tpf_binary_star::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
-{
-    return 1;
 }
 
 int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
@@ -181,12 +95,12 @@ int tpf_binary_star::RequestData(vtkInformation* request, vtkInformationVector**
         auto velocities = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(5).c_str()));
         auto gravitation = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(6).c_str()));
 
-        const double x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
-        const double x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
-        const double y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
-        const double y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
-        const double z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
-        const double z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetPointData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
+        const double x_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(7).c_str()))->GetValue(0);
+        const double x_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(8).c_str()))->GetValue(0);
+        const double y_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(9).c_str()))->GetValue(0);
+        const double y_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(10).c_str()))->GetValue(0);
+        const double z_min = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(11).c_str()))->GetValue(0);
+        const double z_max = FLOAT_TYPE_ARRAY::SafeDownCast(in_octree->GetFieldData()->GetArray(get_array_name(12).c_str()))->GetValue(0);
 
         // Create stars poly data object
         tpf::data::polydata<float_t> stars;
