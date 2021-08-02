@@ -110,11 +110,11 @@ namespace tpf
                         {
                             const data::coords3_t coords(x, y, z);
 
-                        if (ghost_type.has_value()) {
-                            if (ghost_type.value()(coords)) {
-                                continue;
+                            if (ghost_type.has_value()) {
+                                if (ghost_type.value()(coords)) {
+                                    continue;
+                                }
                             }
-                        }
 
                             auto f_value = f(coords);
                             auto f3_value = f3(coords);

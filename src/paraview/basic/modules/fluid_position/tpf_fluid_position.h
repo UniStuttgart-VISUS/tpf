@@ -1,15 +1,15 @@
 #pragma once
 
-#include "vtkAlgorithm.h"
+#include "vtkDataObjectAlgorithm.h"
 
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 
-class VTK_EXPORT tpf_fluid_position : public vtkAlgorithm
+class VTK_EXPORT tpf_fluid_position : public vtkDataObjectAlgorithm
 {
 public:
     static tpf_fluid_position* New();
-    vtkTypeMacro(tpf_fluid_position, vtkAlgorithm);
+    vtkTypeMacro(tpf_fluid_position, vtkDataObjectAlgorithm);
 
     vtkSetMacro(PositionType, int);
     vtkGetMacro(PositionType, int);
@@ -21,12 +21,8 @@ protected:
     virtual int FillInputPortInformation(int, vtkInformation*) override;
     virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-    virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
-
-    int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-    int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-    int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-    int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+    virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
+    virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
 
 private:
     tpf_fluid_position(const tpf_fluid_position&);
