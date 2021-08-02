@@ -37,74 +37,6 @@ tpf_interface_deformation_glyph::tpf_interface_deformation_glyph()
 
 tpf_interface_deformation_glyph::~tpf_interface_deformation_glyph() {}
 
-int tpf_interface_deformation_glyph::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
-{
-    // Create an output object of the correct type.
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA_OBJECT()))
-    {
-        return this->RequestDataObject(request, input_vector, output_vector);
-    }
-
-    // Generate the data
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_INFORMATION()))
-    {
-        return this->RequestInformation(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA()))
-    {
-        return this->RequestData(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT()))
-    {
-        return this->RequestUpdateExtent(request, input_vector, output_vector);
-    }
-
-    return this->Superclass::ProcessRequest(request, input_vector, output_vector);
-}
-
-int tpf_interface_deformation_glyph::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
-{
-    // Vector glyph
-    {
-        auto output = vtkPolyData::SafeDownCast(output_vector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = vtkPolyData::New();
-            output_vector->GetInformationObject(0)->Set(vtkDataObject::DATA_OBJECT(), output);
-            this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-
-    // Stretching glyph
-    {
-        auto output = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(1)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = vtkMultiBlockDataSet::New();
-            output_vector->GetInformationObject(1)->Set(vtkDataObject::DATA_OBJECT(), output);
-            this->GetOutputPortInformation(1)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-    
-    // Bending glyph
-    {
-        auto output = vtkMultiBlockDataSet::SafeDownCast(output_vector->GetInformationObject(2)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = vtkMultiBlockDataSet::New();
-            output_vector->GetInformationObject(2)->Set(vtkDataObject::DATA_OBJECT(), output);
-            this->GetOutputPortInformation(2)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-
-    return 1;
-}
-
 int tpf_interface_deformation_glyph::FillInputPortInformation(int port, vtkInformation* info)
 {
     if (port == 0)
@@ -134,16 +66,6 @@ int tpf_interface_deformation_glyph::FillOutputPortInformation(int port, vtkInfo
         return 1;
     }
 
-    return 1;
-}
-
-int tpf_interface_deformation_glyph::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*)
-{
-    return 1;
-}
-
-int tpf_interface_deformation_glyph::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
-{
     return 1;
 }
 

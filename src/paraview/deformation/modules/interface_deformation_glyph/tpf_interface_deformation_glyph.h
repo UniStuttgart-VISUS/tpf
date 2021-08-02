@@ -1,12 +1,12 @@
 #pragma once
 
-#include "vtkAlgorithm.h"
+#include "vtkDataObjectAlgorithm.h"
 
-class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
+class VTK_EXPORT tpf_interface_deformation_glyph : public vtkDataObjectAlgorithm
 {
     public:
         static tpf_interface_deformation_glyph* New();
-        vtkTypeMacro(tpf_interface_deformation_glyph, vtkAlgorithm);
+        vtkTypeMacro(tpf_interface_deformation_glyph, vtkDataObjectAlgorithm);
 
         vtkSetMacro(VelocityGlyph, int);
         vtkGetMacro(VelocityGlyph, int);
@@ -102,12 +102,7 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkAlgorithm
         virtual int FillInputPortInformation(int, vtkInformation*) override;
         virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-        virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
-
-        virtual int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
 
     private:
         tpf_interface_deformation_glyph(const tpf_interface_deformation_glyph&);
