@@ -1,15 +1,15 @@
 #pragma once
 
-#include "vtkAlgorithm.h"
+#include "vtkDataObjectAlgorithm.h"
 
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 
-class VTK_EXPORT tpf_droplets : public vtkAlgorithm
+class VTK_EXPORT tpf_droplets : public vtkDataObjectAlgorithm
 {
     public:
         static tpf_droplets* New();
-        vtkTypeMacro(tpf_droplets, vtkAlgorithm);
+        vtkTypeMacro(tpf_droplets, vtkDataObjectAlgorithm);
 
         vtkGetMacro(CalculateTranslation, int);
         vtkSetMacro(CalculateTranslation, int);
@@ -36,12 +36,8 @@ class VTK_EXPORT tpf_droplets : public vtkAlgorithm
         virtual int FillInputPortInformation(int, vtkInformation*) override;
         virtual int FillOutputPortInformation(int, vtkInformation*) override;
 
-        virtual int ProcessRequest(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
-
-        virtual int RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
-        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*);
+        virtual int RequestUpdateExtent(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
+        virtual int RequestData(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
 
     private:
         tpf_droplets(const tpf_droplets&);

@@ -22,23 +22,6 @@
 #include <algorithm>
 #include <exception>
 
-namespace
-{
-    template <typename T>
-    void create_or_get_data_object(const int index, vtkAlgorithm* output_algorithm, vtkInformationVector* output_info)
-    {
-        auto output = T::SafeDownCast(output_info->GetInformationObject(index)->Get(vtkDataObject::DATA_OBJECT()));
-
-        if (!output)
-        {
-            output = T::New();
-            output_info->GetInformationObject(index)->Set(vtkDataObject::DATA_OBJECT(), output);
-            output->FastDelete();
-
-            output_algorithm->GetOutputPortInformation(index)->Set(vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
-        }
-    }
-}
 
 vtkStandardNewMacro(tpf_fluid_position);
 
@@ -75,46 +58,6 @@ int tpf_fluid_position::FillOutputPortInformation(int port, vtkInformation* info
     }
 
     return 0;
-}
-
-int tpf_fluid_position::ProcessRequest(vtkInformation* request, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
-{
-    // Create an output object of the correct type.
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA_OBJECT()))
-    {
-        return this->RequestDataObject(request, input_vector, output_vector);
-    }
-
-    // Generate the data
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_INFORMATION()))
-    {
-        return this->RequestInformation(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkDemandDrivenPipeline::REQUEST_DATA()))
-    {
-        return this->RequestData(request, input_vector, output_vector);
-    }
-
-    if (request->Has(vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT()))
-    {
-        return this->RequestUpdateExtent(request, input_vector, output_vector);
-    }
-
-    return this->Superclass::ProcessRequest(request, input_vector, output_vector);
-}
-
-int tpf_fluid_position::RequestDataObject(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
-{
-    create_or_get_data_object<vtkRectilinearGrid>(0, this, output_vector);
-    create_or_get_data_object<vtkPolyData>(1, this, output_vector);
-
-    return 1;
-}
-
-int tpf_fluid_position::RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector* output_vector)
-{
-    return 1;
 }
 
 int tpf_fluid_position::RequestUpdateExtent(vtkInformation*, vtkInformationVector** input_vector, vtkInformationVector* output_vector)
