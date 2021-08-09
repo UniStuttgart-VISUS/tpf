@@ -643,7 +643,7 @@ namespace tpf
 
                             // Calculate and apply anisotropy for superellipse
                             const auto anisotropy = (max - min) / (max + min);
-                            const auto anisotropy_exp = std::pow(anisotropy, sharpness);
+                            const auto anisotropy_exp = std::pow(1.0 - anisotropy, sharpness);
 
                             auto superellipse = [anisotropy_exp](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
                             {
