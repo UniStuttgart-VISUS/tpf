@@ -56,8 +56,11 @@ namespace tpf
             template <typename float_t>
             struct stretching_params_t
             {
-                /// Exponent for increasing the stretching effect
-                float_t exponent;
+                /// Scalar for increasing the stretching effect
+                float_t scalar;
+
+                /// Sharpness of superellipsoid
+                float_t sharpness;
 
                 /// Scalar for scaling the glyphs
                 float_t size_scalar;
@@ -281,11 +284,12 @@ namespace tpf
             /// <param name="glyph_template">Template to instantiate</param>
             /// <param name="average_cell_size">Average cell size of the data</param>
             /// <param name="size_scalar">Scalar to modify the size relative to the average cell size</param>
-            /// <param name="exponent">Exponent used for scaling the stretching factor</param>
+            /// <param name="scalar">Scalar used for scaling the stretching factor</param>
+            /// <param name="sharpness">Sharpness for superellipsoid</param>
             /// <param name="show_strips">Show strips indicating the major eigenvectors</param>
             /// <param name="show_reference">Show reference circle</param>
             void instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template, float_t average_cell_size,
-                float_t size_scalar, float_t exponent, bool show_strips, bool show_reference);
+                float_t size_scalar, float_t scalar, float_t sharpness, bool show_strips, bool show_reference);
 
             /// <summary>
             /// Create a bending glyph (disc), its center being the origin and extending in the x,y-plane with radius 1

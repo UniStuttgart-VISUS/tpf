@@ -38,6 +38,9 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkDataObjectAlgorithm
         vtkSetMacro(StretchingExponent, float);
         vtkGetMacro(StretchingExponent, float);
 
+        vtkSetMacro(StretchingSharpness, float);
+        vtkGetMacro(StretchingSharpness, float);
+
         vtkSetMacro(StretchingSizeScalar, float);
         vtkGetMacro(StretchingSizeScalar, float);
 
@@ -126,6 +129,7 @@ class VTK_EXPORT tpf_interface_deformation_glyph : public vtkDataObjectAlgorithm
         int StretchingGlyph;
 
         float StretchingExponent;
+        float StretchingSharpness;
         float StretchingSizeScalar;
         float StretchingHoleRadius;
         float StretchingOffset;

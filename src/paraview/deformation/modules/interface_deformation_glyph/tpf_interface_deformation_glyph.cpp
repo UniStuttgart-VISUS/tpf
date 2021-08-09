@@ -137,7 +137,8 @@ int tpf_interface_deformation_glyph::RequestData(vtkInformation*, vtkInformation
         velocity_parameters.shaft_thickness = this->ArrowThickness;
 
         tpf::modules::interface_deformation_glyph_aux::stretching_params_t<float_t> stretching_parameters;
-        stretching_parameters.exponent = this->StretchingExponent;
+        stretching_parameters.scalar = this->StretchingExponent;
+        stretching_parameters.sharpness = this->StretchingSharpness;
         stretching_parameters.size_scalar = this->StretchingSizeScalar;
         stretching_parameters.hole_radius = this->StretchingHoleRadius;
         stretching_parameters.offset = this->StretchingOffset;

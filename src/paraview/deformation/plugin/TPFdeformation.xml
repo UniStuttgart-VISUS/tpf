@@ -403,6 +403,14 @@
                     Scalar for increasing the deformation of the glyph caused by the stretching
                 </Documentation>
             </DoubleVectorProperty>
+            <DoubleVectorProperty name="StretchingSharpness" command="SetStretchingSharpness" label="Sharpness" number_of_elements="1" default_values="0.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
+                </Hints>
+                <Documentation>
+                    Edge sharpness for superellipse (0 for ellipse)
+                </Documentation>
+            </DoubleVectorProperty>
             <DoubleVectorProperty name="StretchingSizeScalar" command="SetStretchingSizeScalar" label="Size scalar" number_of_elements="1" default_values="0.4">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
@@ -425,7 +433,7 @@
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="StretchingGlyph" value="1" />
                 </Hints>
                 <Documentation>
-                    Offset from the interface position along the normal.
+                    Offset from the interface position along the normal
                 </Documentation>
             </DoubleVectorProperty>
             <IntVectorProperty name="StretchingDiscResolution" command="SetStretchingDiscResolution" label="Disc resolution" number_of_elements="1" default_values="32" panel_visibility="advanced">
@@ -604,6 +612,7 @@
             <PropertyGroup label="Stretching glyph">
                 <Property name="StretchingGlyph" />
                 <Property name="StretchingExponent" />
+                <Property name="StretchingSharpness" />
                 <Property name="StretchingSizeScalar" />
                 <Property name="StretchingHoleRadius" />
                 <Property name="StretchingOffset" />

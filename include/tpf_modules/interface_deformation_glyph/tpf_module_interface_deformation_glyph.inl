@@ -141,7 +141,8 @@ namespace tpf
                     this->stretching_parameters.disc_bending, this->stretching_parameters.hole_radius,
                     this->stretching_parameters.offset, this->stretching_parameters.strip_size, this->stretching_parameters.reference_size,
                     this->stretching_parameters.z_offset), average_cell_size, this->stretching_parameters.size_scalar,
-                    this->stretching_parameters.exponent, this->stretching_parameters.show_strip, this->stretching_parameters.show_reference);
+                    this->stretching_parameters.scalar, this->stretching_parameters.sharpness,
+                    this->stretching_parameters.show_strip, this->stretching_parameters.show_reference);
             }
 
             // Create bending glyph
@@ -587,11 +588,12 @@ namespace tpf
 
         template <typename float_t>
         inline void interface_deformation_glyph<float_t>::instantiate_stretching_glpyh(const stretching_glyph_t& glyph_template,
-            const float_t average_cell_size, float_t size_scalar, float_t exponent, const bool show_strips, const bool show_reference)
+            const float_t average_cell_size, float_t size_scalar, float_t scalar, float_t sharpness, const bool show_strips, const bool show_reference)
         {
             // Clamp parameter values
             size_scalar = std::max(size_scalar, static_cast<float_t>(0.00001 * average_cell_size));
-            exponent = std::max(exponent, static_cast<float_t>(0.0));
+            scalar = std::max(scalar, static_cast<float_t>(0.0));
+            sharpness = std::max(sharpness, static_cast<float_t>(0.0));
 
             // Get input data
             const data::grid<float_t, float_t, 3, 1>& vof = *this->vof;
@@ -614,7 +616,7 @@ namespace tpf
             auto relevance_references = std::make_shared<data::array<float_t>>("Relevance");
 
             // Iterate over all interface cells
-            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, exponent)
+            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, scalar)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
                 z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
@@ -639,13 +641,32 @@ namespace tpf
                             const math::transformer<float_t, 3> translation_and_rotation(origin,
                                 stretching_min.normalized(), stretching_max.normalized(), normal);
 
+                            // Calculate and apply anisotropy for superellipse
+                            const auto anisotropy = (max - min) / (max + min);
+                            const auto anisotropy_exp = std::pow(anisotropy, sharpness);
+
+                            auto superellipse = [anisotropy_exp](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
+                            {
+                                const auto radius = std::sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+
+                                Eigen::Matrix<float_t, 4, 1> superellipse_vector;
+
+                                superellipse_vector <<
+                                    radius * std::copysign(std::pow(std::abs(vector[0]) / radius, anisotropy_exp), vector[0]),
+                                    radius * std::copysign(std::pow(std::abs(vector[1]) / radius, anisotropy_exp), vector[1]),
+                                    vector[2],
+                                    vector[3];
+
+                                return superellipse_vector;
+                            };
+
                             // Scale
                             Eigen::Matrix<float_t, 4, 4> scale_matrix, reference_scale_matrix;
                             scale_matrix.setIdentity();
                             reference_scale_matrix.setIdentity();
 
-                            scale_matrix(0, 0) = size_scalar * average_cell_size * min * ((min > 1.0) ? exponent : (1.0 / exponent));
-                            scale_matrix(1, 1) = size_scalar * average_cell_size * max * ((max > 1.0) ? exponent : (1.0 / exponent));
+                            scale_matrix(0, 0) = size_scalar * average_cell_size * min * ((min > 1.0) ? scalar : (1.0 / scalar));
+                            scale_matrix(1, 1) = size_scalar * average_cell_size * max * ((max > 1.0) ? scalar : (1.0 / scalar));
                             scale_matrix(2, 2) = size_scalar * average_cell_size;
 
                             reference_scale_matrix(0, 0) = size_scalar * average_cell_size;
@@ -653,8 +674,10 @@ namespace tpf
                             reference_scale_matrix(2, 2) = size_scalar * average_cell_size;
 
                             // Create object matrix
-                            const math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
+                            math::transformer<float_t, 3> trafo(translation_and_rotation * math::transformer<float_t, 3>(scale_matrix));
                             const math::transformer<float_t, 3> trafo_ref(translation_and_rotation * math::transformer<float_t, 3>(reference_scale_matrix));
+
+                            trafo.set_preprocessing(superellipse);
 
                             // Instantiate glyph
                             auto stretching_glyph_ring_instance = std::get<0>(glyph_template).first->clone(trafo);
