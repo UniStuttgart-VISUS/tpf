@@ -31,14 +31,11 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(NumAdvections, int);
         vtkSetMacro(NumAdvections, int);
 
-        vtkGetMacro(ForceFixedTimeStep, int);
-        vtkSetMacro(ForceFixedTimeStep, int);
+        vtkGetMacro(TimeStepMethod, int);
+        vtkSetMacro(TimeStepMethod, int);
 
-        vtkGetMacro(StreamTimeStep, double);
-        vtkSetMacro(StreamTimeStep, double);
-
-        vtkGetMacro(TimeStepFromData, int);
-        vtkSetMacro(TimeStepFromData, int);
+        vtkGetMacro(FixedTimeStep, double);
+        vtkSetMacro(FixedTimeStep, double);
 
         vtkGetMacro(TimeDependency, int);
         vtkSetMacro(TimeDependency, int);
@@ -89,14 +86,11 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         /// Number of advections
         int NumAdvections;
 
-        /// Force fixed time step
-        int ForceFixedTimeStep;
+        /// Methods for time steps: fixed or from data
+        int TimeStepMethod;
 
         /// Time step if fixed
-        double StreamTimeStep;
-
-        /// Force fixed time step
-        int TimeStepFromData;
+        double FixedTimeStep;
 
         /// Dynamic vs. static frame of reference
         int TimeDependency;

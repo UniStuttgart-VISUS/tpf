@@ -83,9 +83,10 @@ namespace tpf
             std::vector<tpf::geometry::point<float_t>> seed_points;
             seed_points.reserve(seed_geometry.size());
 
-            std::transform(seed_geometry.cbegin(), seed_geometry.cend(), std::back_inserter(seed_points), [](std::shared_ptr<geometry::geometric_object<float_t>> point)
+            std::for_each(seed_geometry.cbegin(), seed_geometry.cend(), [&seed_points](std::shared_ptr<geometry::geometric_object<float_t>> object)
                 {
-                    return static_cast<const tpf::geometry::point<float_t>&>(*point);
+                    const auto points = object->get_points();
+                    seed_points.insert(seed_points.end(), points.begin(), points.end());
                 });
 
             flow_field_aux::particle_seed<float_t> particles;

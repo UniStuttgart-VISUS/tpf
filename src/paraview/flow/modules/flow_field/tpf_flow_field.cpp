@@ -53,6 +53,12 @@ namespace
     class data_handler : public tpf::modules::flow_field_aux::request_frame_call_back<float_t, Eigen::Matrix<float_t, 3, 1>>
     {
     public:
+        /// Method for extracting time step information
+        enum class timestep_method_t
+        {
+            paraview, fixed, data_direct, data_difference
+        };
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -64,12 +70,11 @@ namespace
         /// <param name="get_array_name">Function to query the respective array names</param>
         /// <param name="array_selection">Selection of property arrays to interpolate and store at particle positions</param>
         /// <param name="forward">Forward or reverse integration, where true indicates forward, and false reverse direction</param>
+        /// <param name="timestep_method">Extract timestep information from data</param>
         /// <param name="fixed_timestep">Optional fixed timestep</param>
-        /// <param name="time_from_data">Extract timestep information from data</param>
         data_handler(const std::size_t current_timestep, const std::vector<float_t>& timesteps,
             vtkInformation* request, vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
-            vtkDataArraySelection* array_selection, const bool forward, std::optional<float_t> fixed_timestep = std::nullopt,
-            const bool time_from_data = false)
+            vtkDataArraySelection* array_selection, const bool forward, timestep_method_t timestep_method, float_t fixed_timestep = 1.0)
         {
             this->time_offset = static_cast<int>(this->original_time = current_timestep);
             this->timesteps = timesteps;
@@ -83,8 +88,8 @@ namespace
             this->array_selection = array_selection;
 
             this->forward = forward;
+            this->timestep_method = timestep_method;
             this->fixed_timestep = fixed_timestep;
-            this->time_from_data = time_from_data;
         }
 
         /// <summary>
@@ -159,11 +164,13 @@ namespace
                 // Compute time step
                 float_t timestep_delta;
 
-                if (this->fixed_timestep)
+                switch (this->timestep_method)
                 {
-                    timestep_delta = *this->fixed_timestep;
-                }
-                else if (this->time_from_data)
+                case timestep_method_t::fixed:
+                    timestep_delta = this->fixed_timestep;
+
+                    break;
+                case timestep_method_t::data_direct:
                 {
                     const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
 
@@ -178,19 +185,45 @@ namespace
                         timestep_delta = time_array->GetComponent(0, 0);
                     }
                 }
-                else if (this->timesteps.empty() || this->timesteps.size() == 1)
-                {
-                    tpf::log::warning_message(__tpf_warning_message("No valid time step found. Using 1.0 instead."));
 
-                    timestep_delta = 1.0;
-                }
-                else if (this->time_offset == 0)
+                    break;
+                case timestep_method_t::data_difference:
                 {
-                    timestep_delta = this->timesteps[1] - this->timesteps[0];
+                    const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
+
+                    if (time_array == nullptr)
+                    {
+                        tpf::log::warning_message(__tpf_warning_message("No valid time step data found. Using 1.0 instead."));
+
+                        timestep_delta = 1.0;
+                    }
+                    else
+                    {
+                        timestep_delta = std::abs(time_array->GetComponent(0, 0) - this->last_time);
+
+                        this->last_time = time_array->GetComponent(0, 0);
+                    }
                 }
-                else
-                {
-                    timestep_delta = this->timesteps[this->time_offset] - this->timesteps[this->time_offset - 1];
+
+                    break;
+                case timestep_method_t::paraview:
+                default:
+                    if (this->timesteps.empty() || this->timesteps.size() == 1)
+                    {
+                        tpf::log::warning_message(__tpf_warning_message("No valid time step found. Using 1.0 instead."));
+
+                        timestep_delta = 1.0;
+                    }
+                    else if (this->time_offset == 0)
+                    {
+                        timestep_delta = this->timesteps[1] - this->timesteps[0];
+                    }
+                    else
+                    {
+                        timestep_delta = this->timesteps[this->time_offset] - this->timesteps[this->time_offset - 1];
+                    }
+
+                    break;
                 }
 
                 if (timestep_delta == 0.0)
@@ -386,6 +419,14 @@ namespace
 
                 if (this->time_offset >= 0 && this->time_offset < this->timesteps.size())
                 {
+                    // Calculate first time step size if necessary
+                    if (this->timestep_method == timestep_method_t::data_difference && this->original_time == this->time_offset)
+                    {
+                        const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
+
+                        this->last_time = time_array->GetComponent(0, 0);
+                    }
+
                     // Request update
                     this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), this->timesteps[this->time_offset]);
 
@@ -394,6 +435,15 @@ namespace
                     if (this->droplets_alg != nullptr)
                     {
                         this->droplets_alg->Update(this->request);
+                    }
+
+                    // Calculate first time step size if necessary (continuation)
+                    if (this->timestep_method == timestep_method_t::data_difference && this->original_time == this->time_offset)
+                    {
+                        const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
+
+                        timestep_delta = time_array->GetComponent(0, 0) - this->last_time;
+                        this->last_time = time_array->GetComponent(0, 0);
                     }
                 }
 
@@ -456,9 +506,10 @@ namespace
         /// Time direction
         bool forward;
 
-        /// Fixed timestep
-        std::optional<float_t> fixed_timestep;
-        bool time_from_data;
+        /// Timestep extraction
+        timestep_method_t timestep_method;
+        float_t fixed_timestep;
+        float_t last_time;
 
         /// Data of current timestep
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid;
@@ -556,8 +607,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
 
         data_handler<float_t> call_back_loader(current_timestep, timesteps, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
             get_array_name, this->array_selection, this->Direction == 0,
-            this->ForceFixedTimeStep ? std::make_optional(static_cast<float_t>(this->StreamTimeStep)) : std::nullopt,
-            this->TimeStepFromData != 0);
+            static_cast<data_handler<float_t>::timestep_method_t>(this->TimeStepMethod), this->FixedTimeStep);
 
         // Create seed
         tpf::data::polydata<float_t> seed;

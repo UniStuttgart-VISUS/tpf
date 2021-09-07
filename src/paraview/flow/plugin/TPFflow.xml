@@ -170,26 +170,25 @@
                     Number of advection steps
                 </Documentation>
             </IntVectorProperty>
-            <IntVectorProperty name="ForceFixedTimeStep" command="SetForceFixedTimeStep" label="Force fixed time step" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
+            <IntVectorProperty name="TimeStepMethod" command="SetTimeStepMethod" label="Time step method" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="ParaView time"/>
+                    <Entry value="1" text="Fixed time step"/>
+                    <Entry value="2" text="Data time step"/>
+                    <Entry value="3" text="Difference between data times"/>
+                </EnumerationDomain>
                 <Documentation>
-                    Force a fixed time step for streak- and pathline computation
+                    Control method for extracting time step information for stream-, streak- and pathline computation
                 </Documentation>
             </IntVectorProperty>
-            <DoubleVectorProperty name="StreamTimeStep" command="SetStreamTimeStep" label="Fixed time step" number_of_elements="1" default_values="1.0">
+            <DoubleVectorProperty name="FixedTimeStep" command="SetFixedTimeStep" label="Fixed time step" number_of_elements="1" default_values="1.0">
                 <Hints>
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="ForceFixedTimeStep" value="1" />
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepMethod" value="1" />
                 </Hints>
                 <Documentation>
-                    Time step size for streamline computation; and for streak- and pathline computation in case of a fixed time step
+                    Time step size when choosing to use a fixed time step
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="TimeStepFromData" command="SetTimeStepFromData" label="Get time step from data" number_of_elements="1" default_values="0">
-                <BooleanDomain name="bool"/>
-                <Documentation>
-                    Get a time step for stream-, streak- and pathline computation from within the data
-                </Documentation>
-            </IntVectorProperty>
             <StringVectorProperty name="TimeStep" label="Time step" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
                 <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="time_array" none_string="None">
                     <RequiredProperties>
@@ -198,10 +197,15 @@
                 </ArrayListDomain>
                 <Hints>
                     <NoDefault />
-                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepFromData" value="1" />
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepMethod" value="2" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepMethod" value="3" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
                 </Hints>
                 <Documentation>
-                    Rotation of the droplet around its axis of rotation, given as angular velocity
+                    Time step or time from data, depending on chosen time step method
                 </Documentation>
             </StringVectorProperty>
 
@@ -270,9 +274,8 @@
                 <Property name="Method" />
                 <Property name="Direction" />
                 <Property name="NumAdvections" />
-                <Property name="ForceFixedTimeStep" />
-                <Property name="StreamTimeStep" />
-                <Property name="TimeStepFromData" />
+                <Property name="TimeStepMethod" />
+                <Property name="FixedTimeStep" />
                 <Property name="TimeStep" />
             </PropertyGroup>
 
