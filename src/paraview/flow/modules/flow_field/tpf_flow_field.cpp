@@ -445,7 +445,6 @@ namespace
                         const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
 
                         timestep_delta = time_array->GetComponent(0, 0) - this->last_time;
-                        this->last_time = time_array->GetComponent(0, 0);
                     }
                 }
 
