@@ -164,6 +164,8 @@ namespace
                 // Compute time step
                 float_t timestep_delta;
 
+                const bool incomplete = this->timestep_method == timestep_method_t::data_difference && this->original_time == this->time_offset;
+
                 switch (this->timestep_method)
                 {
                 case timestep_method_t::fixed:
@@ -420,7 +422,7 @@ namespace
                 if (this->time_offset >= 0 && this->time_offset < this->timesteps.size())
                 {
                     // Calculate first time step size if necessary
-                    if (this->timestep_method == timestep_method_t::data_difference && this->original_time == this->time_offset)
+                    if (incomplete)
                     {
                         const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
 
@@ -438,7 +440,7 @@ namespace
                     }
 
                     // Calculate first time step size if necessary (continuation)
-                    if (this->timestep_method == timestep_method_t::data_difference && this->original_time == this->time_offset)
+                    if (incomplete)
                     {
                         const auto time_array = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str());
 
