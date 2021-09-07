@@ -154,9 +154,9 @@ namespace tpf
             std::map<std::size_t, std::size_t> map_to_original;
 
             auto position = this->droplets->get_geometry();
-            auto translation = this->droplets->get_point_data_as<float_t, 3>(this->translation_name);
-            auto rotation = this->droplets->get_point_data_as<float_t, 3>(this->rotation_name);
-            auto radius = this->droplets->get_point_data_as<float_t, 1>(this->radius_name);
+            auto translation = this->droplets->template get_point_data_as<float_t, 3>(this->translation_name);
+            auto rotation = this->droplets->template get_point_data_as<float_t, 3>(this->rotation_name);
+            auto radius = this->droplets->template get_point_data_as<float_t, 1>(this->radius_name);
 
             for (std::size_t i = 0; i < droplets_over_time.size(); ++i)
             {
@@ -189,9 +189,9 @@ namespace tpf
                             auto& next_droplet_ids = std::get<2>(next_data);
 
                             auto next_position = next_droplets.get_geometry();
-                            auto next_translation = next_droplets.get_point_data_as<float_t, 3>(this->translation_name);
-                            auto next_rotation = next_droplets.get_point_data_as<float_t, 3>(this->rotation_name);
-                            auto next_radius = next_droplets.get_point_data_as<float_t, 1>(this->radius_name);
+                            auto next_translation = next_droplets.template get_point_data_as<float_t, 3>(this->translation_name);
+                            auto next_rotation = next_droplets.template get_point_data_as<float_t, 3>(this->rotation_name);
+                            auto next_radius = next_droplets.template get_point_data_as<float_t, 1>(this->radius_name);
 
                             timesteps.push_back(next_timestep_delta);
 
@@ -486,9 +486,9 @@ namespace tpf
                 }
 
                 // Create arrow tip
-                constexpr auto tip_rotation = static_cast<float_t>(0.1);
-                constexpr auto tip_resolution = 10;
-                constexpr auto rotation_increment = tip_rotation / tip_resolution;
+                const auto tip_rotation = static_cast<float_t>(0.1);
+                const auto tip_resolution = 10;
+                const auto rotation_increment = tip_rotation / tip_resolution;
 
                 for (std::size_t iteration = 0; iteration < tip_resolution - 1; ++iteration)
                 {
