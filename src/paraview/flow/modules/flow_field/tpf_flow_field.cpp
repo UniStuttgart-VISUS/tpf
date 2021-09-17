@@ -53,12 +53,6 @@ namespace
     class data_handler : public tpf::modules::flow_field_aux::request_frame_call_back<float_t, Eigen::Matrix<float_t, 3, 1>>
     {
     public:
-        /// Method for extracting time step information
-        enum class time_source_t
-        {
-            paraview, data_direct, data_difference
-        };
-
         /// <summary>
         /// Constructor
         /// </summary>
@@ -70,11 +64,10 @@ namespace
         /// <param name="array_selection">Selection of property arrays to interpolate and store at particle positions</param>
         /// <param name="initial_time">Initial time for integration</param>
         /// <param name="timestep">Timestep size (delta t)</param>
-        /// <param name="time_source">Extract time information from data</param>
         data_handler(const std::array<double, 2>& data_time_range, vtkInformation* request,
             vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg,
             std::function<std::string(int, int)> get_array_name, vtkDataArraySelection* array_selection,
-            const double initial_time, const double timestep, const time_source_t time_source)
+            const double initial_time, const double timestep)
         {
             this->time_offset = this->original_time = initial_time;
             this->data_time_range = data_time_range;
@@ -88,7 +81,6 @@ namespace
             this->array_selection = array_selection;
 
             this->timestep = timestep;
-            this->time_source = time_source;
         }
 
         /// <summary>
@@ -348,60 +340,10 @@ namespace
                     };
                 }
 
+                // Get time information and set new timestep for next iteration
                 if (this->data_time_range[0] != this->data_time_range[1])
                 {
-                    // Calculate ParaView time for next time step
-                    switch (this->time_source)
-                    {
-                    case time_source_t::data_direct: // Time difference between time steps is encoded in a user-defined array
-                        if (in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str()) == nullptr)
-                        {
-                            tpf::log::warning_message(__tpf_warning_message(
-                                "No valid time step data found. Using 1.0 as difference between time steps instead."));
-
-                            this->time_offset += this->timestep;
-                        }
-                        else
-                        {
-                            this->time_offset += this->timestep / in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str())->GetComponent(0, 0);
-                        }
-
-                        break;
-                    case time_source_t::data_difference: // Time difference between time steps has to be calculated from user-defined time data
-                    {
-                        if (in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str()) == nullptr)
-                        {
-                            tpf::log::warning_message(__tpf_warning_message(
-                                "No valid time step data found. Using 1.0 as difference between time steps instead."));
-
-                            this->time_offset += this->timestep;
-                        }
-                        else
-                        {
-                            const auto current_time = in_grid->GetFieldData()->GetArray(get_array_name(6, 0).c_str())->GetComponent(0, 0);
-
-                            // Get next _available_ time step
-                            const auto next_offset = (this->timestep > 0.0) ?
-                                (std::floor(this->time_offset) + 1.0) : (std::ceil(this->time_offset) - 1.0);
-
-                            this->request->Set(vtkStreamingDemandDrivenPipeline::UPDATE_TIME_STEP(), next_offset);
-                            this->grid_alg->Update(this->request);
-
-                            const auto next_time = vtkRectilinearGrid::SafeDownCast(this->grid_alg->GetOutputDataObject(0))
-                                ->GetFieldData()->GetArray(get_array_name(6, 0).c_str())->GetComponent(0, 0);
-
-                            const auto delta = next_time - current_time;
-
-                            // Linear interpolate correct offset
-                            this->time_offset += ((next_offset - this->time_offset) / delta) * this->timestep;
-                        }
-                    }
-
-                    break;
-                    case time_source_t::paraview: // Using time in ParaView
-                    default:
-                        this->time_offset += this->timestep;
-                    }
+                    this->time_offset += this->timestep;
                 }
 
                 const auto sample_time = this->grid_alg->GetOutputDataObject(0)->GetInformation()->Get(vtkDataObject::DATA_TIME_STEP());
@@ -460,7 +402,6 @@ namespace
         vtkDataArraySelection* array_selection;
 
         /// Timestep information
-        time_source_t time_source;
         double timestep;
 
         /// Data of current timestep
@@ -568,8 +509,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             : static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / this->FixedTimeStep));
 
         data_handler<float_t> call_back_loader(data_time_range, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
-            get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]),
-            this->FixedTimeStep, static_cast<data_handler<float_t>::time_source_t>(this->TimeStepMethod));
+            get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]), this->FixedTimeStep);
 
         // Create seed
         tpf::data::polydata<float_t> seed;

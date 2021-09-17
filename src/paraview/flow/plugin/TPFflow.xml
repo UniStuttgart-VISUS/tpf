@@ -183,44 +183,6 @@
                     Time step size
                 </Documentation>
             </DoubleVectorProperty>
-            <IntVectorProperty name="TimeStepMethod" command="SetTimeStepMethod" label="Time source" number_of_elements="1" default_values="0">
-                <EnumerationDomain name="enum">
-                    <Entry value="0" text="ParaView time"/>
-                    <Entry value="1" text="Data time step"/>
-                    <Entry value="2" text="Difference between data times"/>
-                </EnumerationDomain>
-                <Hints>
-                    <NoDefault />
-                    <PropertyWidgetDecorator type="CompositeDecorator">
-                        <Expression type="or">
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
-                        </Expression>
-                    </PropertyWidgetDecorator>
-                </Hints>
-                <Documentation>
-                    Control method for extracting time (step) information
-                </Documentation>
-            </IntVectorProperty>
-            <StringVectorProperty name="TimeStep" label="Time step" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
-                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="time_array" none_string="None">
-                    <RequiredProperties>
-                        <Property name="Input" function="Input" />
-                    </RequiredProperties>
-                </ArrayListDomain>
-                <Hints>
-                    <NoDefault />
-                    <PropertyWidgetDecorator type="CompositeDecorator">
-                        <Expression type="or">
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepMethod" value="1" />
-                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="TimeStepMethod" value="2" />
-                        </Expression>
-                    </PropertyWidgetDecorator>
-                </Hints>
-                <Documentation>
-                    Time step or time from data, depending on chosen time step method
-                </Documentation>
-            </StringVectorProperty>
 
             <IntVectorProperty name="TimeDependency" command="SetTimeDependency" label="Time dependency" number_of_elements="1" default_values="0">
                 <EnumerationDomain name="enum">
@@ -288,8 +250,6 @@
                 <Property name="NumAdvections" />
                 <Property name="TimeRange" />
                 <Property name="FixedTimeStep" />
-                <Property name="TimeStepMethod" />
-                <Property name="TimeStep" />
             </PropertyGroup>
 
             <PropertyGroup label="Frame of reference">

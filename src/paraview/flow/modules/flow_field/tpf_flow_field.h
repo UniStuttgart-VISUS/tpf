@@ -34,9 +34,6 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(FixedTimeStep, double);
         vtkSetMacro(FixedTimeStep, double);
 
-        vtkGetMacro(TimeStepMethod, int);
-        vtkSetMacro(TimeStepMethod, int);
-
         vtkGetMacro(TimeDependency, int);
         vtkSetMacro(TimeDependency, int);
 
@@ -88,9 +85,6 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Time step size
         double FixedTimeStep;
-
-        /// Source for time information
-        int TimeStepMethod;
 
         /// Dynamic vs. static frame of reference
         int TimeDependency;
