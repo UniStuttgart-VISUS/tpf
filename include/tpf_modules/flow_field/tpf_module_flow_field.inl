@@ -170,15 +170,15 @@ namespace tpf
 
             const auto timestep_delta = std::get<0>(data);
 
-            const auto velocities = std::get<1>(data);
-            const auto get_translation = std::get<2>(data);
-            const auto get_angular_velocity = std::get<3>(data);
-            const auto get_barycenter = std::get<4>(data);
-            const auto get_initial_translation = std::get<5>(data);
-            const auto get_initial_angular_velocity = std::get<6>(data);
-            const auto is_particle_valid = std::get<7>(data);
+            const auto velocities = std::get<2>(data);
+            const auto get_translation = std::get<3>(data);
+            const auto get_angular_velocity = std::get<4>(data);
+            const auto get_barycenter = std::get<5>(data);
+            const auto get_initial_translation = std::get<6>(data);
+            const auto get_initial_angular_velocity = std::get<7>(data);
+            const auto is_particle_valid = std::get<8>(data);
 
-            const auto fields = std::get<8>(data);
+            const auto fields = std::get<9>(data);
 
             // Interpolate at property fields
             std::vector<std::vector<std::vector<double>>> properties(fields.size());
@@ -289,16 +289,17 @@ namespace tpf
             auto data = next_time_frame_callback();
 
             auto timestep_delta = std::get<0>(data);
+            auto sample_time = std::get<1>(data);
 
-            auto velocities = std::get<1>(data);
-            auto get_translation = std::get<2>(data);
-            auto get_angular_velocity = std::get<3>(data);
-            auto get_barycenter = std::get<4>(data);
-            auto get_initial_translation = std::get<5>(data);
-            auto get_initial_angular_velocity = std::get<6>(data);
-            auto is_particle_valid = std::get<7>(data);
+            auto velocities = std::get<2>(data);
+            auto get_translation = std::get<3>(data);
+            auto get_angular_velocity = std::get<4>(data);
+            auto get_barycenter = std::get<5>(data);
+            auto get_initial_translation = std::get<6>(data);
+            auto get_initial_angular_velocity = std::get<7>(data);
+            auto is_particle_valid = std::get<8>(data);
 
-            auto fields = std::get<8>(data);
+            auto fields = std::get<9>(data);
 
             // Interpolate at property fields
             std::vector<std::vector<std::vector<double>>> properties(fields.size());
@@ -404,7 +405,7 @@ namespace tpf
                 num_valid_particles = particles.sort_and_count(num_valid_particles);
 
                 // Status information
-                tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
+                tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections, " - sample time: ", sample_time));
 
 #ifdef __tpf_debug
                 tpf::log::info_message(__tpf_info_message("Number of valid particles: ", num_valid_particles));
@@ -431,16 +432,17 @@ namespace tpf
                             data = next_time_frame_callback();
 
                             timestep_delta = std::get<0>(data) == static_cast<float_t>(0.0) ? timestep_delta : std::get<0>(data);
+                            sample_time = std::get<1>(data);
 
-                            velocities = std::get<1>(data);
-                            get_translation = std::get<2>(data);
-                            get_angular_velocity = std::get<3>(data);
-                            get_barycenter = std::get<4>(data);
-                            get_initial_translation = std::get<5>(data);
-                            get_initial_angular_velocity = std::get<6>(data);
-                            is_particle_valid = std::get<7>(data);
+                            velocities = std::get<2>(data);
+                            get_translation = std::get<3>(data);
+                            get_angular_velocity = std::get<4>(data);
+                            get_barycenter = std::get<5>(data);
+                            get_initial_translation = std::get<6>(data);
+                            get_initial_angular_velocity = std::get<7>(data);
+                            is_particle_valid = std::get<8>(data);
 
-                            fields = std::get<8>(data);
+                            fields = std::get<9>(data);
                         }
                         catch (const std::exception&)
                         {
@@ -475,14 +477,15 @@ namespace tpf
             auto data = next_time_frame_callback();
 
             auto timestep_delta = std::get<0>(data);
+            auto sample_time = std::get<1>(data);
 
-            auto velocities = std::get<1>(data);
-            auto get_translation = std::get<2>(data);
-            auto get_angular_velocity = std::get<3>(data);
-            auto get_barycenter = std::get<4>(data);
-            auto get_initial_translation = std::get<5>(data);
-            auto get_initial_angular_velocity = std::get<6>(data);
-            auto is_particle_valid = std::get<7>(data);
+            auto velocities = std::get<2>(data);
+            auto get_translation = std::get<3>(data);
+            auto get_angular_velocity = std::get<4>(data);
+            auto get_barycenter = std::get<5>(data);
+            auto get_initial_translation = std::get<6>(data);
+            auto get_initial_angular_velocity = std::get<7>(data);
+            auto is_particle_valid = std::get<8>(data);
 
             // Create particle trace
             flow_field_aux::streak_trace<float_t> particles(std::move(seed));
@@ -595,7 +598,7 @@ namespace tpf
                 num_valid_particles = particles.sort_and_count(num_valid_particles);
 
                 // Status information
-                tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
+                tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections, " - sample time: ", sample_time));
 
 #ifdef __tpf_debug
                 tpf::log::info_message(__tpf_info_message("Number of valid particles: ", num_valid_particles));
@@ -622,14 +625,15 @@ namespace tpf
                             data = next_time_frame_callback();
 
                             timestep_delta = std::get<0>(data) == static_cast<float_t>(0.0) ? timestep_delta : std::get<0>(data);
+                            sample_time = std::get<1>(data);
 
-                            velocities = std::get<1>(data);
-                            get_translation = std::get<2>(data);
-                            get_angular_velocity = std::get<3>(data);
-                            get_barycenter = std::get<4>(data);
-                            get_initial_translation = std::get<5>(data);
-                            get_initial_angular_velocity = std::get<6>(data);
-                            is_particle_valid = std::get<7>(data);
+                            velocities = std::get<2>(data);
+                            get_translation = std::get<3>(data);
+                            get_angular_velocity = std::get<4>(data);
+                            get_barycenter = std::get<5>(data);
+                            get_initial_translation = std::get<6>(data);
+                            get_initial_angular_velocity = std::get<7>(data);
+                            is_particle_valid = std::get<8>(data);
                         }
                         catch (const std::exception&)
                         {

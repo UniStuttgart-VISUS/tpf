@@ -105,10 +105,10 @@ namespace
         /// <summary>
         /// Returns the data for the next time step if possible
         /// </summary>
-        /// <returns>[Time step delta, velocities, global velocity parts, translation,
+        /// <returns>[Time step delta, sample time, velocities, global velocity parts, translation,
         ///  angular velocity, validity, fields to interpolate and store at the particle positions]</returns>
         virtual std::tuple<
-            float_t,
+            float_t, float_t,
             tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
             std::function<Eigen::Matrix<float_t, 3, 1>(const tpf::geometry::point<float_t>&)>,
@@ -399,9 +399,9 @@ namespace
                     break;
                 }
 
-                // Return [Time step delta, velocities, global velocity parts, translation,
+                // Return [Time step delta, sample time, velocities, global velocity parts, translation,
                 //   angular velocity, initial translation (dummy), initial angular velocity (dummy), validity]
-                return std::make_tuple(timestep_delta,
+                return std::make_tuple(timestep_delta, 0.0,
                     static_cast<tpf::policies::interpolatable<Eigen::Matrix<float_t, 3, 1>, tpf::geometry::point<float_t>>*>(&this->octree),
                     get_translation, get_angular_velocity, get_barycenter, get_translation, get_angular_velocity, is_valid, property_octrees);
             }

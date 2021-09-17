@@ -16,9 +16,6 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(Method, int);
         vtkSetMacro(Method, int);
 
-        vtkGetMacro(Direction, int);
-        vtkSetMacro(Direction, int);
-
         vtkGetMacro(SeedInCells, int);
         vtkSetMacro(SeedInCells, int);
 
@@ -31,11 +28,14 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(NumAdvections, int);
         vtkSetMacro(NumAdvections, int);
 
-        vtkGetMacro(TimeStepMethod, int);
-        vtkSetMacro(TimeStepMethod, int);
+        vtkGetVector2Macro(TimeRange, double);
+        vtkSetVector2Macro(TimeRange, double);
 
         vtkGetMacro(FixedTimeStep, double);
         vtkSetMacro(FixedTimeStep, double);
+
+        vtkGetMacro(TimeStepMethod, int);
+        vtkSetMacro(TimeStepMethod, int);
 
         vtkGetMacro(TimeDependency, int);
         vtkSetMacro(TimeDependency, int);
@@ -80,17 +80,17 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         /// Method to use: 0 - streamlines, 1 - streaklines, 2 - pathlines
         int Method;
 
-        /// Time direction: 0 - forward, 1 - reverse
-        int Direction;
-
-        /// Number of advections
+        /// Number of advections for streamlines
         int NumAdvections;
 
-        /// Methods for time steps: fixed or from data
-        int TimeStepMethod;
+        /// Time range for path- and streaklines
+        double TimeRange[2];
 
-        /// Time step if fixed
+        /// Time step size
         double FixedTimeStep;
+
+        /// Source for time information
+        int TimeStepMethod;
 
         /// Dynamic vs. static frame of reference
         int TimeDependency;
