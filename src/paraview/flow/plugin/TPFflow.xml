@@ -23,7 +23,6 @@
                 <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="cell" name="id_array" number_of_components="1"/>
                 <InputArrayDomain attribute_type="cell" name="velocity_array" number_of_components="3"/>
-                <InputArrayDomain attribute_type="field" name="time_array" number_of_components="1" optional="1"/>
                 <InputArrayDomain attribute_type="point" name="property_arrays" optional="1"/>
                 <Documentation>
                     Grid containing a volume of fluid field, droplet information, and a velocity field

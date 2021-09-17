@@ -576,11 +576,16 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::CELL_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::CELL_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::POINT_DATA },
-            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::POINT_DATA });
+            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<double, 1>{ std::string("Time"), tpf::data::topology_t::POINT_DATA },
+            tpf::data::data_information<std::size_t, 1>{ std::string("Seed ID"), tpf::data::topology_t::POINT_DATA });
 
         for (const auto& pd : lines.get_point_data())
         {
-            if (pd->get_name().substr(0, 2).compare("ID"))
+            if (pd->get_name().compare("ID (Advection)") &&
+                pd->get_name().compare("ID (Distribution)") &&
+                pd->get_name().compare("Time") &&
+                pd->get_name().compare("Seed ID"))
             {
                 tpf::vtk::set_data<double>(output, tpf::data::topology_t::POINT_DATA, pd->get_name(),
                     pd->get_data_dynamic(), pd->get_num_components_dynamic());

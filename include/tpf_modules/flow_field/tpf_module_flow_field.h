@@ -189,8 +189,10 @@ namespace tpf
             /// </summary>
             /// <param name="particles">Particle traces</param>
             /// <param name="num_advections">Number of the current advection step</param>
+            /// <param name="time">Time information</param>
             /// <param name="inverse">Invert direction of lines</param>
-            void create_lines(const flow_field_aux::stream_trace<float_t>& particles, std::size_t num_advections, bool inverse = false);
+            void create_lines(const flow_field_aux::stream_trace<float_t>& particles, std::size_t num_advections,
+                const std::vector<double>& time, bool inverse = false);
 
             /// Seed
             const data::polydata<float_t>* seed;
@@ -198,7 +200,7 @@ namespace tpf
             /// Integration lines
             data::polydata<float_t>* lines;
 
-            /// method_t to use
+            /// Method to use
             flow_field_aux::method_t method;
 
             /// Number of advections
