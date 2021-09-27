@@ -506,7 +506,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const std::size_t num_advections =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
             ? static_cast<std::size_t>(this->NumAdvections)
-            : static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / this->FixedTimeStep));
+            : static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / std::abs(this->FixedTimeStep)));
 
         data_handler<float_t> call_back_loader(data_time_range, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
             get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]), this->FixedTimeStep);
