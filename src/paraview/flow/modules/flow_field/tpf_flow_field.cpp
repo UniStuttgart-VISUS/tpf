@@ -495,7 +495,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")"));
         };
 
-        std::array<double, 2> data_time_range;
+        std::array<double, 2> data_time_range{};
         input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_RANGE(), data_time_range.data());
         const auto current_timestep = in_grid->GetInformation()->Get(vtkDataObject::DATA_TIME_STEP());
 
