@@ -355,7 +355,7 @@ namespace
                     get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity, is_valid, property_grids);
             }
 
-            throw std::exception();
+            throw std::runtime_error(__tpf_error_message("Time step is out of bounds: ", this->time_offset, " is not in [", this->data_time_range[0] , ", ", this->data_time_range[1], "]"));
         }
 
         /// <summary>
