@@ -499,9 +499,10 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_RANGE(), data_time_range.data());
         const auto current_timestep = in_grid->GetInformation()->Get(vtkDataObject::DATA_TIME_STEP());
 
-        const std::array<double, 2> integration_range = {
-            std::min(this->TimeRange[0], this->TimeRange[1]),
-            std::max(this->TimeRange[0], this->TimeRange[1]) };
+        const std::array<double, 2> integration_range =
+            (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
+            ? std::array<double, 2>{ current_timestep, current_timestep }
+            : std::array<double, 2>{ std::min(this->TimeRange[0], this->TimeRange[1]), std::max(this->TimeRange[0], this->TimeRange[1]) };
 
         const std::size_t num_advections =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
