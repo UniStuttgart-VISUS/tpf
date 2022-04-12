@@ -33,15 +33,16 @@ The grid contains the following data fields:
 
 The following parameters can be set by the user:
 
-| Parameter                         | Description                                                  | Type       | Accepted values                           | Default value |
-| --------------------------------- | ------------------------------------------------------------ | ---------- | ----------------------------------------- | ------------- |
-| Number of time steps              | Number of time steps for which information is represented.   | Integer    | \>0                                       | 10            |
-| Compute                           | Switch to allow not to compute information directly.         | Boolean    |                                           | False         |
-| Static frame of reference         | Use the initial droplet information only.                    | Boolean    |                                           | False         |
-| Ribbon size                       | Width scalar for the created ribbons.                        | Float      | \>0                                       | 0.025         |
-| Fix size of rotation axis         | Fix size of the rotation axis to the circumsphere.           | Boolean    |                                           | True          |
-| Rotation axis scale               | Scale rotation axis if size is not fixed.                    | Float      | \>0                                       | 1.0           |
-| Show rotation at the origin       | Show rotation axes at the original droplet's origin.         | Boolean    |                                           | True          |
+| Parameter                         | Description                                                           | Type       | Accepted values                           | Default value |
+| --------------------------------- | --------------------------------------------------------------------- | ---------- | ----------------------------------------- | ------------- |
+| Number of time steps              | Number of time steps for which information is represented.            | Integer    | \>0                                       | 10            |
+| Compute                           | Switch to allow not to compute information directly.                  | Boolean    |                                           | False         |
+| Static frame of reference         | Use the initial droplet information only.                             | Boolean    |                                           | False         |
+| Ribbon size                       | Width scalar for the created ribbons.                                 | Float      | \>0                                       | 0.025         |
+| Ribbon thickness                  | Thickness scalar for the created ribbons, relative to droplet size.   | Float      | \>0                                       | 0.025         |
+| Fix size of rotation axis         | Fix size of the rotation axis to the circumsphere.                    | Boolean    |                                           | True          |
+| Rotation axis scale               | Scale rotation axis if size is not fixed.                             | Float      | \>0                                       | 1.0           |
+| Show rotation at the origin       | Show rotation axes at the original droplet's origin.                  | Boolean    |                                           | True          |
 
 ## Output
 

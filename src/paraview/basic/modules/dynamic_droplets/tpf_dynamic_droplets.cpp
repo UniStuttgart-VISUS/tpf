@@ -256,8 +256,8 @@ int tpf_dynamic_droplets::RequestData(vtkInformation *request, vtkInformationVec
             dynamic_droplets_module.set_output(droplet_tracks, summary, paths, axes, ribbons, rotation_paths, coordinate_axes);
 
             dynamic_droplets_module.set_parameters(static_cast<std::size_t>(this->NumTimeSteps), static_cast<float_t>(timestep),
-                this->StaticFrameOfReference == 1, static_cast<float_t>(this->RibbonSize), this->FixRotationAxisSize == 1,
-                static_cast<float_t>(this->RotationAxisScale), this->RotationAxisTranslation == 1,
+                this->StaticFrameOfReference == 1, static_cast<float_t>(this->RibbonSize), static_cast<float_t>(this->RibbonThickness),
+                this->FixRotationAxisSize == 1, static_cast<float_t>(this->RotationAxisScale), this->RotationAxisTranslation == 1,
                 translation_arr->GetName(), rotation_arr->GetName(), radius_arr->GetName());
 
             // Create call back for loading the next time frame if requested

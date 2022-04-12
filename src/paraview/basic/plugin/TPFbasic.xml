@@ -283,6 +283,14 @@
                     Scaling for ribbons
                 </Documentation>
             </DoubleVectorProperty>
+            <DoubleVectorProperty name="RibbonThickness" command="SetRibbonThickness" label="Ribbon thickness" number_of_elements="1" default_values="0.025">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Thickness of ribbons relative to droplet size
+                </Documentation>
+            </DoubleVectorProperty>
             <IntVectorProperty name="FixRotationAxisSize" command="SetFixRotationAxisSize" label="Fix size of rotation axis" number_of_elements="1" default_values="1">
                 <BooleanDomain name="bool"/>
                 <Hints>

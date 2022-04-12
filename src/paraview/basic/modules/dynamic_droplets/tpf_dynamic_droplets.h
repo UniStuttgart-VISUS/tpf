@@ -15,6 +15,7 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
         vtkSetMacro(StaticFrameOfReference, bool);
 
         vtkSetMacro(RibbonSize, double);
+        vtkSetMacro(RibbonThickness, double);
         vtkSetMacro(FixRotationAxisSize, bool);
         vtkSetMacro(RotationAxisScale, double);
         vtkSetMacro(RotationAxisTranslation, bool);
@@ -47,6 +48,7 @@ class VTK_EXPORT tpf_dynamic_droplets : public vtkMultiBlockDataSetAlgorithm
 
         /// Scaling factor for the visualization of ribbons
         double RibbonSize;
+        double RibbonThickness;
 
         /// Scaling factor and option for the visualization of rotation axes
         bool FixRotationAxisSize;
