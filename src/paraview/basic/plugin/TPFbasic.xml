@@ -291,6 +291,19 @@
                     Thickness of ribbons relative to droplet size
                 </Documentation>
             </DoubleVectorProperty>
+            <IntVectorProperty name="DuplicateRibbons" command="SetDuplicateRibbons" label="Duplicate ribbons" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="No"/>
+                    <Entry value="1" text="Two sides"/>
+                    <Entry value="2" text="Four sides"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Duplicate ribbons if they are small enough, to show them on two or four sides
+                </Documentation>
+            </IntVectorProperty>
             <IntVectorProperty name="FixRotationAxisSize" command="SetFixRotationAxisSize" label="Fix size of rotation axis" number_of_elements="1" default_values="1">
                 <BooleanDomain name="bool"/>
                 <Hints>

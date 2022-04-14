@@ -79,7 +79,8 @@ namespace tpf
         template <typename float_t>
         inline void dynamic_droplets<float_t>::set_algorithm_parameters(const std::size_t num_timesteps,
             const float_t timestep, const bool static_frame_of_reference, const float_t ribbon_scale,
-            const float_t ribbon_thickness, const bool fix_axis_size, const float_t axis_scale, const bool axis_translation,
+            const float_t ribbon_thickness, const dynamic_droplets_aux::ribbon_duplication_t ribbon_duplication,
+            const bool fix_axis_size, const float_t axis_scale, const bool axis_translation,
             std::string translation_name, std::string rotation_name, std::string radius_name)
         {
             this->num_timesteps = num_timesteps;
@@ -88,6 +89,7 @@ namespace tpf
             this->static_frame_of_reference = static_frame_of_reference;
             this->ribbon_scale = ribbon_scale;
             this->ribbon_thickness = ribbon_thickness;
+            this->ribbon_duplication = ribbon_duplication;
             this->fix_axis_size = fix_axis_size;
             this->axis_scale = axis_scale;
             this->axis_translation = axis_translation;
@@ -441,6 +443,9 @@ namespace tpf
             {
                 if (droplet.first.front().rotation.isZero()) continue;
 
+                data::polydata<float_t> ribbon;
+                ribbon.add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::POINT_DATA);
+
                 const auto& initial_droplet_position = droplet.first.front().position;
                 const auto& initial_droplet_radius = droplet.first.front().radius;
 
@@ -451,12 +456,16 @@ namespace tpf
 
                 Eigen::Matrix<float_t, 3, 1> pos_min, pos_max, pos_min_outer, pos_max_outer;
 
+                double sum_angle = 0.0;
+
                 for (std::size_t i = 0; i < droplet.first.size(); ++i)
                 {
                     math::quaternion<float_t> q;
                     q.from_axis(droplet.first[i].rotation, timesteps[i]);
 
                     radial_position = q.rotate(radial_position);
+
+                    sum_angle += droplet.first[i].rotation.norm() * timesteps[i];
 
                     const auto next_particle_position = initial_droplet_position + epsilon_scalar * radial_position;
                     const auto next_particle_position_outer = initial_droplet_position + epsilon_scalar_outer * radial_position;
@@ -473,12 +482,12 @@ namespace tpf
                         pos_max_outer = particle_position_outer + this->ribbon_scale * initial_droplet_radius * offset_direction;
 
                         // Create mesh for cap
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(pos_min_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i, i }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(pos_min_outer),
                             geometry::point<float_t>(pos_max_outer)),
@@ -491,23 +500,23 @@ namespace tpf
                     const auto next_pos_min_outer = next_particle_position_outer - this->ribbon_scale * initial_droplet_radius * offset_direction;
                     const auto next_pos_max_outer = next_particle_position_outer + this->ribbon_scale * initial_droplet_radius * offset_direction;
 
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_pos_max),
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i + 1, i, i }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_pos_min),
                         geometry::point<float_t>(next_pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i + 1, i + 1, i }));
 
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(pos_max_outer),
                         geometry::point<float_t>(next_pos_max_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i, i + 1 }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(next_pos_max_outer),
                         geometry::point<float_t>(next_pos_min_outer)),
@@ -515,23 +524,23 @@ namespace tpf
 
                     {
                         // Create mesh for caps
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(next_pos_max_outer),
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(next_pos_max)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i + 1, i, i + 1 }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max_outer),
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(next_pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i, i, i + 1 }));
 
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(next_pos_min),
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(next_pos_min_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA, { i + 1, i, i + 1 }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(next_pos_min_outer),
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(pos_min_outer)),
@@ -552,6 +561,8 @@ namespace tpf
                 const auto tip_rotation = static_cast<float_t>(0.1);
                 const auto tip_resolution = 10;
                 const auto rotation_increment = tip_rotation / tip_resolution;
+
+                sum_angle += tip_rotation;
 
                 math::quaternion<float_t> q;
                 q.from_axis(droplet.first.back().rotation.normalized(), rotation_increment);
@@ -583,13 +594,13 @@ namespace tpf
                     if (iteration == 0)
                     {
                         // Create mesh for cap
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                                 { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(pos_max_outer),
                             geometry::point<float_t>(pos_min_outer)),
@@ -597,26 +608,26 @@ namespace tpf
                                 { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
                     }
 
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_pos_max),
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_pos_min),
                         geometry::point<float_t>(next_pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
 
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(pos_max_outer),
                         geometry::point<float_t>(next_pos_max_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(next_pos_max_outer),
                         geometry::point<float_t>(next_pos_min_outer)),
@@ -625,26 +636,26 @@ namespace tpf
 
                     {
                         // Create mesh for caps
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(next_pos_max),
                             geometry::point<float_t>(next_pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                                 { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(next_pos_max_outer),
                             geometry::point<float_t>(pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                                 { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
 
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(next_pos_min_outer),
                             geometry::point<float_t>(next_pos_min),
                             geometry::point<float_t>(pos_min)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                                 { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                        this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                        ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_min_outer),
                             geometry::point<float_t>(next_pos_min_outer),
                             geometry::point<float_t>(pos_min)),
@@ -669,14 +680,14 @@ namespace tpf
                 const Eigen::Matrix<float_t, 3, 1> next_particle_position = initial_droplet_position + epsilon_scalar * radial_position;
                 const Eigen::Matrix<float_t, 3, 1> next_particle_position_outer = initial_droplet_position + epsilon_scalar_outer * radial_position;
 
-                this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                     geometry::point<float_t>(next_particle_position),
                     geometry::point<float_t>(pos_max),
                     geometry::point<float_t>(pos_min)),
                     data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                         { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
 
-                this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                     geometry::point<float_t>(pos_min_outer),
                     geometry::point<float_t>(pos_max_outer),
                     geometry::point<float_t>(next_particle_position_outer)),
@@ -685,31 +696,74 @@ namespace tpf
 
                 {
                     // Create mesh for caps
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(next_particle_position),
                         geometry::point<float_t>(next_particle_position_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(pos_max_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
 
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(next_particle_position),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
-                    this->ribbons->insert(std::make_shared<geometry::triangle<float_t>>(
+                    ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
                             { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                }
+
+                this->ribbons->merge(ribbon);
+
+                // Duplicate ribbons if they are small enough and the option is set accordingly
+                std::vector<float_t> duplication_angles;
+
+                switch (this->ribbon_duplication)
+                {
+                case dynamic_droplets_aux::ribbon_duplication_t::four:
+                    if (sum_angle < (tpf::math::pi<float_t> / 2.0))
+                    {
+                        duplication_angles.push_back(tpf::math::pi<float_t> / 2.0);
+                        duplication_angles.push_back(3.0 * tpf::math::pi<float_t> / 2.0);
+                    }
+
+                case dynamic_droplets_aux::ribbon_duplication_t::two:
+                    if (sum_angle < tpf::math::pi<float_t>)
+                    {
+                        duplication_angles.push_back(tpf::math::pi<float_t>);
+                    }
+                }
+
+                if (!duplication_angles.empty())
+                {
+                    Eigen::Matrix<float_t, 4, 4> mat_to_origin;
+                    mat_to_origin.setIdentity();
+                    mat_to_origin.col(3).head(3) -= initial_droplet_position;
+
+                    Eigen::Matrix<float_t, 4, 4> mat_from_origin;
+                    mat_from_origin.setIdentity();
+                    mat_from_origin.col(3).head(3) += initial_droplet_position;
+
+                    for (const auto& duplication_angle : duplication_angles)
+                    {
+                        q.from_axis(droplet.first.back().rotation.normalized(), duplication_angle);
+
+                        Eigen::Matrix<float_t, 4, 4> mat_rotation;
+                        mat_rotation.setIdentity();
+                        mat_rotation.block(0, 0, 3, 3) = q.to_matrix();
+
+                        this->ribbons->merge(*ribbon.clone(tpf::math::transformer<float_t, 3>(mat_from_origin * mat_rotation* mat_to_origin)));
+                    }
                 }
             }
         }
