@@ -70,7 +70,7 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&>,
             interface_parameters<std::size_t, float_t, bool, float_t, float_t, dynamic_droplets_aux::ribbon_duplication_t,
-                bool, float_t, bool, std::string, std::string, std::string>>
+                bool, bool, float_t, bool, std::string, std::string, std::string>>
         {
         public:
             using callbacks_t = interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>;
@@ -86,7 +86,7 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&>;
             using parameters_t = interface_parameters<std::size_t, float_t, bool, float_t, float_t,
-                dynamic_droplets_aux::ribbon_duplication_t, bool, float_t, bool, std::string, std::string, std::string>;
+                dynamic_droplets_aux::ribbon_duplication_t, bool, bool, float_t, bool, std::string, std::string, std::string>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
 
@@ -145,6 +145,7 @@ namespace tpf
             /// <param name="ribbon_scale">Scale factor for ribbons</param>
             /// <param name="ribbon_thickness">Scale factor for ribbon thickness</param>
             /// <param name="ribbon_duplication">Duplication mode for rotation ribbons</param>
+            /// <param name="translation_duplication">Duplication mode for translation summary</param>
             /// <param name="fix_axis_size">Fix axis length to circumsphere</param>
             /// <param name="axis_scale">Scale factor for rotation axes</param>
             /// <param name="axis_translation">Translate axis back to its origin</param>
@@ -153,7 +154,7 @@ namespace tpf
             /// <param name="radius_name">Name of the array containing droplet radius information</param>
             virtual void set_algorithm_parameters(std::size_t num_timesteps, float_t timestep, bool static_frame_of_reference,
                 float_t ribbon_scale, float_t ribbon_thickness, dynamic_droplets_aux::ribbon_duplication_t ribbon_duplication,
-                bool fix_axis_size, float_t axis_scale, bool axis_translation, std::string translation_name,
+                bool translation_duplication, bool fix_axis_size, float_t axis_scale, bool axis_translation, std::string translation_name,
                 std::string rotation_name, std::string radius_name) override;
 
             /// <summary>
@@ -263,6 +264,9 @@ namespace tpf
             float_t ribbon_scale;
             float_t ribbon_thickness;
             dynamic_droplets_aux::ribbon_duplication_t ribbon_duplication;
+
+            /// Duplicate translation summary
+            bool translation_duplication;
 
             /// Scale factor for rotation axes
             bool fix_axis_size;

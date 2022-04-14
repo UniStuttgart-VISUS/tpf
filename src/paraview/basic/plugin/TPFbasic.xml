@@ -304,6 +304,15 @@
                     Duplicate ribbons if they are small enough, to show them on two or four sides
                 </Documentation>
             </IntVectorProperty>
+            <IntVectorProperty name="DuplicateTranslation" command="SetDuplicateTranslation" label="Duplicate translation" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Duplicate translation summary onto the opposite side of the droplet
+                </Documentation>
+            </IntVectorProperty>
             <IntVectorProperty name="FixRotationAxisSize" command="SetFixRotationAxisSize" label="Fix size of rotation axis" number_of_elements="1" default_values="1">
                 <BooleanDomain name="bool"/>
                 <Hints>
