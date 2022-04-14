@@ -6,6 +6,7 @@
 #include "tpf_polydata_element.h"
 
 #include "../geometry/tpf_geometric_object.h"
+#include "../math/tpf_transformer.h"
 
 #include <memory>
 #include <string>
@@ -102,6 +103,15 @@ namespace tpf
             /// </summary>
             /// <param name="other">Other poly data</param>
             void merge(const polydata& other);
+
+            /// <summary>
+            /// Clone this polydata object, duplicating and transforming the geometry, and copying the
+            /// associated arrays.
+            /// </summary>
+            /// <param name="trafo">Transformer for modifying the geometry</param>
+            /// <returns>Cloned object</returns>
+            std::shared_ptr<polydata<point_t>> clone(const math::transformer<point_t, 3>& trafo
+                = math::transformer<point_t, 3>::unit()) const;
 
             /// <summary>
             /// Create and add point or cell data array
