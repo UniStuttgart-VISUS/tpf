@@ -373,6 +373,19 @@ namespace tpf
         }
 
         template <typename point_t>
+        inline std::shared_ptr<polydata<point_t>> polydata<point_t>::clone(const math::transformer<point_t, 3>& trafo) const
+        {
+            auto copy = std::make_shared<polydata<point_t>>(*this);
+
+            for (auto& object : copy->get_geometry())
+            {
+                object->transform(trafo);
+            }
+
+            return copy;
+        }
+
+        template <typename point_t>
         template <typename value_t, std::size_t rows, std::size_t columns>
         inline std::shared_ptr<array<value_t, rows, columns>> polydata<point_t>::create(const std::string& name, const topology_t type)
         {
