@@ -209,6 +209,27 @@ namespace tpf
         }
 
         template <typename floatp_t>
+        inline Eigen::Matrix<floatp_t, 3, 3> quaternion<floatp_t>::to_matrix() const
+        {
+            Eigen::Matrix<floatp_t, 3, 3> cross_matrix;
+            cross_matrix.setZero();
+            cross_matrix(0, 1) = -this->imaginary[2];
+            cross_matrix(0, 2) = this->imaginary[1];
+            cross_matrix(1, 0) = this->imaginary[2];
+            cross_matrix(1, 2) = -this->imaginary[0];
+            cross_matrix(2, 0) = -this->imaginary[1];
+            cross_matrix(2, 1) = this->imaginary[0];
+
+            const auto s = (1.0 / squared_norm());
+
+            return s * (
+                this->imaginary * this->imaginary.transpose() +
+                this->real * this->real * Eigen::Matrix<floatp_t, 3, 3>::Identity() +
+                2.0 * this->real * cross_matrix +
+                cross_matrix * cross_matrix);
+        }
+
+        template <typename floatp_t>
         inline std::ostream& operator<<(std::ostream& stream, const quaternion<floatp_t>& quaternion)
         {
             stream << "[" << quaternion.get_real() << ", (" << quaternion.get_imaginary()[0]
