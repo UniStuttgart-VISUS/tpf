@@ -199,6 +199,12 @@ namespace tpf
             /// <param name="scaling">Scaling factor to adjust rotation angle to achieve smaller or larger rotations</param>
             void from_axis(const Eigen::Matrix<floatp_t, 3, 1>& axis, floatp_t scaling = static_cast<floatp_t>(1.0));
 
+            /// <summary>
+            /// Create rotation matrix
+            /// </summary>
+            /// <returns>Rotation matrix</returns>
+            Eigen::Matrix<floatp_t, 3, 3> to_matrix() const;
+
         private:
             /// Real part
             floatp_t real;
