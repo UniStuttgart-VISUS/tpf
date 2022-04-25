@@ -21,6 +21,7 @@ namespace tpf
             inline path_trace<floatp_t>::path_trace(path_trace&& move) : stream_trace<floatp_t>(std::move(move))
             {
                 this->original_particles = std::move(move.original_particles);
+                this->original_sampled_velocities = std::move(move.original_sampled_velocities);
                 this->rotations = std::move(move.rotations);
             }
 
@@ -30,11 +31,13 @@ namespace tpf
                 : stream_trace<floatp_t>(std::move(move), std::move(property_names), std::move(properties))
             {
                 this->original_particles.resize(particle_seed<floatp_t>::seed.size());
+                this->original_sampled_velocities.resize(particle_seed<floatp_t>::seed.size());
                 this->rotations.resize(particle_seed<floatp_t>::seed.size());
 
                 for (std::size_t i = 0; i < particle_seed<floatp_t>::seed.size(); ++i)
                 {
                     this->original_particles[i].push_back(particle_seed<floatp_t>::seed[i]);
+                    this->original_sampled_velocities[i].push_back(Eigen::Matrix<floatp_t, 3, 1>::Zero());
                     this->rotations[i].resize(1);
                 }
             }
@@ -65,10 +68,12 @@ namespace tpf
 
             template <typename floatp_t>
             inline void path_trace<floatp_t>::add_particle(const std::size_t index, const tpf::geometry::point<floatp_t>& particle,
-                const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotations,
+                const tpf::geometry::point<floatp_t>& original_particle, const Eigen::Matrix<floatp_t, 3, 1>& sampled_velocity,
+                const Eigen::Matrix<floatp_t, 3, 1>& original_sampled_velocity, const tpf::math::quaternion<floatp_t>& rotations,
                 std::vector<std::vector<double>>&& properties)
             {
                 stream_trace<floatp_t>::particles[index].push_back(particle);
+                stream_trace<floatp_t>::sampled_velocities[index].push_back(sampled_velocity);
 
                 for (std::size_t p = 0; p < stream_trace<floatp_t>::particle_properties.size(); ++p)
                 {
@@ -76,6 +81,7 @@ namespace tpf
                 }
 
                 this->original_particles[index].push_back(original_particle);
+                this->original_sampled_velocities[index].push_back(original_sampled_velocity);
                 this->rotations[index].push_back(rotations);
             }
 
@@ -87,6 +93,7 @@ namespace tpf
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
                 std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
                 std::vector<std::vector<geometry::point<floatp_t>>> original_particles;
+                std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> original_sampled_velocities;
                 std::vector<std::vector<math::quaternion<floatp_t>>> rotations;
 
                 seed.reserve(particle_seed<floatp_t>::seed.size());
@@ -98,6 +105,7 @@ namespace tpf
                     [this](std::vector<std::vector<std::vector<double>>>& property) { property.reserve(stream_trace<floatp_t>::particles.size()); });
 
                 original_particles.reserve(this->original_particles.size());
+                original_sampled_velocities.reserve(this->original_sampled_velocities.size());
                 rotations.reserve(this->rotations.size());
 
                 // Copy traces that are still valid
@@ -115,6 +123,7 @@ namespace tpf
                         }
 
                         original_particles.push_back(this->original_particles[i]);
+                        original_sampled_velocities.push_back(this->original_sampled_velocities[i]);
                         rotations.push_back(this->rotations[i]);
                     }
                 }
@@ -136,6 +145,7 @@ namespace tpf
                         }
 
                         original_particles.push_back(this->original_particles[i]);
+                        original_sampled_velocities.push_back(this->original_sampled_velocities[i]);
                         rotations.push_back(this->rotations[i]);
                     }
                 }
@@ -152,6 +162,7 @@ namespace tpf
                     }
 
                     original_particles.push_back(this->original_particles[i]);
+                    original_sampled_velocities.push_back(this->original_sampled_velocities[i]);
                     rotations.push_back(this->rotations[i]);
                 }
 
@@ -161,9 +172,16 @@ namespace tpf
                 std::swap(stream_trace<floatp_t>::particles, particles);
                 std::swap(stream_trace<floatp_t>::particle_properties, particle_properties);
                 std::swap(this->original_particles, original_particles);
+                std::swap(this->original_sampled_velocities, original_sampled_velocities);
                 std::swap(this->rotations, rotations);
 
                 return new_num_valid_particles;
+            }
+
+            template <typename floatp_t>
+            inline const std::vector<Eigen::Matrix<floatp_t, 3, 1>>& path_trace<floatp_t>::get_original_sampled_velocities(const std::size_t index) const
+            {
+                return this->original_sampled_velocities[index];
             }
         }
     }

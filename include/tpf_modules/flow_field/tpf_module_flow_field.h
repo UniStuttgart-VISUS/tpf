@@ -194,6 +194,17 @@ namespace tpf
             void create_lines(const flow_field_aux::stream_trace<float_t>& particles, std::size_t num_advections,
                 const std::vector<double>& time, bool inverse = false);
 
+            /// <summary>
+            /// Advect new particle position using explicit Euler, or up to Four-Step Adams-Bashforth
+            /// </summary>
+            /// <param name="position">Input particle position</param>
+            /// <param name="sampled_velocity">Sampled velocity from current time step</param>
+            /// <param name="sampled_velocities">Sampled velocities from previous time steps</param>
+            /// <returns>Advected particle position</returns>
+            tpf::geometry::point<float_t> advect(const tpf::geometry::point<float_t>& position,
+                const Eigen::Matrix<float_t, 3, 1>& sampled_velocity,
+                const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities) const;
+
             /// Seed
             const data::polydata<float_t>* seed;
 

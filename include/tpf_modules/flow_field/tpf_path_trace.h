@@ -77,11 +77,14 @@ namespace tpf
                 /// <param name="index">Index of the seed/trace</param>
                 /// <param name="particle">New particle</param>
                 /// <param name="original_particle">New original particle</param>
+                /// <param name="sampled_velocity">Sampled velocity used to calculate the new particle's position</param>
+                /// <param name="original_sampled_velocity">Sampled velocity used to calculate the new original particle's position</param>
                 /// <param name="rotation">New rotation</param>
                 /// <param name="properties">Properties interpolated at the particle</param>
                 void add_particle(std::size_t index, const tpf::geometry::point<floatp_t>& particle,
-                    const tpf::geometry::point<floatp_t>& original_particle, const tpf::math::quaternion<floatp_t>& rotation,
-                    std::vector<std::vector<double>>&& properties);
+                    const tpf::geometry::point<floatp_t>& original_particle, const Eigen::Matrix<floatp_t, 3, 1>& sampled_velocity,
+                    const Eigen::Matrix<floatp_t, 3, 1>& original_sampled_velocity,
+                    const tpf::math::quaternion<floatp_t>& rotation, std::vector<std::vector<double>>&& properties);
 
                 /// <summary>
                 /// Sort the particle traces for length and update the number of valid particles
@@ -90,9 +93,17 @@ namespace tpf
                 /// <returns>New number of valid particles</returns>
                 virtual std::size_t sort_and_count(std::size_t num_valid_particles);
 
+                /// <summary>
+                /// Return the original sampled velocities for all particles
+                /// </summary>
+                /// <param name="index">Index of the seed/trace</param>
+                /// <returns>Original sampled velocities</returns>
+                const std::vector<Eigen::Matrix<floatp_t, 3, 1>>& get_original_sampled_velocities(std::size_t index) const;
+
             protected:
                 /// Original particles
                 std::vector<std::vector<tpf::geometry::point<floatp_t>>> original_particles;
+                std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> original_sampled_velocities;
 
                 /// Rotations
                 std::vector<std::vector<tpf::math::quaternion<floatp_t>>> rotations;

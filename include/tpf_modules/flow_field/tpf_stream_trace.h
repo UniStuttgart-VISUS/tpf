@@ -8,6 +8,8 @@
 
 #include "tpf/stdext/tpf_bool.h"
 
+#include "Eigen/Dense"
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -65,8 +67,10 @@ namespace tpf
                 /// </summary>
                 /// <param name="index">Index of the seed/trace</param>
                 /// <param name="particle">New particle</param>
+                /// <param name="sampled_velocity">Sampled velocity used to calculate the new particle's position</param>
                 /// <param name="properties">Properties interpolated at the particle</param>
                 void add_particle(std::size_t index, const tpf::geometry::point<floatp_t>& particle,
+                    const Eigen::Matrix<floatp_t, 3, 1>& sampled_velocity,
                     std::vector<std::vector<double>>&& properties);
 
                 /// <summary>
@@ -95,6 +99,13 @@ namespace tpf
                 virtual std::size_t sort_and_count(std::size_t num_valid_particles);
 
                 /// <summary>
+                /// Return the sampled velocities for all particles
+                /// </summary>
+                /// <param name="index">Index of the seed/trace</param>
+                /// <returns>Sampled velocities</returns>
+                const std::vector<Eigen::Matrix<floatp_t, 3, 1>>& get_sampled_velocities(std::size_t index) const;
+
+                /// <summary>
                 /// Return the traces
                 /// </summary>
                 /// <returns>Traces</returns>
@@ -110,6 +121,7 @@ namespace tpf
             protected:
                 /// Particles
                 std::vector<std::vector<tpf::geometry::point<floatp_t>>> particles;
+                std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> sampled_velocities;
 
                 /// Validity of particles
                 std::vector<tpf::bool_t> validity;

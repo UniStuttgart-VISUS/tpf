@@ -18,6 +18,7 @@ namespace tpf
             inline stream_trace<floatp_t>::stream_trace(stream_trace&& move) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles = std::move(move.particles);
+                this->sampled_velocities = std::move(move.sampled_velocities);
                 this->validity = std::move(move.validity);
                 this->seed_properties = std::move(move.seed_properties);
                 this->particle_properties = std::move(move.particle_properties);
@@ -29,6 +30,7 @@ namespace tpf
                 std::vector<std::vector<std::vector<double>>>&& properties) : particle_seed<floatp_t>(std::move(move))
             {
                 this->particles.resize(particle_seed<floatp_t>::seed.size());
+                this->sampled_velocities.resize(particle_seed<floatp_t>::seed.size());
                 this->validity.resize(this->particles.size());
 
                 this->particle_properties.resize(properties.size());
@@ -40,6 +42,7 @@ namespace tpf
                 for (std::size_t i = 0; i < particle_seed<floatp_t>::seed.size(); ++i)
                 {
                     this->particles[i].push_back(particle_seed<floatp_t>::seed[i]);
+                    this->sampled_velocities[i].push_back(Eigen::Matrix<floatp_t, 3, 1>::Zero());
                     this->validity[i] = true;
 
                     for (std::size_t p = 0; p < properties.size(); ++p)
@@ -63,9 +66,10 @@ namespace tpf
 
             template <typename floatp_t>
             inline void stream_trace<floatp_t>::add_particle(const std::size_t index, const tpf::geometry::point<floatp_t>& particle,
-                std::vector<std::vector<double>>&& properties)
+                const Eigen::Matrix<floatp_t, 3, 1>& sampled_velocity, std::vector<std::vector<double>>&& properties)
             {
                 this->particles[index].push_back(particle);
+                this->sampled_velocities[index].push_back(sampled_velocity);
 
                 for (std::size_t p = 0; p < this->particle_properties.size(); ++p)
                 {
@@ -129,10 +133,12 @@ namespace tpf
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<tpf::bool_t> validity;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
+                std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> sampled_velocities;
                 std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
 
                 seed.reserve(particle_seed<floatp_t>::seed.size());
                 particles.reserve(this->particles.size());
+                sampled_velocities.reserve(this->sampled_velocities.size());
 
                 particle_properties.resize(this->particle_properties.size());
 
@@ -147,6 +153,7 @@ namespace tpf
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         validity.push_back(true);
                         particles.push_back(this->particles[i]);
+                        sampled_velocities.push_back(this->sampled_velocities[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
                         {
@@ -165,6 +172,7 @@ namespace tpf
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         validity.push_back(false);
                         particles.push_back(this->particles[i]);
+                        sampled_velocities.push_back(this->sampled_velocities[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
                         {
@@ -178,6 +186,7 @@ namespace tpf
                     seed.push_back(particle_seed<floatp_t>::seed[i]);
                     validity.push_back(false);
                     particles.push_back(this->particles[i]);
+                    sampled_velocities.push_back(this->sampled_velocities[i]);
 
                     for (std::size_t p = 0; p < particle_properties.size(); ++p)
                     {
@@ -189,9 +198,16 @@ namespace tpf
                 std::swap(particle_seed<floatp_t>::seed, seed);
                 std::swap(this->validity, validity);
                 std::swap(this->particles, particles);
+                std::swap(this->sampled_velocities, sampled_velocities);
                 std::swap(this->particle_properties, particle_properties);
 
                 return new_num_valid_particles;
+            }
+
+            template <typename floatp_t>
+            inline const std::vector<Eigen::Matrix<floatp_t, 3, 1>>& stream_trace<floatp_t>::get_sampled_velocities(const std::size_t index) const
+            {
+                return this->sampled_velocities[index];
             }
         }
     }

@@ -229,7 +229,8 @@ namespace tpf
 
                             if (!local_velocity.isZero())
                             {
-                                const tpf::geometry::point<float_t> advected_particle(particle + local_velocity * timestep_delta);
+                                const tpf::geometry::point<float_t> advected_particle = advect(particle,
+                                    local_velocity * timestep_delta, particles.get_sampled_velocities(index));
 
                                 // Interpolate at property fields
                                 std::vector<std::vector<double>> properties(fields.size());
@@ -239,7 +240,7 @@ namespace tpf
                                     properties[f] = std::get<2>(fields[f])->interpolate_dynamic(advected_particle);
                                 }
 
-                                particles.add_particle(index, advected_particle, std::move(properties));
+                                particles.add_particle(index, advected_particle, local_velocity * timestep_delta, std::move(properties));
                             }
                         }
                         catch (...)
@@ -381,8 +382,10 @@ namespace tpf
                                 // Calculate droplet-local velocity and advect particles
                                 local_velocity = previous_rotation.rotate(local_velocity);
 
-                                const tpf::geometry::point<float_t> advected_particle(particle + local_velocity * timestep_delta);
-                                const tpf::geometry::point<float_t> advected_original_particle(original_particle + velocity * timestep_delta);
+                                const tpf::geometry::point<float_t> advected_particle = advect(particle,
+                                    local_velocity * timestep_delta, particles.get_sampled_velocities(index));
+                                const tpf::geometry::point<float_t> advected_original_particle = advect(original_particle,
+                                    velocity * timestep_delta, particles.get_original_sampled_velocities(index));
 
                                 // Interpolate at property fields
                                 std::vector<std::vector<double>> properties(fields.size());
@@ -392,7 +395,8 @@ namespace tpf
                                     properties[f] = std::get<2>(fields[f])->interpolate_dynamic(advected_original_particle);
                                 }
 
-                                particles.add_particle(index, advected_particle, advected_original_particle, new_rotation, std::move(properties));
+                                particles.add_particle(index, advected_particle, advected_original_particle,
+                                    local_velocity * timestep_delta, velocity * timestep_delta, new_rotation, std::move(properties));
                             }
                         }
                         catch (...)
@@ -596,8 +600,8 @@ namespace tpf
                             + (quaternion.rotate(relative_position) + barycenter) + (translation * timestep_delta));
 
                         // Insert new particle at the seed
-                        particles.add_particle(index, particles.get_seed(index), original_seed,
-                            tpf::math::quaternion<float_t>(), std::vector<std::vector<double>>());
+                        particles.add_particle(index, particles.get_seed(index), original_seed, Eigen::Matrix<float_t, 3, 1>::Zero(),
+                            Eigen::Matrix<float_t, 3, 1>::Zero(), tpf::math::quaternion<float_t>(), std::vector<std::vector<double>>());
                     }
                     else
                     {
@@ -869,6 +873,42 @@ namespace tpf
             {
                 this->lines->add(property.second, tpf::data::topology_t::POINT_DATA);
             }
+        }
+
+        template <typename float_t, typename point_t>
+        inline tpf::geometry::point<float_t> flow_field<float_t, point_t>::advect(const tpf::geometry::point<float_t>& position,
+            const Eigen::Matrix<float_t, 3, 1>& sampled_velocity,
+            const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities) const
+        {
+            if (sampled_velocities.size() == 1) // Explicit Euler
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex() + sampled_velocity);
+            }
+            else if (sampled_velocities.size() == 2) // Two-Step Adams-Bashforth
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex()
+                    + (3.0 / 2.0) * sampled_velocity
+                    - (1.0 / 2.0) * sampled_velocities[1]);
+            }
+            else if (sampled_velocities.size() == 3) // Three-Step Adams-Bashforth
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex()
+                    + (23.0 / 12.0) * sampled_velocity
+                    - (16.0 / 12.0) * sampled_velocities[2]
+                    + (5.0 / 12.0) * sampled_velocities[1]);
+            }
+            else if (sampled_velocities.size() >= 4) // Four-Step Adams-Bashforth
+            {
+                const auto i = sampled_velocities.size() - 1;
+
+                return tpf::geometry::point<float_t>(position.get_vertex()
+                    + (55.0 / 24.0) * sampled_velocity
+                    - (59.0 / 24.0) * sampled_velocities[i]
+                    + (37.0 / 24.0) * sampled_velocities[i - 1]
+                    - (9.0 / 24.0) * sampled_velocities[i - 2]);
+            }
+
+            throw;
         }
     }
 }
