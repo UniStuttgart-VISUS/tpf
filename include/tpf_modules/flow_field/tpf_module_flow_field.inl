@@ -63,10 +63,12 @@ namespace tpf
         }
 
         template <typename float_t, typename point_t>
-        inline void flow_field<float_t, point_t>::set_algorithm_parameters(const flow_field_aux::method_t method, const std::size_t num_advections,
+        inline void flow_field<float_t, point_t>::set_algorithm_parameters(const flow_field_aux::method_t method,
+            const std::size_t num_advections, const flow_field_aux::integration_t integration_method,
             const flow_field_aux::time_dependency_t time_dependency, const bool keep_translation, const bool keep_rotation)
         {
             this->method = method;
+            this->integration_method = integration_method;
             this->num_advections = num_advections;
 
             this->time_dependency = time_dependency;
@@ -223,14 +225,27 @@ namespace tpf
                     {
                         try
                         {
-                            const auto velocity = velocities->interpolate(point_t(particle));
-                            const auto local_velocity = velocity - get_global_velocity(point_t(particle),
+                            const auto k_1 = velocities->interpolate(point_t(particle)) - get_global_velocity(point_t(particle),
                                 get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
 
-                            if (!local_velocity.isZero())
+                            const auto particle_1 = particle + k_1 * timestep_delta / 2.0;
+
+                            const auto k_2 = velocities->interpolate(point_t(particle_1)) - get_global_velocity(point_t(particle_1),
+                                get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
+
+                            const auto particle_2 = particle + k_2 * timestep_delta / 2.0;
+
+                            const auto k_3 = velocities->interpolate(point_t(particle_2)) - get_global_velocity(point_t(particle_2),
+                                get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
+
+                            const auto particle_3 = particle + k_3 * timestep_delta;
+
+                            const auto k_4 = velocities->interpolate(point_t(particle_3)) - get_global_velocity(point_t(particle_3),
+                                get_translation, get_angular_velocity, get_barycenter, get_initial_translation, get_initial_angular_velocity);
+
+                            if (!(k_1 + k_2 + k_3 + k_4).isZero())
                             {
-                                const tpf::geometry::point<float_t> advected_particle = advect(particle,
-                                    local_velocity * timestep_delta, particles.get_sampled_velocities(index));
+                                const tpf::geometry::point<float_t> advected_particle = particle + (1.0 / 6.0) * (k_1 + k_2 + k_3 + k_4) * timestep_delta;
 
                                 // Interpolate at property fields
                                 std::vector<std::vector<double>> properties(fields.size());
@@ -240,7 +255,7 @@ namespace tpf
                                     properties[f] = std::get<2>(fields[f])->interpolate_dynamic(advected_particle);
                                 }
 
-                                particles.add_particle(index, advected_particle, local_velocity * timestep_delta, std::move(properties));
+                                particles.add_particle(index, advected_particle, k_1 * timestep_delta, std::move(properties));
                             }
                         }
                         catch (...)
@@ -259,6 +274,7 @@ namespace tpf
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections));
+                tpf::log::info_message(__tpf_info_message("  Number of valid particles: ", num_valid_particles, " of ", particles.get_size()));
 
 #ifdef __tpf_debug
                 tpf::log::info_message(__tpf_info_message("Number of valid particles: ", num_valid_particles));
@@ -383,9 +399,9 @@ namespace tpf
                                 local_velocity = previous_rotation.rotate(local_velocity);
 
                                 const tpf::geometry::point<float_t> advected_particle = advect(particle,
-                                    local_velocity * timestep_delta, particles.get_sampled_velocities(index));
+                                    local_velocity * timestep_delta, particles.get_sampled_velocities(index), this->integration_method);
                                 const tpf::geometry::point<float_t> advected_original_particle = advect(original_particle,
-                                    velocity * timestep_delta, particles.get_original_sampled_velocities(index));
+                                    velocity * timestep_delta, particles.get_original_sampled_velocities(index), this->integration_method);
 
                                 // Interpolate at property fields
                                 std::vector<std::vector<double>> properties(fields.size());
@@ -415,6 +431,7 @@ namespace tpf
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections, " - sample time: ", sample_time));
+                tpf::log::info_message(__tpf_info_message("  Number of valid particles: ", num_valid_particles, " of ", particles.get_size()));
 
                 times.push_back(times.back() + timestep_delta);
 
@@ -614,6 +631,7 @@ namespace tpf
 
                 // Status information
                 tpf::log::info_message(__tpf_info_message("Completed advection ", (advection + 1), " of ", this->num_advections, " - sample time: ", sample_time));
+                tpf::log::info_message(__tpf_info_message("  Number of valid particles: ", num_valid_particles, " of ", particles.get_size()));
 
                 times.push_back(times.back() + timestep_delta);
 
@@ -877,35 +895,57 @@ namespace tpf
 
         template <typename float_t, typename point_t>
         inline tpf::geometry::point<float_t> flow_field<float_t, point_t>::advect(const tpf::geometry::point<float_t>& position,
-            const Eigen::Matrix<float_t, 3, 1>& sampled_velocity,
-            const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities) const
+            const Eigen::Matrix<float_t, 3, 1>& sampled_velocity, const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities,
+            flow_field_aux::integration_t integration_method) const
         {
-            if (sampled_velocities.size() == 1) // Explicit Euler
+            switch (integration_method)
             {
-                return tpf::geometry::point<float_t>(position.get_vertex() + sampled_velocity);
-            }
-            else if (sampled_velocities.size() == 2) // Two-Step Adams-Bashforth
-            {
-                return tpf::geometry::point<float_t>(position.get_vertex()
-                    + (3.0 / 2.0) * sampled_velocity
-                    - (1.0 / 2.0) * sampled_velocities[1]);
-            }
-            else if (sampled_velocities.size() == 3) // Three-Step Adams-Bashforth
-            {
-                return tpf::geometry::point<float_t>(position.get_vertex()
-                    + (23.0 / 12.0) * sampled_velocity
-                    - (16.0 / 12.0) * sampled_velocities[2]
-                    + (5.0 / 12.0) * sampled_velocities[1]);
-            }
-            else if (sampled_velocities.size() >= 4) // Four-Step Adams-Bashforth
-            {
-                const auto i = sampled_velocities.size() - 1;
+            case flow_field_aux::integration_t::adams_bashforth:
+                return advect_adams_bashforth(position, sampled_velocity, sampled_velocities);
 
+            case flow_field_aux::integration_t::explicit_euler:
+            default:
+                return advect_euler(position, sampled_velocity);
+            }
+        }
+
+        template <typename float_t, typename point_t>
+        inline tpf::geometry::point<float_t> flow_field<float_t, point_t>::advect_euler(const tpf::geometry::point<float_t>& position,
+            const Eigen::Matrix<float_t, 3, 1>& sampled_velocity) const
+        {
+            return tpf::geometry::point<float_t>(position.get_vertex() + sampled_velocity);
+        }
+
+        template <typename float_t, typename point_t>
+        inline tpf::geometry::point<float_t> flow_field<float_t, point_t>::advect_adams_bashforth(const tpf::geometry::point<float_t>& position,
+            const Eigen::Matrix<float_t, 3, 1>& sampled_velocity, const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities) const
+        {
+            const auto i = sampled_velocities.size() - 1;
+
+            if (sampled_velocities.size() >= 4) // Four-Step Adams-Bashforth
+            {
                 return tpf::geometry::point<float_t>(position.get_vertex()
                     + (55.0 / 24.0) * sampled_velocity
                     - (59.0 / 24.0) * sampled_velocities[i]
                     + (37.0 / 24.0) * sampled_velocities[i - 1]
                     - (9.0 / 24.0) * sampled_velocities[i - 2]);
+            }
+            else if (sampled_velocities.size() >= 3) // Three-Step Adams-Bashforth
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex()
+                    + (23.0 / 12.0) * sampled_velocity
+                    - (16.0 / 12.0) * sampled_velocities[i]
+                    + (5.0 / 12.0) * sampled_velocities[i - 1]);
+            }
+            else if (sampled_velocities.size() >= 2) // Two-Step Adams-Bashforth
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex()
+                    + (3.0 / 2.0) * sampled_velocity
+                    - (1.0 / 2.0) * sampled_velocities[i]);
+            }
+            else if (sampled_velocities.size() >= 1) // Explicit Euler
+            {
+                return tpf::geometry::point<float_t>(position.get_vertex() + sampled_velocity);
             }
 
             throw;

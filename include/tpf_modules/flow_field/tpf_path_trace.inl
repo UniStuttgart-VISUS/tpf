@@ -91,6 +91,7 @@ namespace tpf
                 std::vector<geometry::point<floatp_t>> seed;
                 std::vector<tpf::bool_t> validity;
                 std::vector<std::vector<geometry::point<floatp_t>>> particles;
+                std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> sampled_velocities;
                 std::vector<std::vector<std::vector<std::vector<double>>>> particle_properties;
                 std::vector<std::vector<geometry::point<floatp_t>>> original_particles;
                 std::vector<std::vector<Eigen::Matrix<floatp_t, 3, 1>>> original_sampled_velocities;
@@ -98,6 +99,7 @@ namespace tpf
 
                 seed.reserve(particle_seed<floatp_t>::seed.size());
                 particles.reserve(stream_trace<floatp_t>::particles.size());
+                sampled_velocities.reserve(stream_trace<floatp_t>::sampled_velocities.size());
 
                 particle_properties.resize(stream_trace<floatp_t>::particle_properties.size());
 
@@ -116,6 +118,7 @@ namespace tpf
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         validity.push_back(true);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
+                        sampled_velocities.push_back(stream_trace<floatp_t>::sampled_velocities[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
                         {
@@ -138,6 +141,7 @@ namespace tpf
                         seed.push_back(particle_seed<floatp_t>::seed[i]);
                         validity.push_back(false);
                         particles.push_back(stream_trace<floatp_t>::particles[i]);
+                        sampled_velocities.push_back(stream_trace<floatp_t>::sampled_velocities[i]);
 
                         for (std::size_t p = 0; p < particle_properties.size(); ++p)
                         {
@@ -155,6 +159,7 @@ namespace tpf
                     seed.push_back(particle_seed<floatp_t>::seed[i]);
                     validity.push_back(false);
                     particles.push_back(stream_trace<floatp_t>::particles[i]);
+                    sampled_velocities.push_back(stream_trace<floatp_t>::sampled_velocities[i]);
 
                     for (std::size_t p = 0; p < particle_properties.size(); ++p)
                     {
@@ -170,6 +175,7 @@ namespace tpf
                 std::swap(particle_seed<floatp_t>::seed, seed);
                 std::swap(stream_trace<floatp_t>::validity, validity);
                 std::swap(stream_trace<floatp_t>::particles, particles);
+                std::swap(stream_trace<floatp_t>::sampled_velocities, sampled_velocities);
                 std::swap(stream_trace<floatp_t>::particle_properties, particle_properties);
                 std::swap(this->original_particles, original_particles);
                 std::swap(this->original_sampled_velocities, original_sampled_velocities);

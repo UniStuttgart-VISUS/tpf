@@ -158,6 +158,40 @@
                     Method for the computation of the flow lines
                 </Documentation>
             </IntVectorProperty>
+            <IntVectorProperty name="Interpolatable" command="SetInterpolatable" label="Interpolatable?" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Is the data interpolatable? (Not the case for VOF data)
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="Integration" command="SetIntegration" label="Integration" number_of_elements="1" default_values="1">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Explicit Euler"/>
+                    <Entry value="1" text="Adams-Bashforth"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <Expression type="or">
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                            </Expression>
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Interpolatable" value="0" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Integration method
+                </Documentation>
+            </IntVectorProperty>
             <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of advections" number_of_elements="1" default_values="20">
                 <Hints>
                     <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
@@ -168,7 +202,6 @@
             </IntVectorProperty>
             <DoubleVectorProperty name="TimeRange" command="SetTimeRange" label="Time range" number_of_elements="2" default_values="0.0 1.0">
                 <Hints>
-                    <NoDefault />
                     <PropertyWidgetDecorator type="CompositeDecorator">
                         <Expression type="or">
                             <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
@@ -181,6 +214,14 @@
                 </Documentation>
             </DoubleVectorProperty>
             <DoubleVectorProperty name="FixedTimeStep" command="SetFixedTimeStep" label="Time step" number_of_elements="1" default_values="0.1">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Interpolatable" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
                 <Documentation>
                     Time step size
                 </Documentation>
@@ -249,6 +290,8 @@
 
             <PropertyGroup label="Computation">
                 <Property name="Method" />
+                <Property name="Interpolatable" />
+                <Property name="Integration" />
                 <Property name="NumAdvections" />
                 <Property name="TimeRange" />
                 <Property name="FixedTimeStep" />

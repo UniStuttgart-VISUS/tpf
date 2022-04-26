@@ -57,20 +57,24 @@ namespace
         /// Constructor
         /// </summary>
         /// <param name="data_time_range">Available time range</param>
+        /// <param name="data_times">Available time steps</param>
         /// <param name="request">Original request that will be modified for requesting different time frames</param>
         /// <param name="grid_alg">Algorithm producing the velocity field and additional information</param>
         /// <param name="droplets_alg">Algorithm producing droplet data</param>
         /// <param name="get_array_name">Function to query the respective array names</param>
         /// <param name="array_selection">Selection of property arrays to interpolate and store at particle positions</param>
         /// <param name="initial_time">Initial time for integration</param>
+        /// <param name="is_interpolatable">Is the data interpolatable</param>
         /// <param name="timestep">Timestep size (delta t)</param>
-        data_handler(const std::array<double, 2>& data_time_range, vtkInformation* request,
-            vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg,
-            std::function<std::string(int, int)> get_array_name, vtkDataArraySelection* array_selection,
-            const double initial_time, const double timestep)
+        data_handler(const std::array<double, 2>& data_time_range, const std::vector<double>& data_times, vtkInformation* request,
+            vtkAlgorithm* grid_alg, vtkAlgorithm* droplets_alg, std::function<std::string(int, int)> get_array_name,
+            vtkDataArraySelection* array_selection, const double initial_time, const bool is_interpolatable, const double timestep)
         {
             this->time_offset = this->original_time = initial_time;
             this->data_time_range = data_time_range;
+            this->data_times = data_times;
+
+            this->is_interpolatable = is_interpolatable;
 
             this->request = request;
             this->grid_alg = grid_alg;
@@ -80,7 +84,34 @@ namespace
 
             this->array_selection = array_selection;
 
-            this->timestep = timestep;
+            if (is_interpolatable)
+            {
+                this->timestep = timestep;
+            }
+            else
+            {
+                this->timestep_id = 0;
+
+                float_t min_time_step_diff = std::abs(static_cast<float_t>(data_times[0]) - initial_time);
+                int num_time_steps = 1;
+
+                for (; data_times[num_time_steps] < data_time_range[1]; ++num_time_steps)
+                {
+                    if (std::abs(static_cast<float_t>(data_times[num_time_steps]) - initial_time) < min_time_step_diff)
+                    {
+                        min_time_step_diff = std::abs(static_cast<float_t>(data_times[num_time_steps]) - initial_time);
+                        this->timestep_id = num_time_steps;
+                    }
+                }
+
+                if (std::abs(static_cast<float_t>(data_times[num_time_steps]) - initial_time) < min_time_step_diff)
+                {
+                    min_time_step_diff = std::abs(static_cast<float_t>(data_times[num_time_steps]) - initial_time);
+                    this->timestep_id = num_time_steps;
+                }
+
+                this->timestep = this->data_times[this->timestep_id + 1uLL] - this->data_times[this->timestep_id];
+            }
         }
 
         /// <summary>
@@ -343,7 +374,24 @@ namespace
                 // Get time information and set new timestep for next iteration
                 if (this->data_time_range[0] != this->data_time_range[1])
                 {
-                    this->time_offset += this->timestep;
+                    if (this->is_interpolatable)
+                    {
+                        this->time_offset += this->timestep;
+                    }
+                    else
+                    {
+                        ++this->timestep_id;
+
+                        if (this->timestep_id != this->data_times.size())
+                        {
+                            this->timestep = this->data_times[this->timestep_id] - this->time_offset;
+                            this->time_offset = this->data_times[this->timestep_id];
+                        }
+                        else
+                        {
+                            this->time_offset = this->data_time_range[1] + 1.0;
+                        }
+                    }
                 }
 
                 const auto sample_time = this->grid_alg->GetOutputDataObject(0)->GetInformation()->Get(vtkDataObject::DATA_TIME_STEP());
@@ -385,6 +433,10 @@ namespace
 
         /// Available time range
         std::array<double, 2> data_time_range;
+        std::vector<double> data_times;
+
+        /// Is the data integratable?
+        bool is_interpolatable;
 
         /// Request
         vtkInformation* request;
@@ -403,6 +455,7 @@ namespace
 
         /// Timestep information
         double timestep;
+        int timestep_id;
 
         /// Data of current timestep
         tpf::data::grid<float_t, float_t, 3, 3> velocity_grid;
@@ -495,9 +548,24 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             throw std::runtime_error(__tpf_error_message("Tried to access non-existing array (ID: ", index, ")"));
         };
 
-        std::array<double, 2> data_time_range{};
-        input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_RANGE(), data_time_range.data());
+        auto vtk_data_time_range = input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_RANGE());
+        auto vtk_data_times = input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_STEPS());
+
+        if (vtk_data_time_range == nullptr || vtk_data_times == nullptr)
+        {
+            throw std::runtime_error(__tpf_error_message("No time information available."));
+        }
+
+        const std::array<double, 2> data_time_range{ vtk_data_time_range[0], vtk_data_time_range[1] };
         const auto current_timestep = in_grid->GetInformation()->Get(vtkDataObject::DATA_TIME_STEP());
+
+        std::vector<double> data_times;
+        std::size_t num_time_steps = 0;
+        for (; vtk_data_times[num_time_steps] < data_time_range[1]; ++num_time_steps)
+        {
+            data_times.push_back(static_cast<float_t>(vtk_data_times[num_time_steps]));
+        }
+        data_times.push_back(static_cast<float_t>(vtk_data_times[num_time_steps]));
 
         const std::array<double, 2> integration_range =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
@@ -509,8 +577,11 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             ? static_cast<std::size_t>(this->NumAdvections)
             : static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / std::abs(this->FixedTimeStep)));
 
-        data_handler<float_t> call_back_loader(data_time_range, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
-            get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]), this->FixedTimeStep);
+        data_handler<float_t> call_back_loader(data_time_range, data_times, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
+            get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]),
+            this->Interpolatable != 0 || static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM,
+            this->Interpolatable != 0 || static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM
+                ? this->FixedTimeStep : (std::signbit(this->TimeRange[1] - this->TimeRange[0]) ? 1.0 : -1.0));
 
         // Create seed
         tpf::data::polydata<float_t> seed;
@@ -563,7 +634,8 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         flow_field_module.set_output(lines);
 
         flow_field_module.set_parameters(static_cast<tpf::modules::flow_field_aux::method_t>(this->Method),
-            num_advections, static_cast<tpf::modules::flow_field_aux::time_dependency_t>(this->TimeDependency),
+            num_advections, static_cast<tpf::modules::flow_field_aux::integration_t>(this->Integration),
+            static_cast<tpf::modules::flow_field_aux::time_dependency_t>(this->TimeDependency),
             this->KeepTranslation == 1, this->KeepRotation == 1);
 
         flow_field_module.set_callbacks(&call_back_loader);

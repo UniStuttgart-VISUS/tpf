@@ -16,6 +16,12 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
         vtkGetMacro(Method, int);
         vtkSetMacro(Method, int);
 
+        vtkGetMacro(Interpolatable, int);
+        vtkSetMacro(Interpolatable, int);
+
+        vtkGetMacro(Integration, int);
+        vtkSetMacro(Integration, int);
+
         vtkGetMacro(SeedInCells, int);
         vtkSetMacro(SeedInCells, int);
 
@@ -76,6 +82,12 @@ class VTK_EXPORT tpf_flow_field : public vtkPolyDataAlgorithm
 
         /// Method to use: 0 - streamlines, 1 - streaklines, 2 - pathlines
         int Method;
+
+        /// Is the data interpolatable?
+        int Interpolatable;
+
+        /// Integration method for non-integratable data
+        int Integration;
 
         /// Number of advections for streamlines
         int NumAdvections;

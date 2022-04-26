@@ -65,6 +65,15 @@ namespace tpf
             };
 
             /// <summary>
+            /// Integration method
+            /// </summary>
+            enum class integration_t
+            {
+                explicit_euler,
+                adams_bashforth
+            };
+
+            /// <summary>
             /// Dynamic vs. static frame of reference
             /// </summary>
             enum class time_dependency_t
@@ -85,14 +94,14 @@ namespace tpf
             interface_input<const data::polydata<float_t>&>,
             interface_output<data::polydata<float_t>&>,
             interface_parameters<flow_field_aux::method_t, std::size_t,
-                flow_field_aux::time_dependency_t, bool, bool>>
+                flow_field_aux::integration_t, flow_field_aux::time_dependency_t, bool, bool>>
         {
         public:
             using callbacks_t = interface_callbacks<flow_field_aux::request_frame_call_back<float_t, point_t>*>;
             using input_t = interface_input<const data::polydata<float_t>&>;
             using output_t = interface_output<data::polydata<float_t>&>;
             using parameters_t = interface_parameters<flow_field_aux::method_t, std::size_t,
-                flow_field_aux::time_dependency_t, bool, bool>;
+                flow_field_aux::integration_t, flow_field_aux::time_dependency_t, bool, bool>;
 
             using base_t = module_base<callbacks_t, input_t, output_t, parameters_t>;
 
@@ -137,11 +146,13 @@ namespace tpf
             /// </summary>
             /// <param name="method">method_t to use: 0 - streamlines, 1 - streaklines, 2 - pathlines</param>
             /// <param name="num_advections">Number of advections</param>
+            /// <param name="integration_method">Number of advections</param>
             /// <param name="time_dependency">Dynamic vs. static frame of reference</param>
             /// <param name="keep_translation">Keep translational velocity part</param>
             /// <param name="keep_rotation">Keep rotational velocity part</param>
             virtual void set_algorithm_parameters(flow_field_aux::method_t method, std::size_t num_advections,
-                flow_field_aux::time_dependency_t time_dependency, bool keep_translation, bool keep_rotation) override;
+                flow_field_aux::integration_t integration_method, flow_field_aux::time_dependency_t time_dependency,
+                bool keep_translation, bool keep_rotation) override;
 
             /// <summary>
             /// Run module
@@ -195,13 +206,21 @@ namespace tpf
                 const std::vector<double>& time, bool inverse = false);
 
             /// <summary>
-            /// Advect new particle position using explicit Euler, or up to Four-Step Adams-Bashforth
+            /// Advect new particle position using explicit Euler, or Four-Step Adams-Bashforth
             /// </summary>
             /// <param name="position">Input particle position</param>
             /// <param name="sampled_velocity">Sampled velocity from current time step</param>
             /// <param name="sampled_velocities">Sampled velocities from previous time steps</param>
             /// <returns>Advected particle position</returns>
             tpf::geometry::point<float_t> advect(const tpf::geometry::point<float_t>& position,
+                const Eigen::Matrix<float_t, 3, 1>& sampled_velocity,
+                const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities,
+                flow_field_aux::integration_t integration_method) const;
+
+            tpf::geometry::point<float_t> advect_euler(const tpf::geometry::point<float_t>& position,
+                const Eigen::Matrix<float_t, 3, 1>& sampled_velocity) const;
+
+            tpf::geometry::point<float_t> advect_adams_bashforth(const tpf::geometry::point<float_t>& position,
                 const Eigen::Matrix<float_t, 3, 1>& sampled_velocity,
                 const std::vector<Eigen::Matrix<float_t, 3, 1>>& sampled_velocities) const;
 
@@ -213,6 +232,7 @@ namespace tpf
 
             /// Method to use
             flow_field_aux::method_t method;
+            flow_field_aux::integration_t integration_method;
 
             /// Number of advections
             std::size_t num_advections;
