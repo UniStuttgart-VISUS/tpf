@@ -180,6 +180,14 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> rectangle<floatp_t, kernel_t>::get_centroid() const
+        {
+            const auto points = get_points();
+
+            return (1.0 / 4.0) * (points[0] + points[1] + points[2] + points[3]);
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> rectangle<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();

@@ -197,6 +197,19 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> cuboid<floatp_t, kernel_t>::get_centroid() const
+        {
+            return (1.0 / 8.0) * (point<floatp_t, kernel_t>(this->_cuboid.vertex(0)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(1)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(2)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(3)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(4)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(5)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(6)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_cuboid.vertex(7)).get_vertex());
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> cuboid<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();

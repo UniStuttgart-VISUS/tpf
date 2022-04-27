@@ -120,6 +120,13 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> line<floatp_t, kernel_t>::get_centroid() const
+        {
+            return 0.5 * (point<floatp_t, kernel_t>(this->_line.vertex(0)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_line.vertex(1)).get_vertex());
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> line<floatp_t, kernel_t>::serialize() const
         {
             std::vector<char> buffer(1 + 6 * sizeof(floatp_t));
