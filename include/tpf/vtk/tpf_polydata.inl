@@ -9,6 +9,7 @@
 #include "../geometry/tpf_geometric_object.h"
 #include "../geometry/tpf_line.h"
 #include "../geometry/tpf_point.h"
+#include "../geometry/tpf_polygon.h"
 
 #include "../log/tpf_log.h"
 
@@ -236,8 +237,23 @@ namespace tpf
                         geometric_objects.push_back(std::make_shared<geometry::line<float_t>>(point_1, point_2));
                     }
 
-                    // Create cells
-                    // Not implemented, as reverse construction of cells might not be unique
+                    // Create polygonals
+                    polys->InitTraversal();
+
+                    while (polys->GetNextCell(vtk_point_ids))
+                    {
+                        std::vector<geometry::point<float_t>> polygon_vertices;
+                        polygon_vertices.reserve(vtk_point_ids->GetNumberOfIds());
+
+                        for (vtkIdType i = 0; i < vtk_point_ids->GetNumberOfIds(); ++i)
+                        {
+                            points->GetPoint(vtk_point_ids->GetId(i), vtk_point);
+
+                            polygon_vertices.emplace_back(static_cast<float_t>(vtk_point[0]), static_cast<float_t>(vtk_point[1]), static_cast<float_t>(vtk_point[2]));
+                        }
+
+                        geometric_objects.push_back(std::make_shared<geometry::polygon<float_t>>(polygon_vertices, true, false));
+                    }
 
                     return geometric_objects;
                 }
@@ -356,6 +372,11 @@ namespace tpf
         template <typename point_t, typename... data_info_t>
         inline data::polydata<point_t> get_polydata(vtkPolyData* data, const data_info_t&... data_info)
         {
+            if (data == nullptr)
+            {
+                return data::polydata<point_t>();
+            }
+
             mesh input_mesh = { vtkSmartPointer<vtkPoints>(data->GetPoints()), vtkSmartPointer<vtkCellArray>(data->GetVerts()),
                 vtkSmartPointer<vtkCellArray>(data->GetLines()), vtkSmartPointer<vtkCellArray>(data->GetPolys()) };
 
