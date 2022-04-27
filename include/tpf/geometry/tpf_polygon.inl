@@ -143,10 +143,7 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         inline geometric_object<floatp_t>& polygon<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
         {
-            if (!trafo.is_unit())
-            {
-                throw exception::not_implemented_exception(__tpf_error_message("Transformation not available for 2D objects."));
-            }
+            this->transformation = trafo * this->transformation;
 
             return *this;
         }
@@ -257,6 +254,12 @@ namespace tpf
             }
 
             return cells;
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> polygon<floatp_t, kernel_t>::get_centroid() const
+        {
+            return calculate_centroid().get_vertex();
         }
 
         template <typename floatp_t, typename kernel_t>

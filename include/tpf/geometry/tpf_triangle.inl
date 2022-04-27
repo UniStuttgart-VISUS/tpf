@@ -137,6 +137,14 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> triangle<floatp_t, kernel_t>::get_centroid() const
+        {
+            return (1.0 / 3.0) * (point<floatp_t, kernel_t>(this->_triangle.vertex(0)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_triangle.vertex(1)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_triangle.vertex(2)).get_vertex());
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> triangle<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
