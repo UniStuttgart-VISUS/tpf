@@ -56,16 +56,18 @@ namespace tpf
 
         template <typename float_t>
         inline void dynamic_droplets<float_t>::set_algorithm_input(const data::polydata<float_t>& droplets,
-            const data::grid<long long, float_t, 3, 1>& droplet_ids)
+            const data::grid<long long, float_t, 3, 1>& droplet_ids, const data::polydata<float_t>& droplet_surface)
         {
             this->droplets = &droplets;
             this->droplet_ids = &droplet_ids;
+            this->droplet_surface = &droplet_surface;
         }
 
         template <typename float_t>
         inline void dynamic_droplets<float_t>::set_algorithm_output(data::polydata<float_t>& tracks,
             data::polydata<float_t>& summary, data::polydata<float_t>& paths, data::polydata<float_t>& axes,
-            data::polydata<float_t>& ribbons, data::polydata<float_t>& rotation_paths, data::polydata<float_t>& coordinate_axes)
+            data::polydata<float_t>& ribbons, data::polydata<float_t>& rotation_paths, data::polydata<float_t>& coordinate_axes,
+            std::vector<data::polydata<float_t>>& droplet_surfaces)
         {
             this->tracks = &tracks;
             this->summary = &summary;
@@ -74,6 +76,7 @@ namespace tpf
             this->ribbons = &ribbons;
             this->rotation_paths = &rotation_paths;
             this->coordinate_axes = &coordinate_axes;
+            this->droplet_surfaces = &droplet_surfaces;
         }
 
         template <typename float_t>
@@ -137,6 +140,7 @@ namespace tpf
             create_ribbons(droplets_over_time.first, droplets_over_time.second);
             create_rotation_paths(droplets_over_time.first, droplets_over_time.second);
             create_coordinate_axes(droplets_over_time.first, droplets_over_time.second);
+            create_droplet_surfaces(droplets_over_time.first, droplets_over_time.second);
         }
 
         template <typename float_t>
@@ -147,10 +151,35 @@ namespace tpf
             auto timestep_delta = this->timestep;
             auto droplets = *this->droplets;
             auto droplet_ids = *this->droplet_ids;
+            auto droplet_surface = *this->droplet_surface;
 
             std::vector<float_t> timesteps;
             timesteps.reserve(this->num_timesteps);
             timesteps.push_back(timestep_delta);
+
+            // Function to extract the surface of a single droplet
+            auto extract_surfaces = [](const tpf::data::polydata<float_t>& droplet_surface,
+                const tpf::data::grid<long long, float_t, 3, 1>& droplet_ids, const std::size_t num_droplets)
+            {
+                std::map<std::size_t, tpf::data::polydata<float_t>> surfaces;
+
+                for (std::size_t i = 0; i < num_droplets; ++i)
+                {
+                    surfaces[i];
+                }
+
+                for (auto object : droplet_surface.get_geometry())
+                {
+                    const auto cell = droplet_ids.find_cell(object->get_centroid());
+
+                    if (cell && droplet_ids(*cell) >= 0)
+                    {
+                        surfaces.at(droplet_ids(*cell)).insert(object);
+                    }
+                }
+
+                return surfaces;
+            };
 
             // Map droplets from different time steps, and record topological changes
             std::vector<droplet_trace_t> droplets_over_time(this->droplets->get_num_objects());
@@ -162,11 +191,13 @@ namespace tpf
             auto rotation = this->droplets->template get_point_data_as<float_t, 3>(this->rotation_name);
             auto radius = this->droplets->template get_point_data_as<float_t, 1>(this->radius_name);
 
+            auto surfaces = extract_surfaces(droplet_surface, droplet_ids, droplets_over_time.size());
+
             for (std::size_t i = 0; i < droplets_over_time.size(); ++i)
             {
                 droplets_over_time[i].first.push_back(droplet_t
                     { std::dynamic_pointer_cast<geometry::point<float_t>>(position[i])->get_vertex(),
-                    (*translation)(i), (*rotation)(i), (*radius)(i) });
+                    (*translation)(i), (*rotation)(i), (*radius)(i), tpf::math::transformer<float_t, 3>(), surfaces.at(i) });
 
                 droplets_over_time[i].second = topology_t::none;
 
@@ -187,15 +218,18 @@ namespace tpf
                         {
                             auto next_data = (*this->next_time_frame_callback)();
 
-                            // Get complete data: [Time step delta, droplets]
+                            // Get complete data: [Time step delta, droplets, droplet IDs, droplet surfaces]
                             auto& next_timestep_delta = std::get<0>(next_data);
                             auto& next_droplets = std::get<1>(next_data);
                             auto& next_droplet_ids = std::get<2>(next_data);
+                            auto& next_droplet_surface = std::get<3>(next_data);
 
                             auto next_position = next_droplets.get_geometry();
                             auto next_translation = next_droplets.template get_point_data_as<float_t, 3>(this->translation_name);
                             auto next_rotation = next_droplets.template get_point_data_as<float_t, 3>(this->rotation_name);
                             auto next_radius = next_droplets.template get_point_data_as<float_t, 1>(this->radius_name);
+
+                            auto next_surfaces = extract_surfaces(next_droplet_surface, next_droplet_ids, droplets.get_num_objects()); // TODO: unsure if num objects is correct here
 
                             timesteps.push_back(next_timestep_delta);
 
@@ -276,24 +310,48 @@ namespace tpf
                                     const auto original_droplet = map_to_original.at(collision_map.second.front());
                                     new_map_to_original[collision_map.first] = original_droplet;
 
+                                    const auto& last_trafo = droplets_over_time[original_droplet].first.back().transformation;
+
                                     if (!this->static_frame_of_reference)
                                     {
+                                        const auto delta_time = timesteps[timesteps.size() - 2];
+
+                                        const auto droplet_position = std::dynamic_pointer_cast<geometry::point<float_t>>(next_position[collision_map.first])->get_vertex();
+                                        const auto droplet_translation = (*next_translation)(collision_map.first);
+                                        const auto droplet_rotation = (*next_rotation)(collision_map.first);
+                                        const auto droplet_radius = (*next_radius)(collision_map.first);
+
+                                        tpf::math::quaternion<float_t> quaternion;
+                                        quaternion.from_axis(droplet_rotation, delta_time);
+
+                                        const auto current_trafo = tpf::math::transformer<float_t, 3>(delta_time * droplet_translation,
+                                            quaternion, droplet_position);
+
                                         droplets_over_time[original_droplet].first.push_back(droplet_t{
-                                            std::dynamic_pointer_cast<geometry::point<float_t>>(next_position[collision_map.first])->get_vertex(),
-                                            (*next_translation)(collision_map.first),
-                                            (*next_rotation)(collision_map.first),
-                                            (*next_radius)(collision_map.first)
+                                            droplet_position, droplet_translation, droplet_rotation, droplet_radius,
+                                            current_trafo * last_trafo, next_surfaces.at(collision_map.first)
                                             });
                                     }
                                     else
                                     {
+                                        const auto delta_time = timesteps.front();
+
+                                        const auto droplet_position = droplets_over_time[original_droplet].first.front().position
+                                            + timestep * timesteps.front() * droplets_over_time[original_droplet].first.front().translation;
+                                        const auto droplet_translation = droplets_over_time[original_droplet].first.front().translation;
+                                        const auto droplet_rotation = droplets_over_time[original_droplet].first.front().rotation;
+                                        const auto droplet_radius = droplets_over_time[original_droplet].first.front().radius;
+
+                                        tpf::math::quaternion<float_t> quaternion;
+                                        quaternion.from_axis(droplet_rotation, delta_time);
+
+                                        const auto current_trafo = tpf::math::transformer<float_t, 3>(delta_time * droplet_translation,
+                                            quaternion, droplet_position);
+
                                         // Add pseudo droplet as if the frame of reference was static
                                         droplets_over_time[original_droplet].first.push_back(droplet_t{
-                                            droplets_over_time[original_droplet].first.front().position
-                                                + timestep * timesteps.front() * droplets_over_time[original_droplet].first.front().translation,
-                                            droplets_over_time[original_droplet].first.front().translation,
-                                            droplets_over_time[original_droplet].first.front().rotation,
-                                            droplets_over_time[original_droplet].first.front().radius
+                                            droplet_position, droplet_translation, droplet_rotation, droplet_radius,
+                                            current_trafo * last_trafo, next_surfaces.at(collision_map.first)
                                             });
                                     }
                                 }
@@ -305,11 +363,14 @@ namespace tpf
                             rotation = next_rotation;
                             radius = next_radius;
 
+                            surfaces = next_surfaces;
+
                             std::swap(map_to_original, new_map_to_original);
 
                             std::swap(timestep_delta, next_timestep_delta);
                             std::swap(droplets, next_droplets);
                             std::swap(droplet_ids, next_droplet_ids);
+                            std::swap(droplet_surface, next_droplet_surface);
                         }
                         catch (const std::exception&)
                         {
@@ -906,6 +967,37 @@ namespace tpf
                     y_time = next_y_time;
                     z_time = next_z_time;
                 }
+            }
+        }
+
+        template <typename float_t>
+        inline void dynamic_droplets<float_t>::create_droplet_surfaces(const std::vector<droplet_trace_t>& all_droplets,
+            const std::vector<float_t>& timesteps)
+        {
+            this->droplet_surfaces->resize(timesteps.size());
+
+            for (const auto& droplet_trace : all_droplets)
+            {
+                for (std::size_t t = 0; t < droplet_trace.first.size(); ++t)
+                {
+                    //(*this->droplet_surfaces)[t].merge(droplet_trace.first[t].surface);
+                    (*this->droplet_surfaces)[t].merge(*droplet_trace.first[t].surface.clone(droplet_trace.first[t].transformation.inverse()));
+                }
+            }
+
+            // Add time information
+            const std::string data_name("Time ID");
+
+            for (std::size_t t = 0; t < this->droplet_surfaces->size(); ++t)
+            {
+                auto time_ids = std::make_shared<data::array<std::size_t, 1>>(data_name, (*this->droplet_surfaces)[t].get_num_cells());
+
+                for (std::size_t i = 0; i < time_ids->get_size(); ++i)
+                {
+                    (*time_ids)(i) = t;
+                }
+
+                (*this->droplet_surfaces)[t].add(time_ids, data::topology_t::CELL_DATA);
             }
         }
     }

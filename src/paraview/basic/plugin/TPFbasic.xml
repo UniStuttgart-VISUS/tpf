@@ -212,6 +212,18 @@
                     Grid containing droplet IDs
                 </Documentation>
             </InputProperty>
+            <InputProperty name="Surface" port_index="2" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <Documentation>
+                    Surface of the droplets
+                </Documentation>
+            </InputProperty>
             
             <StringVectorProperty name="Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
                 <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array">

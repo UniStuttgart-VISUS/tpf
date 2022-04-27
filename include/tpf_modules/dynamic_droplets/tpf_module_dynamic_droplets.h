@@ -8,6 +8,7 @@
 
 #include "tpf/data/tpf_grid.h"
 #include "tpf/data/tpf_polydata.h"
+#include "tpf/math/tpf_transformer.h"
 
 #include <functional>
 #include <optional>
@@ -34,7 +35,8 @@ namespace tpf
                 /// Returns the data for the next time step if possible
                 /// </summary>
                 /// <returns>[Time step delta, droplets, droplet IDs]</returns>
-                virtual std::tuple<float_t, data::polydata<float_t>, data::grid<long long, float_t, 3, 1>> operator()() = 0;
+                virtual std::tuple<float_t, data::polydata<float_t>, data::grid<long long, float_t, 3, 1>,
+                    data::polydata<float_t>> operator()() = 0;
 
                 /// <summary>
                 /// Reset input algorithms to their beginning state
@@ -60,7 +62,8 @@ namespace tpf
             interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>,
             interface_input<
                 const data::polydata<float_t>&,
-                const data::grid<long long, float_t, 3, 1>&>,
+                const data::grid<long long, float_t, 3, 1>&,
+                const data::polydata<float_t>&>,
             interface_output<
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
@@ -68,7 +71,8 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
-                data::polydata<float_t>&>,
+                data::polydata<float_t>&,
+                std::vector<data::polydata<float_t>>&>,
             interface_parameters<std::size_t, float_t, bool, float_t, float_t, dynamic_droplets_aux::ribbon_duplication_t,
                 bool, bool, float_t, bool, std::string, std::string, std::string>>
         {
@@ -76,7 +80,8 @@ namespace tpf
             using callbacks_t = interface_callbacks<dynamic_droplets_aux::request_frame_call_back<float_t>*>;
             using input_t = interface_input<
                 const data::polydata<float_t>&,
-                const data::grid<long long, float_t, 3, 1>&>;
+                const data::grid<long long, float_t, 3, 1>&,
+                const data::polydata<float_t>&>;
             using output_t = interface_output<
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
@@ -84,7 +89,8 @@ namespace tpf
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
                 data::polydata<float_t>&,
-                data::polydata<float_t>&>;
+                data::polydata<float_t>&,
+                std::vector<data::polydata<float_t>>&>;
             using parameters_t = interface_parameters<std::size_t, float_t, bool, float_t, float_t,
                 dynamic_droplets_aux::ribbon_duplication_t, bool, bool, float_t, bool, std::string, std::string, std::string>;
 
@@ -119,8 +125,9 @@ namespace tpf
             /// </summary>
             /// <param name="droplets">Input droplets</param>
             /// <param name="droplet_ids">Input droplet IDs</param>
+            /// <param name="droplet_surface">Input droplet surface</param>
             virtual void set_algorithm_input(const tpf::data::polydata<float_t>& droplets,
-                const data::grid<long long, float_t, 3, 1>& droplet_ids) override;
+                const data::grid<long long, float_t, 3, 1>& droplet_ids, const data::polydata<float_t>& droplet_surface) override;
 
             /// <summary>
             /// Set output
@@ -132,9 +139,11 @@ namespace tpf
             /// <param name="ribbons">Output rotation ribbons</param>
             /// <param name="rotation_paths">Output rotation paths</param>
             /// <param name="coordinate_axes">Output transforming coordinate axes</param>
+            /// <param name="droplet_surfaces">Output droplet surfaces for all time steps</param>
             virtual void set_algorithm_output(data::polydata<float_t>& tracks, data::polydata<float_t>& summary,
                 data::polydata<float_t>& paths, data::polydata<float_t>& axes, data::polydata<float_t>& ribbons,
-                data::polydata<float_t>& rotation_paths, data::polydata<float_t>& coordinate_axes) override;
+                data::polydata<float_t>& rotation_paths, data::polydata<float_t>& coordinate_axes,
+                std::vector<data::polydata<float_t>>& droplet_surfaces) override;
 
             /// <summary>
             /// Set parameters
@@ -170,6 +179,9 @@ namespace tpf
                 Eigen::Matrix<float_t, 3, 1> translation;
                 Eigen::Matrix<float_t, 3, 1> rotation;
                 float_t radius;
+
+                tpf::math::transformer<float_t, 3> transformation;
+                tpf::data::polydata<float_t> surface;
             };
 
             /// Tracking information
@@ -230,9 +242,17 @@ namespace tpf
             /// <param name="timesteps">Time step sizes</param>
             void create_coordinate_axes(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
 
+            /// <summary>
+            /// Create droplet-local surfaces for each time step
+            /// </summary>
+            /// <param name="droplets">Droplet information over time</param>
+            /// <param name="timesteps">Time step sizes</param>
+            void create_droplet_surfaces(const std::vector<droplet_trace_t>& droplets, const std::vector<float_t>& timesteps);
+
             /// Droplets
             const tpf::data::polydata<float_t>* droplets;
             const tpf::data::grid<long long, float_t, 3, 1>* droplet_ids;
+            const tpf::data::polydata<float_t>* droplet_surface;
 
             /// Droplet tracks
             data::polydata<float_t>* tracks;
@@ -250,6 +270,9 @@ namespace tpf
 
             /// Coordinate system axes
             data::polydata<float_t>* coordinate_axes;
+
+            /// Droplet surfaces for each time step
+            std::vector<tpf::data::polydata<float_t>>* droplet_surfaces;
 
             /// Number of time steps
             std::size_t num_timesteps;
