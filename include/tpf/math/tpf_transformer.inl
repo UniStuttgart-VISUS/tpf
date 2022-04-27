@@ -19,7 +19,7 @@ namespace tpf
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
         inline transformer<floatp_t, dimension, homogeneous>::transformer()
         {
-            trafo.setIdentity();
+            this->trafo.setIdentity();
             set_default_preprocessing();
         }
 
@@ -38,6 +38,30 @@ namespace tpf
             const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis, const bool invert)
         {
             create_transformation_matrix(origin, x_axis, y_axis, z_axis, invert);
+            set_default_preprocessing();
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline transformer<floatp_t, dimension, homogeneous>::transformer(const Eigen::Matrix<floatp_t, 3, 1>& translation,
+            const quaternion<floatp_t>& quaternion, const Eigen::Matrix<floatp_t, 3, 1>& center_of_rotation, const bool invert)
+        {
+            Eigen::Matrix<floatp_t, 4, 4> translate;
+            translate.setIdentity();
+            translate.col(3).head(3) = translation;
+
+            Eigen::Matrix<floatp_t, 4, 4> to_origin;
+            to_origin.setIdentity();
+            to_origin.col(3).head(3) = -center_of_rotation;
+
+            Eigen::Matrix<floatp_t, 4, 4> to_center;
+            to_center.setIdentity();
+            to_center.col(3).head(3) = center_of_rotation;
+
+            Eigen::Matrix<floatp_t, 4, 4> rotate;
+            rotate.setIdentity();
+            rotate.block(0, 0, 3, 3) = quaternion.to_matrix();
+
+            this->trafo = translate * to_center * rotate * to_origin;
             set_default_preprocessing();
         }
 
@@ -116,6 +140,20 @@ namespace tpf
         {
             this->preprocessing = func;
             this->is_default_function = false;
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline transformer<floatp_t, dimension, homogeneous>& transformer<floatp_t, dimension, homogeneous>::invert()
+        {
+            this->trafo = this->trafo.inverse();
+            return *this;
+        }
+
+        template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
+        inline transformer<floatp_t, dimension, homogeneous> transformer<floatp_t, dimension, homogeneous>::inverse() const
+        {
+            transformer copy(*this);
+            return copy.invert();
         }
 
         template <typename floatp_t, std::size_t dimension, std::size_t homogeneous>
