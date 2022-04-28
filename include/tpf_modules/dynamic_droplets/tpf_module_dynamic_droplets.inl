@@ -159,14 +159,9 @@ namespace tpf
 
             // Function to extract the surface of a single droplet
             auto extract_surfaces = [](const tpf::data::polydata<float_t>& droplet_surface,
-                const tpf::data::grid<long long, float_t, 3, 1>& droplet_ids, const std::size_t num_droplets)
+                const tpf::data::grid<long long, float_t, 3, 1>& droplet_ids)
             {
                 std::map<std::size_t, tpf::data::polydata<float_t>> surfaces;
-
-                for (std::size_t i = 0; i < num_droplets; ++i)
-                {
-                    surfaces[i];
-                }
 
                 for (auto object : droplet_surface.get_geometry())
                 {
@@ -174,11 +169,24 @@ namespace tpf
 
                     if (cell && droplet_ids(*cell) >= 0)
                     {
-                        surfaces.at(droplet_ids(*cell)).insert(object);
+                        surfaces[droplet_ids(*cell)].insert(object);
                     }
                 }
 
                 return surfaces;
+            };
+
+            const tpf::data::polydata<float_t> dummy_surface;
+
+            auto get_surface = [&dummy_surface](const std::map<std::size_t, tpf::data::polydata<float_t>>& surface_map, const std::size_t index)
+                -> const tpf::data::polydata<float_t>&
+            {
+                if (surface_map.find(index) == surface_map.end())
+                {
+                    return dummy_surface;
+                }
+
+                return surface_map.at(index);
             };
 
             // Map droplets from different time steps, and record topological changes
@@ -191,13 +199,13 @@ namespace tpf
             auto rotation = this->droplets->template get_point_data_as<float_t, 3>(this->rotation_name);
             auto radius = this->droplets->template get_point_data_as<float_t, 1>(this->radius_name);
 
-            auto surfaces = extract_surfaces(droplet_surface, droplet_ids, droplets_over_time.size());
+            auto surfaces = extract_surfaces(droplet_surface, droplet_ids);
 
             for (std::size_t i = 0; i < droplets_over_time.size(); ++i)
             {
                 droplets_over_time[i].first.push_back(droplet_t
                     { std::dynamic_pointer_cast<geometry::point<float_t>>(position[i])->get_vertex(),
-                    (*translation)(i), (*rotation)(i), (*radius)(i), tpf::math::transformer<float_t, 3>(), surfaces.at(i) });
+                    (*translation)(i), (*rotation)(i), (*radius)(i), tpf::math::transformer<float_t, 3>(), get_surface(surfaces, i) });
 
                 droplets_over_time[i].second = topology_t::none;
 
@@ -208,6 +216,9 @@ namespace tpf
             {
                 // Try to load the next time step
                 bool has_available_timestep = true;
+
+                std::size_t num_collisions = 0;
+                std::size_t num_breakups = 0;
 
                 try
                 {
@@ -229,7 +240,7 @@ namespace tpf
                             auto next_rotation = next_droplets.template get_point_data_as<float_t, 3>(this->rotation_name);
                             auto next_radius = next_droplets.template get_point_data_as<float_t, 1>(this->radius_name);
 
-                            auto next_surfaces = extract_surfaces(next_droplet_surface, next_droplet_ids, droplets.get_num_objects()); // TODO: unsure if num objects is correct here
+                            auto next_surfaces = extract_surfaces(next_droplet_surface, next_droplet_ids);
 
                             timesteps.push_back(next_timestep_delta);
 
@@ -291,6 +302,8 @@ namespace tpf
                                 if (breakup_map.second.size() > 1)
                                 {
                                     droplets_over_time[map_to_original.at(breakup_map.first)].second = topology_t::breakup;
+
+                                    ++num_breakups;
                                 }
                             }
 
@@ -303,6 +316,8 @@ namespace tpf
                                     {
                                         droplets_over_time[map_to_original.at(collision_map.second[i])].second = topology_t::collision;
                                     }
+
+                                    ++num_collisions;
                                 }
                                 else
                                 {
@@ -329,7 +344,7 @@ namespace tpf
 
                                         droplets_over_time[original_droplet].first.push_back(droplet_t{
                                             droplet_position, droplet_translation, droplet_rotation, droplet_radius,
-                                            current_trafo * last_trafo, next_surfaces.at(collision_map.first)
+                                            current_trafo * last_trafo, get_surface(next_surfaces, collision_map.first)
                                             });
                                     }
                                     else
@@ -351,7 +366,7 @@ namespace tpf
                                         // Add pseudo droplet as if the frame of reference was static
                                         droplets_over_time[original_droplet].first.push_back(droplet_t{
                                             droplet_position, droplet_translation, droplet_rotation, droplet_radius,
-                                            current_trafo * last_trafo, next_surfaces.at(collision_map.first)
+                                            current_trafo * last_trafo, get_surface(next_surfaces, collision_map.first)
                                             });
                                     }
                                 }
@@ -362,7 +377,6 @@ namespace tpf
                             translation = next_translation;
                             rotation = next_rotation;
                             radius = next_radius;
-
                             surfaces = next_surfaces;
 
                             std::swap(map_to_original, new_map_to_original);
@@ -372,8 +386,10 @@ namespace tpf
                             std::swap(droplet_ids, next_droplet_ids);
                             std::swap(droplet_surface, next_droplet_surface);
                         }
-                        catch (const std::exception&)
+                        catch (const std::exception& e)
                         {
+                            std::cerr << __tpf_warning_message("Error occured while tracking droplets: ", e.what()) << std::endl;
+
                             has_available_timestep = false;
                         }
                     }
@@ -390,6 +406,9 @@ namespace tpf
                 }
 
                 log::info_message(__tpf_info_message("Completed time step ", timestep, " of ", this->num_timesteps, "."));
+                log::info_message(__tpf_info_message("  Number of droplet mappings: ", map_to_original.size()));
+                log::info_message(__tpf_info_message("  Number of collisions: ", num_collisions));
+                log::info_message(__tpf_info_message("  Number of breakups: ", num_breakups));
 
 #ifdef __tpf_debug
                 log::info_message(__tpf_info_message("  Number of droplets: ", droplets.get_geometry().size()));
