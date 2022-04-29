@@ -407,6 +407,15 @@ namespace
         }
 
         /// <summary>
+        /// Answer the index of the initial time step
+        /// </summary>
+        /// <returns>Initial time step index</returns>
+        std::size_t get_start_time_id() const
+        {
+            return this->timestep_id;
+        }
+
+        /// <summary>
         /// Reset input algorithms to their beginning state
         /// </summary>
         virtual void reset() override
@@ -572,16 +581,49 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
             ? std::array<double, 2>{ current_timestep, current_timestep }
             : std::array<double, 2>{ std::min(this->TimeRange[0], this->TimeRange[1]), std::max(this->TimeRange[0], this->TimeRange[1]) };
 
-        const std::size_t num_advections =
+        const bool forward =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
-            ? static_cast<std::size_t>(this->NumAdvections)
-            : static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / std::abs(this->FixedTimeStep)));
+            ? (this->FixedTimeStep > 0.0)
+            : (this->TimeRange[1] > this->TimeRange[0]);
 
         data_handler<float_t> call_back_loader(data_time_range, data_times, request, GetInputAlgorithm(0, 0), GetInputAlgorithm(2, 0),
             get_array_name, this->array_selection, ((this->FixedTimeStep > 0.0) ? integration_range[0] : integration_range[1]),
             this->Interpolatable != 0 || static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM,
-            this->Interpolatable != 0 || static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM
-                ? this->FixedTimeStep : (std::signbit(this->TimeRange[1] - this->TimeRange[0]) ? 1.0 : -1.0));
+            (this->Interpolatable != 0 || static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
+                ? this->FixedTimeStep : (forward ? 1.0 : -1.0));
+
+        auto time_index = call_back_loader.get_start_time_id();
+        if (forward)
+        {
+            while (data_times[time_index] < integration_range[1])
+            {
+                ++time_index;
+            }
+        }
+        else
+        {
+            while (data_times[time_index] > integration_range[0])
+            {
+                --time_index;
+            }
+        }
+
+        const std::size_t num_advections =
+            (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
+            ? static_cast<std::size_t>(this->NumAdvections)
+            : (this->Interpolatable != 0
+                ? static_cast<std::size_t>(std::ceil((integration_range[1] - integration_range[0]) / std::abs(this->FixedTimeStep)))
+                : std::abs(static_cast<long long>(time_index) - static_cast<long long>(call_back_loader.get_start_time_id())));
+
+        // Output information
+        tpf::log::info_message(__tpf_info_message("Flow Field"));
+        tpf::log::info_message(__tpf_info_message(" Method: ", 
+            ((static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM) ? "streamlines"
+                : (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::PATH) ? "pathlines" : "streaklines")));
+        tpf::log::info_message(__tpf_info_message(" Frame: ",
+            (static_cast<tpf::modules::flow_field_aux::time_dependency_t>(this->TimeDependency) == tpf::modules::flow_field_aux::time_dependency_t::dynamic ? "dynamic" : "static")));
+        tpf::log::info_message(__tpf_info_message(" Direction: ", (forward ? "forward" : "backward")));
+        tpf::log::info_message(__tpf_info_message(" Range: [", integration_range[0], ", ", integration_range[1], "]"));
 
         // Create seed
         tpf::data::polydata<float_t> seed;
