@@ -122,12 +122,12 @@ namespace tpf
 
             for (const auto& droplet_track : droplets_over_time.first)
             {
-                const auto topology = droplet_track.second;
+                const auto topology = std::get<1>(droplet_track);
 
-                for (std::size_t i = 0; i < droplet_track.first.size() - 1; ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet_track).size() - 1; ++i)
                 {
                     this->tracks->insert(std::make_shared<geometry::line<float_t>>(
-                        droplet_track.first[i].position, droplet_track.first[i + 1].position),
+                        std::get<0>(droplet_track)[i].position, std::get<0>(droplet_track)[i + 1].position),
                         data::polydata_element<std::size_t, 1>("Topology information", data::topology_t::CELL_DATA,
                             { static_cast<std::size_t>(topology) }));
                 }
@@ -203,11 +203,11 @@ namespace tpf
 
             for (std::size_t i = 0; i < droplets_over_time.size(); ++i)
             {
-                droplets_over_time[i].first.push_back(droplet_t
+                std::get<0>(droplets_over_time[i]).push_back(droplet_t
                     { std::dynamic_pointer_cast<geometry::point<float_t>>(position[i])->get_vertex(),
                     (*translation)(i), (*rotation)(i), (*radius)(i), tpf::math::transformer<float_t, 3>(), get_surface(surfaces, i) });
 
-                droplets_over_time[i].second = topology_t::none;
+                std::get<1>(droplets_over_time[i]) = topology_t::none;
 
                 map_to_original[i] = i;
             }
@@ -251,8 +251,7 @@ namespace tpf
                                 // Create map from future to current droplet
                                 for (std::size_t i = 0; i < droplets.get_num_objects(); ++i)
                                 {
-                                    if (map_to_original.find(i) != map_to_original.end() &&
-                                        droplets_over_time[map_to_original.at(i)].second == topology_t::none)
+                                    if (map_to_original.find(i) != map_to_original.end())
                                     {
                                         const auto advected_position = std::dynamic_pointer_cast<geometry::point<float_t>>(position[i])->get_vertex()
                                             + timestep_delta * (*translation)(i);
@@ -301,9 +300,23 @@ namespace tpf
                                 // Breakup
                                 if (breakup_map.second.size() > 1)
                                 {
-                                    droplets_over_time[map_to_original.at(breakup_map.first)].second = topology_t::breakup;
+                                    std::get<1>(droplets_over_time[map_to_original.at(breakup_map.first)]) = topology_t::breakup;
 
                                     ++num_breakups;
+
+                                    // Duplicate original droplet (without surface), and add entry for mapping
+                                    for (std::size_t i = 1; i < breakup_map.second.size(); ++i)
+                                    {
+                                        const auto original = map_to_original.at(breakup_map.first);
+                                        map_to_original[breakup_map.second[i]] = droplets_over_time.size();
+
+                                        droplets_over_time.push_back(droplets_over_time[original]);
+
+                                        for (auto& droplet : std::get<0>(droplets_over_time.back()))
+                                        {
+                                            droplet.surface = tpf::data::polydata<float_t>();
+                                        }
+                                    }
                                 }
                             }
 
@@ -314,7 +327,7 @@ namespace tpf
                                 {
                                     for (std::size_t i = 0; i < collision_map.second.size(); ++i)
                                     {
-                                        droplets_over_time[map_to_original.at(collision_map.second[i])].second = topology_t::collision;
+                                        std::get<1>(droplets_over_time[map_to_original.at(collision_map.second[i])]) = topology_t::collision;
                                     }
 
                                     ++num_collisions;
@@ -325,12 +338,12 @@ namespace tpf
                                     const auto original_droplet = map_to_original.at(collision_map.second.front());
                                     new_map_to_original[collision_map.first] = original_droplet;
 
-                                    const auto& last_trafo = droplets_over_time[original_droplet].first.back().transformation;
+                                    const auto& last_trafo = std::get<0>(droplets_over_time[original_droplet]).back().transformation;
+
+                                    const auto delta_time = timesteps[timesteps.size() - 2];
 
                                     if (!this->static_frame_of_reference)
                                     {
-                                        const auto delta_time = timesteps[timesteps.size() - 2];
-
                                         const auto droplet_position = std::dynamic_pointer_cast<geometry::point<float_t>>(next_position[collision_map.first])->get_vertex();
                                         const auto droplet_translation = (*next_translation)(collision_map.first);
                                         const auto droplet_rotation = (*next_rotation)(collision_map.first);
@@ -342,20 +355,17 @@ namespace tpf
                                         const auto current_trafo = tpf::math::transformer<float_t, 3>(delta_time * droplet_translation,
                                             quaternion, droplet_position);
 
-                                        droplets_over_time[original_droplet].first.push_back(droplet_t{
+                                        std::get<0>(droplets_over_time[original_droplet]).push_back(droplet_t{
                                             droplet_position, droplet_translation, droplet_rotation, droplet_radius,
                                             current_trafo * last_trafo, get_surface(next_surfaces, collision_map.first)
                                             });
                                     }
                                     else
                                     {
-                                        const auto delta_time = timesteps.front();
-
-                                        const auto droplet_position = droplets_over_time[original_droplet].first.front().position
-                                            + timestep * timesteps.front() * droplets_over_time[original_droplet].first.front().translation;
-                                        const auto droplet_translation = droplets_over_time[original_droplet].first.front().translation;
-                                        const auto droplet_rotation = droplets_over_time[original_droplet].first.front().rotation;
-                                        const auto droplet_radius = droplets_over_time[original_droplet].first.front().radius;
+                                        const auto droplet_position = std::dynamic_pointer_cast<geometry::point<float_t>>(next_position[collision_map.first])->get_vertex();
+                                        const auto droplet_translation = std::get<0>(droplets_over_time[original_droplet]).front().translation;
+                                        const auto droplet_rotation = std::get<0>(droplets_over_time[original_droplet]).front().rotation;
+                                        const auto droplet_radius = std::get<0>(droplets_over_time[original_droplet]).front().radius;
 
                                         tpf::math::quaternion<float_t> quaternion;
                                         quaternion.from_axis(droplet_rotation, delta_time);
@@ -364,7 +374,7 @@ namespace tpf
                                             quaternion, droplet_position);
 
                                         // Add pseudo droplet as if the frame of reference was static
-                                        droplets_over_time[original_droplet].first.push_back(droplet_t{
+                                        std::get<0>(droplets_over_time[original_droplet]).push_back(droplet_t{
                                             droplet_position, droplet_translation, droplet_rotation, droplet_radius,
                                             current_trafo * last_trafo, get_surface(next_surfaces, collision_map.first)
                                             });
@@ -435,17 +445,17 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                const auto position = droplet.first.front().position;
-                const auto radius = droplet.first.front().radius;
+                const auto position = std::get<0>(droplet).front().position;
+                const auto radius = std::get<0>(droplet).front().radius;
 
-                const Eigen::Matrix<float_t, 3, 1> direction = droplet.first.front().translation.normalized();
+                const Eigen::Matrix<float_t, 3, 1> direction = std::get<0>(droplet).front().translation.normalized();
                 const Eigen::Matrix<float_t, 3, 1> start_position = position + radius * direction;
 
                 auto droplet_position = start_position;
 
-                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size(); ++i)
                 {
-                    droplet_position += timesteps[i] * droplet.first[i].translation;
+                    droplet_position += timesteps[i] * std::get<0>(droplet)[i].translation;
                 }
 
                 this->summary->insert(std::make_shared<geometry::point<float_t>>(start_position),
@@ -474,12 +484,12 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                Eigen::Matrix<float_t, 3, 1> droplet_position = droplet.first.front().position
-                    + droplet.first.front().radius * droplet.first.front().translation.normalized();
+                Eigen::Matrix<float_t, 3, 1> droplet_position = std::get<0>(droplet).front().position
+                    + std::get<0>(droplet).front().radius * std::get<0>(droplet).front().translation.normalized();
 
-                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size(); ++i)
                 {
-                    const auto next_droplet_position = droplet_position + timesteps[i] * droplet.first[i].translation;
+                    const auto next_droplet_position = droplet_position + timesteps[i] * std::get<0>(droplet)[i].translation;
 
                     this->paths->insert(std::make_shared<geometry::line<float_t>>(
                         geometry::point<float_t>(droplet_position), geometry::point<float_t>(next_droplet_position)),
@@ -501,16 +511,16 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                const auto droplet_center = droplet.first.front().position;
+                const auto droplet_center = std::get<0>(droplet).front().position;
 
-                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size(); ++i)
                 {
                     const auto axis_origin = droplet_center - (this->fix_axis_size
-                        ? (droplet.first[i].radius * droplet.first[i].rotation.normalized())
-                        : (0.5 * this->axis_scale * timesteps[i] * droplet.first[i].rotation));
+                        ? (std::get<0>(droplet)[i].radius * std::get<0>(droplet)[i].rotation.normalized())
+                        : (0.5 * this->axis_scale * timesteps[i] * std::get<0>(droplet)[i].rotation));
                     const auto axis_target = droplet_center + (this->fix_axis_size
-                        ? (droplet.first[i].radius * droplet.first[i].rotation.normalized())
-                        : (0.5 * this->axis_scale * timesteps[i] * droplet.first[i].rotation));
+                        ? (std::get<0>(droplet)[i].radius * std::get<0>(droplet)[i].rotation.normalized())
+                        : (0.5 * this->axis_scale * timesteps[i] * std::get<0>(droplet)[i].rotation));
 
                     this->axes->insert(std::make_shared<geometry::line<float_t>>(
                         geometry::point<float_t>(axis_origin), geometry::point<float_t>(axis_target)),
@@ -533,15 +543,15 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                if (droplet.first.front().rotation.isZero()) continue;
+                if (std::get<0>(droplet).front().rotation.isZero()) continue;
 
                 data::polydata<float_t> ribbon;
                 ribbon.add(std::make_shared<data::array<std::size_t, 1>>(data_name), data::topology_t::POINT_DATA);
 
-                const auto& initial_droplet_position = droplet.first.front().position;
-                const auto& initial_droplet_radius = droplet.first.front().radius;
+                const auto& initial_droplet_position = std::get<0>(droplet).front().position;
+                const auto& initial_droplet_radius = std::get<0>(droplet).front().radius;
 
-                Eigen::Matrix<float_t, 3, 1> radial_position = initial_droplet_radius * math::orthonormal(droplet.first.front().rotation).first.normalized();
+                Eigen::Matrix<float_t, 3, 1> radial_position = initial_droplet_radius * math::orthonormal(std::get<0>(droplet).front().rotation).first.normalized();
 
                 Eigen::Matrix<float_t, 3, 1> particle_position = initial_droplet_position + epsilon_scalar * radial_position;
                 Eigen::Matrix<float_t, 3, 1> particle_position_outer = initial_droplet_position + epsilon_scalar_outer * radial_position;
@@ -550,14 +560,14 @@ namespace tpf
 
                 double sum_angle = 0.0;
 
-                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size(); ++i)
                 {
                     math::quaternion<float_t> q;
-                    q.from_axis(droplet.first[i].rotation, timesteps[i]);
+                    q.from_axis(std::get<0>(droplet)[i].rotation, timesteps[i]);
 
                     radial_position = q.rotate(radial_position);
 
-                    sum_angle += droplet.first[i].rotation.norm() * timesteps[i];
+                    sum_angle += std::get<0>(droplet)[i].rotation.norm() * timesteps[i];
 
                     const auto next_particle_position = initial_droplet_position + epsilon_scalar * radial_position;
                     const auto next_particle_position_outer = initial_droplet_position + epsilon_scalar_outer * radial_position;
@@ -657,7 +667,7 @@ namespace tpf
                 sum_angle += tip_rotation;
 
                 math::quaternion<float_t> q;
-                q.from_axis(droplet.first.back().rotation.normalized(), rotation_increment);
+                q.from_axis(std::get<0>(droplet).back().rotation.normalized(), rotation_increment);
 
                 for (std::size_t iteration = 0; iteration < tip_resolution - 1; ++iteration)
                 {
@@ -691,13 +701,13 @@ namespace tpf
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                         ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_min),
                             geometry::point<float_t>(pos_max_outer),
                             geometry::point<float_t>(pos_min_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     }
 
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
@@ -705,26 +715,26 @@ namespace tpf
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_pos_min),
                         geometry::point<float_t>(next_pos_max),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(pos_max_outer),
                         geometry::point<float_t>(next_pos_max_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(next_pos_max_outer),
                         geometry::point<float_t>(next_pos_min_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                     {
                         // Create mesh for caps
@@ -733,26 +743,26 @@ namespace tpf
                             geometry::point<float_t>(next_pos_max),
                             geometry::point<float_t>(next_pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                         ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_max),
                             geometry::point<float_t>(next_pos_max_outer),
                             geometry::point<float_t>(pos_max_outer)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                         ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(next_pos_min_outer),
                             geometry::point<float_t>(next_pos_min),
                             geometry::point<float_t>(pos_min)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                         ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                             geometry::point<float_t>(pos_min_outer),
                             geometry::point<float_t>(next_pos_min_outer),
                             geometry::point<float_t>(pos_min)),
                             data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                                { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                                { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     }
 
                     particle_position = next_particle_position;
@@ -765,7 +775,7 @@ namespace tpf
                     pos_max_outer = next_pos_max_outer;
                 }
 
-                q.from_axis(droplet.first.back().rotation.normalized(), rotation_increment);
+                q.from_axis(std::get<0>(droplet).back().rotation.normalized(), rotation_increment);
 
                 radial_position = q.rotate(radial_position);
 
@@ -777,14 +787,14 @@ namespace tpf
                     geometry::point<float_t>(pos_max),
                     geometry::point<float_t>(pos_min)),
                     data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                        { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                        { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                 ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                     geometry::point<float_t>(pos_min_outer),
                     geometry::point<float_t>(pos_max_outer),
                     geometry::point<float_t>(next_particle_position_outer)),
                     data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                        { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                        { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                 {
                     // Create mesh for caps
@@ -793,26 +803,26 @@ namespace tpf
                         geometry::point<float_t>(next_particle_position),
                         geometry::point<float_t>(next_particle_position_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_max),
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(pos_max_outer)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
 
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(next_particle_position),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                     ribbon.insert(std::make_shared<geometry::triangle<float_t>>(
                         geometry::point<float_t>(pos_min_outer),
                         geometry::point<float_t>(next_particle_position_outer),
                         geometry::point<float_t>(pos_min)),
                         data::polydata_element<std::size_t, 1>(data_name, data::topology_t::POINT_DATA,
-                            { droplet.first.size(), droplet.first.size(), droplet.first.size() }));
+                            { std::get<0>(droplet).size(), std::get<0>(droplet).size(), std::get<0>(droplet).size() }));
                 }
 
                 this->ribbons->merge(ribbon);
@@ -848,7 +858,7 @@ namespace tpf
 
                     for (const auto& duplication_angle : duplication_angles)
                     {
-                        q.from_axis(droplet.first.back().rotation.normalized(), duplication_angle);
+                        q.from_axis(std::get<0>(droplet).back().rotation.normalized(), duplication_angle);
 
                         Eigen::Matrix<float_t, 4, 4> mat_rotation;
                         mat_rotation.setIdentity();
@@ -871,21 +881,21 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                if (droplet.first.front().rotation.isZero()) continue;
+                if (std::get<0>(droplet).front().rotation.isZero()) continue;
 
-                Eigen::Matrix<float_t, 3, 1> particle_position = droplet.first.front().position
-                    + droplet.first.front().radius * math::orthonormal(droplet.first.front().rotation).first.normalized();
+                Eigen::Matrix<float_t, 3, 1> particle_position = std::get<0>(droplet).front().position
+                    + std::get<0>(droplet).front().radius * math::orthonormal(std::get<0>(droplet).front().rotation).first.normalized();
 
-                for (std::size_t i = 0; i < droplet.first.size(); ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size(); ++i)
                 {
                     math::quaternion<float_t> q;
-                    q.from_axis(droplet.first[i].rotation, timesteps[i]);
+                    q.from_axis(std::get<0>(droplet)[i].rotation, timesteps[i]);
 
                     Eigen::Matrix<float_t, 3, 1> next_particle_position =
-                        q.rotate(Eigen::Matrix<float_t, 3, 1>(particle_position - droplet.first.front().position));
+                        q.rotate(Eigen::Matrix<float_t, 3, 1>(particle_position - std::get<0>(droplet).front().position));
 
-                    next_particle_position = droplet.first.front().position +
-                        droplet.first.front().radius * next_particle_position.normalized();
+                    next_particle_position = std::get<0>(droplet).front().position +
+                        std::get<0>(droplet).front().radius * next_particle_position.normalized();
 
                     this->rotation_paths->insert(std::make_shared<geometry::line<float_t>>(
                         geometry::point<float_t>(particle_position), geometry::point<float_t>(next_particle_position)),
@@ -907,33 +917,33 @@ namespace tpf
 
             for (const auto& droplet : all_droplets)
             {
-                Eigen::Matrix<float_t, 3, 1> droplet_position = droplet.first.front().position
-                    + droplet.first.front().radius * droplet.first.front().translation.normalized();
+                Eigen::Matrix<float_t, 3, 1> droplet_position = std::get<0>(droplet).front().position
+                    + std::get<0>(droplet).front().radius * std::get<0>(droplet).front().translation.normalized();
 
                 Eigen::Matrix<float_t, 3, 1> x_axis;
-                Eigen::Matrix<float_t, 3, 1> y_axis = droplet.first.front().rotation.normalized();
+                Eigen::Matrix<float_t, 3, 1> y_axis = std::get<0>(droplet).front().rotation.normalized();
                 Eigen::Matrix<float_t, 3, 1> z_axis;
 
                 if (y_axis.isZero()) continue;
 
                 std::tie(x_axis, z_axis) = math::orthonormal(y_axis);
 
-                x_axis *= 0.1f * droplet.first.front().radius;
-                y_axis *= 0.1f * droplet.first.front().radius;
-                z_axis *= 0.1f * droplet.first.front().radius;
+                x_axis *= 0.1f * std::get<0>(droplet).front().radius;
+                y_axis *= 0.1f * std::get<0>(droplet).front().radius;
+                z_axis *= 0.1f * std::get<0>(droplet).front().radius;
 
-                const auto time_delta = 1 / static_cast<float_t>(droplet.first.size() - 1);
+                const auto time_delta = 1 / static_cast<float_t>(std::get<0>(droplet).size() - 1);
 
                 float_t x_time = 0.0;
                 float_t y_time = 2.0;
                 float_t z_time = 4.0;
 
-                for (std::size_t i = 0; i < droplet.first.size() - 1; ++i)
+                for (std::size_t i = 0; i < std::get<0>(droplet).size() - 1; ++i)
                 {
-                    const auto next_droplet_position = droplet_position + timesteps[i] * droplet.first[i].translation;
+                    const auto next_droplet_position = droplet_position + timesteps[i] * std::get<0>(droplet)[i].translation;
 
                     math::quaternion<float_t> q;
-                    q.from_axis(droplet.first[i].rotation, timesteps[i]);
+                    q.from_axis(std::get<0>(droplet)[i].rotation, timesteps[i]);
 
                     const auto next_x_axis = q.rotate(x_axis);
                     const auto next_y_axis = q.rotate(y_axis);
@@ -976,7 +986,7 @@ namespace tpf
                         geometry::point<float_t>(next_droplet_position)),
                         data::polydata_element<float_t, 1>(data_name, data::topology_t::POINT_DATA, { z_time, next_z_time, next_z_time }));
 
-                    droplet_position += timesteps[i] * droplet.first[i].translation;
+                    droplet_position += timesteps[i] * std::get<0>(droplet)[i].translation;
 
                     z_axis = next_z_axis;
                     y_axis = next_y_axis;
@@ -997,10 +1007,10 @@ namespace tpf
 
             for (const auto& droplet_trace : all_droplets)
             {
-                for (std::size_t t = 0; t < droplet_trace.first.size(); ++t)
+                for (std::size_t t = 0; t < std::get<0>(droplet_trace).size(); ++t)
                 {
-                    //(*this->droplet_surfaces)[t].merge(droplet_trace.first[t].surface);
-                    (*this->droplet_surfaces)[t].merge(*droplet_trace.first[t].surface.clone(droplet_trace.first[t].transformation.inverse()));
+                    //(*this->droplet_surfaces)[t].merge(std::get<0>(droplet_trace)[t].surface);
+                    (*this->droplet_surfaces)[t].merge(*std::get<0>(droplet_trace)[t].surface.clone(std::get<0>(droplet_trace)[t].transformation.inverse()));
                 }
             }
 
