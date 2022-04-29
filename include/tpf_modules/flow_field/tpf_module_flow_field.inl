@@ -613,8 +613,7 @@ namespace tpf
 
                         const Eigen::Matrix<float_t, 3, 1> relative_position = original_seed.get_vertex() - barycenter;
 
-                        original_seed = tpf::geometry::point<float_t>(original_seed.get_vertex()
-                            + (quaternion.rotate(relative_position) + barycenter) + (translation * timestep_delta));
+                        original_seed = tpf::geometry::point<float_t>((quaternion.rotate(relative_position) + barycenter) + (translation * timestep_delta));
 
                         // Insert new particle at the seed
                         particles.add_particle(index, particles.get_seed(index), original_seed, Eigen::Matrix<float_t, 3, 1>::Zero(),
