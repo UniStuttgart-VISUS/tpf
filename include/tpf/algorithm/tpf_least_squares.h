@@ -34,15 +34,25 @@ namespace tpf
         };
 
         /// <summary>
+        /// Constraint on least squares
+        /// </summary>
+        enum class constraint_t
+        {
+            none, quadratic_only
+        };
+
+        /// <summary>
         /// Least squares for a resulting second-order polynomial
         /// </summary>
         /// <remarks>Needs at least 6 positions, throws an exception when given less</remarks>
         /// <template name="forward_iterator_t">Forward iterator type</template>
         /// <param name="begin">Iterator pointing at the first position vector of type Eigen::Vector3</param>
         /// <param name="end">Iterator pointing past the last position vector of type Eigen::Vector3</param>
+        /// <param name="constraint">Constraint on resulting coefficients of the polynomial</param>
         /// <return>Second-order polynomial</return>
         template<typename forward_iterator_t>
-        polynomial<typename std::iterator_traits<forward_iterator_t>::value_type::value_type> least_squares(forward_iterator_t begin, forward_iterator_t end);
+        polynomial<typename std::iterator_traits<forward_iterator_t>::value_type::value_type> least_squares(forward_iterator_t begin,
+            forward_iterator_t end, constraint_t constraint = constraint_t::none);
 
         /// <summary>
         /// Solve least squares for Ax = b, returning x

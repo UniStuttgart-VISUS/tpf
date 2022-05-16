@@ -122,8 +122,8 @@ namespace tpf
                             {
                                 // Get neighbouring barycenters and advect them
                                 std::vector<math::vec3_t<float_t>> points, velocity;
-                                points.reserve(27);
-                                velocity.reserve(27);
+                                points.reserve(26);
+                                velocity.reserve(26);
 
                                 for (long long k = -2; k <= 2; ++k)
                                 {
@@ -131,12 +131,15 @@ namespace tpf
                                     {
                                         for (long long i = -2; i <= 2; ++i)
                                         {
-                                            const data::coords3_t neighbour_pos = coords + data::coords3_t(i, j, k);
-
-                                            if (fractions(neighbour_pos) > static_cast<float_t>(0.0L) && fractions(neighbour_pos) < static_cast<float_t>(1.0L))
+                                            if (i != 0 || j != 0 || k != 0)
                                             {
-                                                points.push_back(positions(neighbour_pos));
-                                                velocity.push_back(velocities(neighbour_pos));
+                                                const data::coords3_t neighbour_pos = coords + data::coords3_t(i, j, k);
+
+                                                if (fractions(neighbour_pos) > static_cast<float_t>(0.0L) && fractions(neighbour_pos) < static_cast<float_t>(1.0L))
+                                                {
+                                                    points.push_back(positions(neighbour_pos));
+                                                    velocity.push_back(velocities(neighbour_pos));
+                                                }
                                             }
                                         }
                                     }
@@ -203,8 +206,8 @@ namespace tpf
                                 }
 
                                 // Calculate paraboloids
-                                const auto paraboloid = algorithm::least_squares(points.begin(), points.end());
-                                const auto paraboloid_advected = algorithm::least_squares(advected_points.begin(), advected_points.end());
+                                const auto paraboloid = algorithm::least_squares(points.begin(), points.end(), algorithm::constraint_t::quadratic_only);
+                                const auto paraboloid_advected = algorithm::least_squares(advected_points.begin(), advected_points.end(), algorithm::constraint_t::quadratic_only);
 
                                 const auto difference = paraboloid_advected - paraboloid;
 

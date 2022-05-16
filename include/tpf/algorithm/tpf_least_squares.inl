@@ -28,7 +28,8 @@ namespace tpf
         }
 
         template<typename forward_iterator_t>
-        inline polynomial<typename std::iterator_traits<forward_iterator_t>::value_type::value_type> least_squares(forward_iterator_t current, const forward_iterator_t end)
+        inline polynomial<typename std::iterator_traits<forward_iterator_t>::value_type::value_type> least_squares(forward_iterator_t current,
+            const forward_iterator_t end, const constraint_t constraint)
         {
             using floatp_t = typename std::iterator_traits<forward_iterator_t>::value_type::value_type;
 
@@ -38,30 +39,35 @@ namespace tpf
                 "The value type of the iterator does not match the requirements");
             static_assert(std::is_base_of<std::forward_iterator_tag, typename std::iterator_traits<forward_iterator_t>::iterator_category>::value,
                 "Iterator must be a forward input iterator");
-            
+
             // Check number of positions
             const auto num_positions = std::distance(current, end);
 
-            if (num_positions < 6)
+            if (num_positions < (constraint == constraint_t::none ? 6 : 3))
             {
-                throw std::runtime_error(__tpf_error_message("Least squares needs at least 6 positions to compute a 2nd-order polynomial"));
+                throw std::runtime_error(__tpf_error_message("Least squares needs at least ",
+                    (constraint == constraint_t::none ? 6 : 3), " positions to compute a 2nd-order polynomial"));
             }
 
             // Create matrix A and right-hand side b
-            Eigen::Matrix<floatp_t, Eigen::Dynamic, 6> A;
-            A.resize(num_positions, Eigen::NoChange);
+            Eigen::Matrix<floatp_t, Eigen::Dynamic, Eigen::Dynamic> A;
+            A.resize(num_positions, (constraint == constraint_t::none) ? 6 : 3);
 
             Eigen::Matrix<floatp_t, Eigen::Dynamic, 1> b;
             b.resize(num_positions, Eigen::NoChange);
 
             for (std::size_t j = 0; current != end; ++current, ++j)
             {
-                A(j, 0) = 1;
-                A(j, 1) = (*current)[0];
-                A(j, 2) = (*current)[1];
-                A(j, 3) = (*current)[0] * (*current)[1];
-                A(j, 4) = (*current)[0] * (*current)[0];
-                A(j, 5) = (*current)[1] * (*current)[1];
+                if (constraint == constraint_t::none)
+                {
+                    A(j, 0) = 1;
+                    A(j, 1) = (*current)[0];
+                    A(j, 2) = (*current)[1];
+                }
+
+                A(j, 3 - (constraint != constraint_t::none ? 3 : 0)) = (*current)[0] * (*current)[1];
+                A(j, 4 - (constraint != constraint_t::none ? 3 : 0)) = (*current)[0] * (*current)[0];
+                A(j, 5 - (constraint != constraint_t::none ? 3 : 0)) = (*current)[1] * (*current)[1];
 
                 b(j) = (*current)[2];
             }
@@ -70,12 +76,23 @@ namespace tpf
             const auto result = least_squares(A, b);
 
             polynomial<floatp_t> poly;
-            poly.a_1 = result[0];
-            poly.a_x = result[1];
-            poly.a_y = result[2];
-            poly.a_xy = result[3];
-            poly.a_xx = result[4];
-            poly.a_yy = result[5];
+
+            if (constraint == constraint_t::none)
+            {
+                poly.a_1 = result[0];
+                poly.a_x = result[1];
+                poly.a_y = result[2];
+            }
+            else
+            {
+                poly.a_1 = 0.0;
+                poly.a_x = 0.0;
+                poly.a_y = 0.0;
+            }
+
+            poly.a_xy = result[3 - (constraint != constraint_t::none ? 3 : 0)];
+            poly.a_xx = result[4 - (constraint != constraint_t::none ? 3 : 0)];
+            poly.a_yy = result[5 - (constraint != constraint_t::none ? 3 : 0)];
 
             return poly;
         }
