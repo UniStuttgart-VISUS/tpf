@@ -200,6 +200,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t tetrahedron<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::TETRAHEDRON;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const typename kernel_t::Tetrahedron_3& tetrahedron<floatp_t, kernel_t>::get_internal() const
         {
             return this->_tetrahedron;

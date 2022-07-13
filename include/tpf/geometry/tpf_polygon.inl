@@ -275,6 +275,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t polygon<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::POLYGON;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const CGAL::Polygon_2<kernel_t>& polygon<floatp_t, kernel_t>::get_internal() const
         {
             return this->_polygon;

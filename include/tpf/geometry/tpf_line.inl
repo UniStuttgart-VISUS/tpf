@@ -5,7 +5,7 @@
 
 #include "../log/tpf_log.h"
 
-#include <CGAL/Line_3.h>
+#include <CGAL/Segment_3.h>
 
 #include <memory>
 #include <stdexcept>
@@ -129,16 +129,16 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         inline std::vector<char> line<floatp_t, kernel_t>::serialize() const
         {
-            std::vector<char> buffer(1 + 6 * sizeof(floatp_t));
+            std::vector<char> buffer(sizeof(uint64_t) + 6 * sizeof(floatp_t));
 
-            buffer[0] = static_cast<char>(geometry_t::LINE);
+            *reinterpret_cast<uint64_t*>(&buffer[0]) = static_cast<uint64_t>(get_type());
 
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 0 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).x()));
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 1 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).y()));
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 2 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).z()));
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 3 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).x()));
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 4 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).y()));
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 5 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).z()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 0 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).x()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 1 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).y()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 2 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(0).z()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 3 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).x()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 4 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).y()));
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 5 * sizeof(floatp_t)]) = static_cast<floatp_t>(CGAL::to_double(this->_line.vertex(1).z()));
 
             return buffer;
         }
@@ -146,19 +146,25 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         std::shared_ptr<geometric_object<floatp_t>> line<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
-            if (static_cast<geometry_t>(serialized[0]) != geometry_t::LINE)
+            if (static_cast<geometry_t>(*reinterpret_cast<const uint64_t*>(&serialized[0])) != get_type())
             {
                 throw std::runtime_error(__tpf_error_message("Illegal identifier for deserialization of a line."));
             }
 
             return std::dynamic_pointer_cast<geometric_object<floatp_t>>(std::make_shared<line<floatp_t, kernel_t>>(point<floatp_t, kernel_t>(
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 0 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 1 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 2 * sizeof(floatp_t)])), point<floatp_t, kernel_t>(
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 3 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 4 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 5 * sizeof(floatp_t)]))
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 0 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 1 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 2 * sizeof(floatp_t)])), point<floatp_t, kernel_t>(
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 3 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 4 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 5 * sizeof(floatp_t)]))
                 ));
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t line<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::LINE;
         }
 
         template <typename floatp_t, typename kernel_t>

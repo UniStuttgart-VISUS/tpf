@@ -185,15 +185,15 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         inline std::vector<char> point<floatp_t, kernel_t>::serialize() const
         {
-            std::vector<char> buffer(1 + 3 * sizeof(floatp_t));
+            std::vector<char> buffer(sizeof(uint64_t) + 3 * sizeof(floatp_t));
 
-            buffer[0] = static_cast<char>(geometry_t::POINT);
+            *reinterpret_cast<uint64_t*>(&buffer[0]) = static_cast<uint64_t>(get_type());
 
             const auto vertex = get_vertex();
 
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 0 * sizeof(floatp_t)]) = vertex[0];
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 1 * sizeof(floatp_t)]) = vertex[1];
-            *reinterpret_cast<floatp_t*>(&buffer[1 + 2 * sizeof(floatp_t)]) = vertex[2];
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 0 * sizeof(floatp_t)]) = vertex[0];
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 1 * sizeof(floatp_t)]) = vertex[1];
+            *reinterpret_cast<floatp_t*>(&buffer[sizeof(uint64_t) + 2 * sizeof(floatp_t)]) = vertex[2];
 
             return buffer;
         }
@@ -201,16 +201,22 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         std::shared_ptr<geometric_object<floatp_t>> point<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
-            if (static_cast<geometry_t>(serialized[0]) != geometry_t::POINT)
+            if (static_cast<geometry_t>(*reinterpret_cast<const uint64_t*>(&serialized[0])) != get_type())
             {
                 throw std::runtime_error(__tpf_error_message("Illegal identifier for deserialization of a point."));
             }
 
             return std::dynamic_pointer_cast<geometric_object<floatp_t>>(std::make_shared<point<floatp_t, kernel_t>>(
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 0 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 1 * sizeof(floatp_t)]),
-                *reinterpret_cast<const floatp_t*>(&serialized[1 + 2 * sizeof(floatp_t)])
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 0 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 1 * sizeof(floatp_t)]),
+                *reinterpret_cast<const floatp_t*>(&serialized[sizeof(uint64_t) + 2 * sizeof(floatp_t)])
                 ));
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t point<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::POINT;
         }
 
         template <typename floatp_t, typename kernel_t>

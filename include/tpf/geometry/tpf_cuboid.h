@@ -154,6 +154,12 @@ namespace tpf
             static std::shared_ptr<geometric_object<floatp_t>> deserialize(const std::vector<char>& serialized);
 
             /// <summary>
+            /// Answer the type of this geometric object
+            /// </summary>
+            /// <returns>Type of this geometric object</returns>
+            virtual geometry_t get_type() const;
+
+            /// <summary>
             /// Return internal representation
             /// </summary>
             /// <returns>Internal representation</returns>

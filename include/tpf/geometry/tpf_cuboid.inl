@@ -222,6 +222,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t cuboid<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::CUBOID;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const typename kernel_t::Iso_cuboid_3& cuboid<floatp_t, kernel_t>::get_internal() const
         {
             return this->_cuboid;

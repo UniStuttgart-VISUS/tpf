@@ -200,6 +200,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t rectangle<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::RECTANGLE;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const typename kernel_t::Iso_rectangle_2& rectangle<floatp_t, kernel_t>::get_internal() const
         {
             return this->_rectangle;

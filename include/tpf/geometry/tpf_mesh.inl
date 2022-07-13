@@ -326,6 +326,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t mesh<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::MESH;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const CGAL::Surface_mesh<typename kernel_t::Point_3>& mesh<floatp_t, kernel_t>::get_internal() const
         {
             return this->_mesh;
