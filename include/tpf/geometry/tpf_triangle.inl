@@ -157,6 +157,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t triangle<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::TRIANGLE;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const typename kernel_t::Triangle_3& triangle<floatp_t, kernel_t>::get_internal() const
         {
             return this->_triangle;

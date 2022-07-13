@@ -145,6 +145,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline geometry_t plane<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::PLANE;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline const typename kernel_t::Plane_3& plane<floatp_t, kernel_t>::get_internal() const
         {
             return this->_plane;

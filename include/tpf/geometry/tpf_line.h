@@ -3,7 +3,7 @@
 #include "tpf_geometric_object.h"
 #include "tpf_point.h"
 
-#include <CGAL/Line_3.h>
+#include <CGAL/Segment_3.h>
 
 #include <memory>
 #include <vector>
@@ -125,6 +125,12 @@ namespace tpf
             /// <param name="serialized">Serialized object</param>
             /// <returns>Deserialized object</returns>
             static std::shared_ptr<geometric_object<floatp_t>> deserialize(const std::vector<char>& serialized);
+
+            /// <summary>
+            /// Answer the type of this geometric object
+            /// </summary>
+            /// <returns>Type of this geometric object</returns>
+            virtual geometry_t get_type() const;
 
             /// <summary>
             /// Return internal representation
