@@ -782,7 +782,7 @@ namespace tpf
                     std::reverse(trace.begin(), trace.end());
                     this->lines->insert(std::make_shared<tpf::geometry::line_strip<float_t>>(trace));
 
-                    for (std::size_t i = trace.size() - 1; i >= 0; --i)
+                    for (long long i = trace.size() - 1; i >= 0; --i)
                     {
                         id_particle_advection(particle_index) = i;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>(i * distribution_step);
