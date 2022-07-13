@@ -10,12 +10,14 @@
 #include "tpf/data/tpf_polydata.h"
 
 #include "tpf/geometry/tpf_line.h"
+#include "tpf/geometry/tpf_line_strip.h"
 #include "tpf/geometry/tpf_point.h"
 
 #include "tpf/log/tpf_log.h"
 
 #include "Eigen/Dense"
 
+#include <algorithm>
 #include <exception>
 #include <map>
 #include <memory>
@@ -696,25 +698,19 @@ namespace tpf
             const std::size_t num_advections, const std::vector<double>& time, const bool inverse)
         {
             // Create arrays for advection step
-            auto id_line_advection_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Advection)", particles.get_num_lines());
-            auto id_line_distribution_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Distribution)", particles.get_num_lines());
-
-            auto id_particle_advection_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Advection)", particles.get_num_lines() * 2);
-            auto id_particle_distribution_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Distribution)", particles.get_num_lines() * 2);
-
-            auto& id_line_advection = *id_line_advection_ref;
-            auto& id_line_distribution = *id_line_distribution_ref;
+            auto id_particle_advection_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Advection)", particles.get_num_particles());
+            auto id_particle_distribution_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("ID (Distribution)", particles.get_num_particles());
 
             auto& id_particle_advection = *id_particle_advection_ref;
             auto& id_particle_distribution = *id_particle_distribution_ref;
 
             // Create array for advection time
-            auto particle_time_ref = std::make_shared<tpf::data::array<double, 1>>("Time", particles.get_num_lines() * 2);
+            auto particle_time_ref = std::make_shared<tpf::data::array<double, 1>>("Time", particles.get_num_particles());
 
             auto& particle_time = *particle_time_ref;
 
             // Create array for seed ID
-            auto line_id_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("Seed ID", particles.get_num_lines() * 2);
+            auto line_id_ref = std::make_shared<tpf::data::array<std::size_t, 1>>("Seed ID", particles.get_num_particles());
 
             auto& line_id = *line_id_ref;
 
@@ -728,11 +724,11 @@ namespace tpf
             {
                 if (particle_properties[p].front().front().size() == 1)
                 {
-                    property_map[p] = std::make_shared<tpf::data::array<double, 1>>(particle_property_names[p], particles.get_num_lines() * 2);
+                    property_map[p] = std::make_shared<tpf::data::array<double, 1>>(particle_property_names[p], particles.get_num_particles());
                 }
                 else if (particle_properties[p].front().front().size() == 3)
                 {
-                    property_map[p] = std::make_shared<tpf::data::array<double, 3>>(particle_property_names[p], particles.get_num_lines() * 2);
+                    property_map[p] = std::make_shared<tpf::data::array<double, 3>>(particle_property_names[p], particles.get_num_particles());
                 }
                 else
                 {
@@ -743,26 +739,19 @@ namespace tpf
 
             // Loop variables
             std::size_t trace_index = 0;
-
-            std::size_t line_index = 0;
             std::size_t particle_index = 0;
 
             // Create line segments
-            for (const auto& trace : particles.get_trace())
+            for (auto trace : particles.get_trace())
             {
                 const auto distribution_step = static_cast<float_t>(num_advections) / static_cast<float_t>(trace.size() - 1);
 
                 if (!inverse)
                 {
-                    for (std::size_t i = 0; i < trace.size() - 1; ++i)
+                    this->lines->insert(std::make_shared<tpf::geometry::line_strip<float_t>>(trace));
+
+                    for (std::size_t i = 0; i < trace.size(); ++i)
                     {
-                        this->lines->insert(std::make_shared<tpf::geometry::line<float_t>>(trace[i], trace[i + 1]));
-
-                        id_line_advection(line_index) = i;
-                        id_line_distribution(line_index) = static_cast<std::size_t>(i * distribution_step);
-
-                        ++line_index;
-
                         id_particle_advection(particle_index) = i;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>(i * distribution_step);
 
@@ -786,43 +775,15 @@ namespace tpf
                         }
 
                         ++particle_index;
-
-                        id_particle_advection(particle_index) = i + 1;
-                        id_particle_distribution(particle_index) = static_cast<std::size_t>((i + 1) * distribution_step);
-
-                        particle_time(particle_index) = time[i + 1];
-                        line_id(particle_index) = trace_index;
-
-                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
-                        {
-                            if (property_map[p]->get_num_components_dynamic() == 1)
-                            {
-                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map[p])->at(particle_index)
-                                    = particle_properties[p][trace_index][i + 1].front();
-                            }
-                            else
-                            {
-                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map[p])->at(particle_index) <<
-                                    particle_properties[p][trace_index][i + 1][0],
-                                    particle_properties[p][trace_index][i + 1][1],
-                                    particle_properties[p][trace_index][i + 1][2];
-                            }
-                        }
-
-                        ++particle_index;
                     }
                 }
                 else
                 {
-                    for (std::size_t i = trace.size() - 1; i > 0; --i)
+                    std::reverse(trace.begin(), trace.end());
+                    this->lines->insert(std::make_shared<tpf::geometry::line_strip<float_t>>(trace));
+
+                    for (std::size_t i = trace.size() - 1; i >= 0; --i)
                     {
-                        this->lines->insert(std::make_shared<tpf::geometry::line<float_t>>(trace[i], trace[i - 1]));
-
-                        id_line_advection(line_index) = i;
-                        id_line_distribution(line_index) = static_cast<std::size_t>(i * distribution_step);
-
-                        ++line_index;
-
                         id_particle_advection(particle_index) = i;
                         id_particle_distribution(particle_index) = static_cast<std::size_t>(i * distribution_step);
 
@@ -846,30 +807,6 @@ namespace tpf
                         }
 
                         ++particle_index;
-
-                        id_particle_advection(particle_index) = i - 1;
-                        id_particle_distribution(particle_index) = static_cast<std::size_t>((i - 1) * distribution_step);
-
-                        particle_time(particle_index) = time[i - 1];
-                        line_id(particle_index) = trace_index;
-
-                        for (std::size_t p = 0; p < particle_properties.size(); ++p)
-                        {
-                            if (property_map[p]->get_num_components_dynamic() == 1)
-                            {
-                                std::dynamic_pointer_cast<tpf::data::array<double, 1>>(property_map[p])->at(particle_index)
-                                    = particle_properties[p][trace_index][i - 1].front();
-                            }
-                            else
-                            {
-                                std::dynamic_pointer_cast<tpf::data::array<double, 3>>(property_map[p])->at(particle_index) <<
-                                    particle_properties[p][trace_index][i - 1][0],
-                                    particle_properties[p][trace_index][i - 1][1],
-                                    particle_properties[p][trace_index][i - 1][2];
-                            }
-                        }
-
-                        ++particle_index;
                     }
                 }
 
@@ -877,9 +814,6 @@ namespace tpf
             }
 
             // Store information arrays
-            this->lines->add(id_line_advection_ref, tpf::data::topology_t::CELL_DATA);
-            this->lines->add(id_line_distribution_ref, tpf::data::topology_t::CELL_DATA);
-
             this->lines->add(id_particle_advection_ref, tpf::data::topology_t::POINT_DATA);
             this->lines->add(id_particle_distribution_ref, tpf::data::topology_t::POINT_DATA);
 

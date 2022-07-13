@@ -688,8 +688,6 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         auto output = vtkPolyData::GetData(output_vector);
 
         tpf::vtk::set_polydata(output, lines,
-            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::CELL_DATA },
-            tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::CELL_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Advection)"), tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<std::size_t, 1>{ std::string("ID (Distribution)"), tpf::data::topology_t::POINT_DATA },
             tpf::data::data_information<double, 1>{ std::string("Time"), tpf::data::topology_t::POINT_DATA },
