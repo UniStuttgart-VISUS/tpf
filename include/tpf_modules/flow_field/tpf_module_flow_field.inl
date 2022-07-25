@@ -247,7 +247,8 @@ namespace tpf
 
                             if (!(k_1 + k_2 + k_3 + k_4).isZero())
                             {
-                                const tpf::geometry::point<float_t> advected_particle = particle + (1.0 / 6.0) * (k_1 + k_2 + k_3 + k_4) * timestep_delta;
+                                const tpf::geometry::point<float_t> advected_particle =
+                                    Eigen::Matrix<float_t, 3, 1>(particle + (1.0 / 6.0) * (k_1 + k_2 + k_3 + k_4) * timestep_delta);
 
                                 // Interpolate at property fields
                                 std::vector<std::vector<double>> properties(fields.size());
