@@ -560,7 +560,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         auto vtk_data_time_range = input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_RANGE());
         auto vtk_data_times = input_vector[0]->GetInformationObject(0)->Get(vtkStreamingDemandDrivenPipeline::TIME_STEPS());
 
-        if (vtk_data_time_range == nullptr || vtk_data_times == nullptr)
+        if (vtk_data_time_range == nullptr || (vtk_data_times == nullptr && !this->Interpolatable))
         {
             throw std::runtime_error(__tpf_error_message("No time information available."));
         }
@@ -570,11 +570,14 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
 
         std::vector<double> data_times;
         std::size_t num_time_steps = 0;
-        for (; vtk_data_times[num_time_steps] < data_time_range[1]; ++num_time_steps)
+        if (vtk_data_times != nullptr)
         {
+            for (; vtk_data_times[num_time_steps] < data_time_range[1]; ++num_time_steps)
+            {
+                data_times.push_back(static_cast<float_t>(vtk_data_times[num_time_steps]));
+            }
             data_times.push_back(static_cast<float_t>(vtk_data_times[num_time_steps]));
         }
-        data_times.push_back(static_cast<float_t>(vtk_data_times[num_time_steps]));
 
         const std::array<double, 2> integration_range =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
@@ -593,18 +596,21 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
                 ? this->FixedTimeStep : (forward ? 1.0 : -1.0));
 
         auto time_index = call_back_loader.get_start_time_id();
-        if (forward)
+        if (!this->Interpolatable)
         {
-            while (data_times[time_index] < integration_range[1])
+            if (forward)
             {
-                ++time_index;
+                while (data_times[time_index] < integration_range[1])
+                {
+                    ++time_index;
+                }
             }
-        }
-        else
-        {
-            while (data_times[time_index] > integration_range[0])
+            else
             {
-                --time_index;
+                while (data_times[time_index] > integration_range[0])
+                {
+                    --time_index;
+                }
             }
         }
 
