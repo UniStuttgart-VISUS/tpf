@@ -582,7 +582,9 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
         const std::array<double, 2> integration_range =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
             ? std::array<double, 2>{ current_timestep, current_timestep }
-            : std::array<double, 2>{ std::min(this->TimeRange[0], this->TimeRange[1]), std::max(this->TimeRange[0], this->TimeRange[1]) };
+            : std::array<double, 2>{
+                std::clamp(std::min(this->TimeRange[0], this->TimeRange[1]), data_time_range[0], data_time_range[1]),
+                std::clamp(std::max(this->TimeRange[0], this->TimeRange[1]), data_time_range[0], data_time_range[1]) };
 
         const bool forward =
             (static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) == tpf::modules::flow_field_aux::method_t::STREAM)
@@ -596,7 +598,7 @@ int tpf_flow_field::RequestData(vtkInformation *request, vtkInformationVector **
                 ? this->FixedTimeStep : (forward ? 1.0 : -1.0));
 
         auto time_index = call_back_loader.get_start_time_id();
-        if (!this->Interpolatable)
+        if (!this->Interpolatable && static_cast<tpf::modules::flow_field_aux::method_t>(this->Method) != tpf::modules::flow_field_aux::method_t::STREAM)
         {
             if (forward)
             {
