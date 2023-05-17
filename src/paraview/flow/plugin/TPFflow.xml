@@ -1,0 +1,315 @@
+<ServerManagerConfiguration>
+    <ProxyGroup name="filters">
+        <!--
+
+        Flow Field.
+
+        Compute stream-, streak- or pathlines for vector fields on rectilinear grids.
+
+        -->
+        <SourceProxy name="Flow Field" class="tpf_flow_field" label="Flow Field">
+            <Documentation>
+                Compute stream-, streak- or pathlines for vector fields on rectilinear grids.
+            </Documentation>
+
+            <InputProperty name="Input" command="SetInputConnection" port_index="0">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="fractions_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="id_array" number_of_components="1" optional="1"/>
+                <InputArrayDomain attribute_type="cell" name="velocity_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="property_arrays" optional="1"/>
+                <Documentation>
+                    Grid containing a volume of fluid field, droplet information, and a velocity field
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Seed" command="SetInputConnection" port_index="1">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <Documentation>
+                    Input seed for stream-, streak and path lines
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Droplets" command="SetInputConnection" port_index="2">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="translation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="rotation_array" number_of_components="3"/>
+                <Documentation>
+                    Extracted droplet positions with corresponding properties
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="Droplet ID" label="Droplet ID" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    ID of the corresponding droplet or cluster to which the respective cell belongs
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Velocity" label="Velocity field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="velocity_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Velocity field
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Droplet Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Droplets" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Translation of the droplet at its center of mass
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Droplet Rotation" label="Droplet rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Droplets" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Rotation of the droplet around its axis of rotation, given as angular velocity
+                </Documentation>
+            </StringVectorProperty>
+            
+            <IntVectorProperty name="SeedInCells" command="SetSeedInCells" label="Seed in cells" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Seed in cells instead of using input seed
+                </Documentation>
+            </IntVectorProperty>
+            <StringVectorProperty name="VOF" label="Volume of fluid field" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="fractions_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedInCells" value="1" />
+                </Hints>
+                <Documentation>
+                    Volume of fluid field
+                </Documentation>
+            </StringVectorProperty>
+            <IntVectorProperty name="SeedCellType" command="SetSeedCellType" label="Cell type" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="All cells (0 &lt; f)"/>
+                    <Entry value="1" text="Interface cells (0 &lt; f &lt; 1)"/>
+                    <Entry value="2" text="Droplet cells (f = 1)"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedInCells" value="1" />
+                </Hints>
+                <Documentation>
+                    Choose in which cells seeds should be created
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="SeedPerCell" command="SetSeedPerCell" label="Seed size per cell" number_of_elements="1" default_values="1">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="SeedInCells" value="1" />
+                </Hints>
+                <Documentation>
+                    Number of seeded particles per cell
+                </Documentation>
+            </IntVectorProperty>
+
+            <IntVectorProperty name="Method" command="SetMethod" label="Method" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Streamlines"/>
+                    <Entry value="1" text="Streaklines"/>
+                    <Entry value="2" text="Pathlines"/>
+                </EnumerationDomain>
+                <Documentation>
+                    Method for the computation of the flow lines
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="Interpolatable" command="SetInterpolatable" label="Interpolatable?" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Is the data interpolatable? (Not the case for VOF data)
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="Integration" command="SetIntegration" label="Integration" number_of_elements="1" default_values="1">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Explicit Euler"/>
+                    <Entry value="1" text="Adams-Bashforth"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <Expression type="or">
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                                <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                            </Expression>
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Interpolatable" value="0" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Integration method
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="NumAdvections" command="SetNumAdvections" label="Number of advections" number_of_elements="1" default_values="20">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
+                </Hints>
+                <Documentation>
+                    Number of advection steps for streamline computation
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="TimeRange" command="SetTimeRange" label="Time range" number_of_elements="2" default_values="0.0 1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Time range for pathline and streakline computation
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="FixedTimeStep" command="SetFixedTimeStep" label="Time step" number_of_elements="1" default_values="0.1">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="0" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Interpolatable" value="1" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Time step size
+                </Documentation>
+            </DoubleVectorProperty>
+
+            <IntVectorProperty name="TimeDependency" command="SetTimeDependency" label="Time dependency" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="Dynamic"/>
+                    <Entry value="1" text="Static"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="or">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Method" value="2" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Time dependency of the frame of reference, i.e., static vs. dynamic frame of reference
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="KeepTranslation" command="SetKeepTranslation" label="Keep translation" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Do not remove translational velocity part
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="KeepRotation" command="SetKeepRotation" label="Keep rotation" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Do not remove rotational velocity part
+                </Documentation>
+            </IntVectorProperty>
+
+            <StringVectorProperty name="Arrays" command="GetArraySelection" number_of_elements_per_command="1" repeat_command="1" si_class="vtkSIDataArraySelectionProperty">
+                <ArrayListDomain name="array_list" input_domain_name="property_arrays">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Interpolate at particle positions and store values along stream- or pathlines
+                </Documentation>
+                <Hints>
+                    <ArraySelectionWidget icon_type="point"/>
+                </Hints>
+            </StringVectorProperty>
+
+            <PropertyGroup label="Input grid">
+                <Property name="Droplet ID" />
+                <Property name="Velocity" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Droplets">
+                <Property name="Droplet Translation" />
+                <Property name="Droplet Rotation" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Seeding">
+                <Property name="SeedInCells" />
+                <Property name="VOF" />
+                <Property name="SeedCellType" />
+                <Property name="SeedPerCell" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Computation">
+                <Property name="Method" />
+                <Property name="Interpolatable" />
+                <Property name="Integration" />
+                <Property name="NumAdvections" />
+                <Property name="TimeRange" />
+                <Property name="FixedTimeStep" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Frame of reference">
+                <Property name="TimeDependency" />
+                <Property name="KeepTranslation" />
+                <Property name="KeepRotation" />
+            </PropertyGroup>
+
+            <PropertyGroup label="Property arrays">
+                <Property name="Arrays" />
+            </PropertyGroup>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>

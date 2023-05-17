@@ -162,7 +162,7 @@ namespace tpf
                 throw std::runtime_error(__tpf_error_message("Illegal identifier for deserialization of a line strip."));
             }
 
-            const auto num_points = *reinterpret_cast<const uint64_t*>(&serialized[sizeof(uint64_t)])
+            const auto num_points = *reinterpret_cast<const uint64_t*>(&serialized[sizeof(uint64_t)]);
 
             std::vector<point<floatp_t, kernel_t>> points;
             points.reserve(num_points);

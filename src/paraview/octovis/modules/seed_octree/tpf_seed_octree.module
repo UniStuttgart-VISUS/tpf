@@ -1,0 +1,8 @@
+NAME
+  TPFoctovis::tpf_seed_octree
+LIBRARY_NAME
+  tpf_seed_octree
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore
