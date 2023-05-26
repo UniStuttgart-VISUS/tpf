@@ -67,7 +67,8 @@ namespace tpf
                         static_cast<uint64_t>(geometry::geometry_t::RECTANGLE) |
                         static_cast<uint64_t>(geometry::geometry_t::CUBOID) |
                         static_cast<uint64_t>(geometry::geometry_t::POLYGON) |
-                        static_cast<uint64_t>(geometry::geometry_t::POLYHEDRON);
+                        static_cast<uint64_t>(geometry::geometry_t::POLYHEDRON) |
+                        static_cast<uint64_t>(geometry::geometry_t::MESH);
 
                     // Get number of points and cell indices
                     std::size_t num_points = 0;

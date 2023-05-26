@@ -4,6 +4,7 @@
 
 #include "tpf_cuboid.h"
 #include "tpf_line.h"
+#include "tpf_mesh.h"
 #include "tpf_plane.h"
 #include "tpf_point.h"
 #include "tpf_polygon.h"
@@ -310,7 +311,7 @@ namespace tpf
         static inline typename std::enable_if<std::is_floating_point<floatp_t>::value, std::shared_ptr<geometric_object<floatp_t>>>::type
             make_shared(geometry_t geometry, arguments_t... args) noexcept
         {
-            // Switch between POINT, LINE, TRIANGLE, TETRAHEDRON, PLANE, RECTANGLE, CUBOID, POLYGON, POLYHEDRON
+            // Switch between POINT, LINE, TRIANGLE, TETRAHEDRON, PLANE, RECTANGLE, CUBOID, POLYGON, POLYHEDRON, MESH
             switch (static_cast<geometry_t>(geometry))
             {
             case geometry_t::POINT:
@@ -340,6 +341,9 @@ namespace tpf
             case geometry_t::POLYHEDRON:
                 return std::dynamic_pointer_cast<geometric_object<floatp_t>>(make_shared(make_impl<polyhedron<floatp_t, kernel_t>, true>::make(args...)));
                 break;
+            case geometry_t::MESH:
+                return std::dynamic_pointer_cast<geometric_object<floatp_t>>(make_shared(make_impl<mesh<floatp_t, kernel_t>, true>::make(args...)));
+                break;
             }
 
             return nullptr;
@@ -350,7 +354,7 @@ namespace tpf
         {
             const int indicator = static_cast<int>(serialized[0]);
 
-            // Switch between POINT, LINE, TRIANGLE, TETRAHEDRON, PLANE, RECTANGLE, CUBOID, POLYGON, POLYHEDRON
+            // Switch between POINT, LINE, TRIANGLE, TETRAHEDRON, PLANE, RECTANGLE, CUBOID, POLYGON, POLYHEDRON, MESH
             switch (static_cast<geometry_t>(indicator))
             {
             case geometry_t::POINT:
@@ -379,6 +383,9 @@ namespace tpf
                 break;
             case geometry_t::POLYHEDRON:
                 return polyhedron<floatp_t, kernel_t>::deserialize(serialized);
+                break;
+            case geometry_t::MESH:
+                return mesh<floatp_t, kernel_t>::deserialize(serialized);
             }
 
             throw std::runtime_error(__tpf_error_message("Unknown identifier in serialized geometric object."));

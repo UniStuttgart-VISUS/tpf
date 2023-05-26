@@ -29,7 +29,8 @@ namespace tpf
             RECTANGLE = 64,
             CUBOID = 128,
             POLYGON = 256,
-            POLYHEDRON = 512
+            POLYHEDRON = 512,
+            MESH = 1024
         };
 
         /// Default CGAL kernel
