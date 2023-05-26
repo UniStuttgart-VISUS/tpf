@@ -15,9 +15,21 @@ namespace tpf
     namespace geometry
     {
         /// Geometry types
-        enum class geometry_t
+        /// ! DO NOT REORDER OR CHANGE VALUE OF EXISTING ENTRY !
+        /// If serialization was used to store geometric objects, they rely on
+        /// the below values being ontouched for deserialization.
+        enum class geometry_t : uint64_t
         {
-            POINT, LINE, TRIANGLE, TETRAHEDRON, PLANE, RECTANGLE, CUBOID, POLYGON, POLYHEDRON
+            POINT = 1,
+            LINE = 2,
+            LINE_STRIP = 4,
+            TRIANGLE = 8,
+            TETRAHEDRON = 16,
+            PLANE = 32,
+            RECTANGLE = 64,
+            CUBOID = 128,
+            POLYGON = 256,
+            POLYHEDRON = 512
         };
 
         /// Default CGAL kernel
@@ -72,10 +84,29 @@ namespace tpf
             virtual std::vector<std::vector<std::size_t>> get_cells() const = 0;
 
             /// <summary>
+            /// Return the centroid or center of mass of the object
+            /// </summary>
+            /// <returns>Centroid</returns>
+            virtual Eigen::Matrix<floatp_t, 3, 1> get_centroid() const = 0;
+
+            /// <summary>
             /// Serialize object to a binary representation
             /// </summary>
             /// <returns>Binary representation</returns>
             virtual std::vector<char> serialize() const = 0;
+
+            /// <summary>
+            /// Answer the type of this geometric object
+            /// </summary>
+            /// <returns>Type of this geometric object</returns>
+            virtual geometry_t get_type() const = 0;
+
+            /// <summary>
+            /// Specifically answer if this geometric object is of the given type
+            /// </summary>
+            /// <param name="geometry_type">Geometry type to check with</param>
+            /// <returns>True if this geometric object is of the given type, false otherwise</returns>
+            bool is_a(geometry_t geometry_type) const { return get_type() == geometry_type; }
         };
     }
 }

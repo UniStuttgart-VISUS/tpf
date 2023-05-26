@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tpf_quaternion.h"
+
 #include "Eigen/Dense"
 
 #include <type_traits>
@@ -49,6 +51,16 @@ namespace tpf
             /// <param name="invert">Invert transformation matrix</param>
             transformer(const Eigen::Matrix<floatp_t, 3, 1>& origin, const Eigen::Matrix<floatp_t, 3, 1>& x_axis,
                 const Eigen::Matrix<floatp_t, 3, 1>& y_axis, const Eigen::Matrix<floatp_t, 3, 1>& z_axis, bool invert = false);
+
+            /// <summary>
+            /// Transformation from translation and rotation
+            /// </summary>
+            /// <param name="translation">Translation</param>
+            /// <param name="quaternion">Rotation quaternion</param>
+            /// <param name="center_of_rotation">Center around to rotate</param>
+            /// <param name="invert">Invert transformation matrix</param>
+            transformer(const Eigen::Matrix<floatp_t, 3, 1>& translation, const quaternion<floatp_t>& quaternion,
+                const Eigen::Matrix<floatp_t, 3, 1>& center_of_rotation, bool invert = false);
 
             /// <summary>
             /// Constructor
@@ -119,6 +131,18 @@ namespace tpf
             /// </summary>
             /// <param name="func">Pre-processing function</param>
             void set_preprocessing(std::function<Eigen::Matrix<floatp_t, 4, 1>(const Eigen::Matrix<floatp_t, 4, 1>&)> func);
+
+            /// <summary>
+            /// Invert this transformation
+            /// </summary>
+            /// <returns>This, containing the inverse transformation</returns>
+            transformer& invert();
+
+            /// <summary>
+            /// Inverse transformation
+            /// </summary>
+            /// <returns>Inverted transformation</returns>
+            transformer inverse() const;
 
             /// <summary>
             /// Transform vector

@@ -1,0 +1,8 @@
+NAME
+  TPFoctovis::tpf_flow_field_octree
+LIBRARY_NAME
+  tpf_flow_field_octree
+DEPENDS
+  VTK::CommonCore
+  VTK::CommonExecutionModel
+  VTK::FiltersCore

@@ -124,6 +124,15 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> plane<floatp_t, kernel_t>::get_centroid() const
+        {
+            Eigen::Matrix<floatp_t, 3, 1> origin;
+            origin.setZero();
+
+            return origin;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> plane<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
@@ -133,6 +142,12 @@ namespace tpf
         std::shared_ptr<geometric_object<floatp_t>> plane<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
             throw exception::not_implemented_exception();
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t plane<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::PLANE;
         }
 
         template <typename floatp_t, typename kernel_t>

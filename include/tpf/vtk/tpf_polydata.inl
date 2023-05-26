@@ -9,6 +9,7 @@
 #include "../geometry/tpf_geometric_object.h"
 #include "../geometry/tpf_line.h"
 #include "../geometry/tpf_point.h"
+#include "../geometry/tpf_polygon.h"
 
 #include "../log/tpf_log.h"
 
@@ -56,6 +57,18 @@ namespace tpf
             {
                 try
                 {
+                    const auto is_vertex = static_cast<uint64_t>(geometry::geometry_t::POINT);
+                    const auto is_line =
+                        static_cast<uint64_t>(geometry::geometry_t::LINE) |
+                        static_cast<uint64_t>(geometry::geometry_t::LINE_STRIP);
+                    const auto is_polygon =
+                        static_cast<uint64_t>(geometry::geometry_t::TRIANGLE) |
+                        static_cast<uint64_t>(geometry::geometry_t::TETRAHEDRON) |
+                        static_cast<uint64_t>(geometry::geometry_t::RECTANGLE) |
+                        static_cast<uint64_t>(geometry::geometry_t::CUBOID) |
+                        static_cast<uint64_t>(geometry::geometry_t::POLYGON) |
+                        static_cast<uint64_t>(geometry::geometry_t::POLYHEDRON);
+
                     // Get number of points and cell indices
                     std::size_t num_points = 0;
                     std::size_t num_verts = 0;
@@ -66,22 +79,22 @@ namespace tpf
                     std::size_t num_polys_indices = 0;
 
                     std::for_each(objects.begin(), objects.end(), [&num_points](const std::shared_ptr<geometry::geometric_object<float_t>>& obj) { num_points += obj->get_num_points(); });
-                    std::for_each(objects.begin(), objects.end(), [&num_verts, &num_vert_indices, &num_lines,
+                    std::for_each(objects.begin(), objects.end(), [&is_vertex, &is_line, &is_polygon, &num_verts, &num_vert_indices, &num_lines,
                         &num_line_indices, &num_polys, &num_polys_indices](const std::shared_ptr<geometry::geometric_object<float_t>>& obj)
                     {
-                        for (const auto& cell : obj->get_cells())
+                        if (static_cast<uint64_t>(obj->get_type()) & is_vertex)
                         {
-                            if (cell.size() == 1)
-                            {
-                                ++num_verts;
-                                num_vert_indices += cell.size() + 1;
-                            }
-                            else if (cell.size() == 2)
-                            {
-                                ++num_lines;
-                                num_line_indices += cell.size() + 1;
-                            }
-                            else
+                            ++num_verts;
+                            num_vert_indices += 2;
+                        }
+                        else if (static_cast<uint64_t>(obj->get_type()) & is_line)
+                        {
+                            ++num_lines;
+                            num_line_indices += obj->get_cells()[0].size() + 1;
+                        }
+                        else if (static_cast<uint64_t>(obj->get_type()) & is_polygon)
+                        {
+                            for (const auto& cell : obj->get_cells())
                             {
                                 ++num_polys;
                                 num_polys_indices += cell.size() + 1;
@@ -116,35 +129,35 @@ namespace tpf
 
                         for (const auto& cell : obj->get_cells())
                         {
-                            if (cell.size() == 1)
+                            if (static_cast<uint64_t>(obj->get_type()) & is_vertex)
                             {
-                                vert_indices->SetValue(static_cast<int>(vert_index++), static_cast<int>(1));
+                                vert_indices->SetValue(static_cast<int>(vert_index++), static_cast<vtkIdType>(1));
                             }
-                            else if (cell.size() == 2)
+                            else if (static_cast<uint64_t>(obj->get_type()) & is_line)
                             {
-                                line_indices->SetValue(static_cast<int>(line_index++), static_cast<int>(2));
+                                line_indices->SetValue(static_cast<int>(line_index++), static_cast<vtkIdType>(cell.size()));
                             }
-                            else
+                            else if (static_cast<uint64_t>(obj->get_type()) & is_polygon)
                             {
-                                poly_indices->SetValue(static_cast<int>(poly_index++), static_cast<int>(cell.size()));
+                                poly_indices->SetValue(static_cast<int>(poly_index++), static_cast<vtkIdType>(cell.size()));
                             }
 
                             for (const auto& index : cell)
                             {
                                 float p[3] = { static_cast<float>(obj_points[index][0]), static_cast<float>(obj_points[index][1]), static_cast<float>(obj_points[index][2]) };
-                                points->SetPoint(static_cast<int>(point_index + index), p);
+                                points->SetPoint(static_cast<vtkIdType>(point_index + index), p);
 
-                                if (cell.size() == 1)
+                                if (static_cast<uint64_t>(obj->get_type()) & is_vertex)
                                 {
-                                    vert_indices->SetValue(static_cast<int>(vert_index++), static_cast<int>(point_index + index));
+                                    vert_indices->SetValue(static_cast<int>(vert_index++), static_cast<vtkIdType>(point_index + index));
                                 }
-                                else if (cell.size() == 2)
+                                else if (static_cast<uint64_t>(obj->get_type()) & is_line)
                                 {
-                                    line_indices->SetValue(static_cast<int>(line_index++), static_cast<int>(point_index + index));
+                                    line_indices->SetValue(static_cast<int>(line_index++), static_cast<vtkIdType>(point_index + index));
                                 }
-                                else
+                                else if (static_cast<uint64_t>(obj->get_type()) & is_polygon)
                                 {
-                                    poly_indices->SetValue(static_cast<int>(poly_index++), static_cast<int>(point_index + index));
+                                    poly_indices->SetValue(static_cast<int>(poly_index++), static_cast<vtkIdType>(point_index + index));
                                 }
                             }
                         }
@@ -236,8 +249,23 @@ namespace tpf
                         geometric_objects.push_back(std::make_shared<geometry::line<float_t>>(point_1, point_2));
                     }
 
-                    // Create cells
-                    // Not implemented, as reverse construction of cells might not be unique
+                    // Create polygonals
+                    polys->InitTraversal();
+
+                    while (polys->GetNextCell(vtk_point_ids))
+                    {
+                        std::vector<geometry::point<float_t>> polygon_vertices;
+                        polygon_vertices.reserve(vtk_point_ids->GetNumberOfIds());
+
+                        for (vtkIdType i = 0; i < vtk_point_ids->GetNumberOfIds(); ++i)
+                        {
+                            points->GetPoint(vtk_point_ids->GetId(i), vtk_point);
+
+                            polygon_vertices.emplace_back(static_cast<float_t>(vtk_point[0]), static_cast<float_t>(vtk_point[1]), static_cast<float_t>(vtk_point[2]));
+                        }
+
+                        geometric_objects.push_back(std::make_shared<geometry::polygon<float_t>>(polygon_vertices, true, false));
+                    }
 
                     return geometric_objects;
                 }
@@ -356,6 +384,11 @@ namespace tpf
         template <typename point_t, typename... data_info_t>
         inline data::polydata<point_t> get_polydata(vtkPolyData* data, const data_info_t&... data_info)
         {
+            if (data == nullptr)
+            {
+                return data::polydata<point_t>();
+            }
+
             mesh input_mesh = { vtkSmartPointer<vtkPoints>(data->GetPoints()), vtkSmartPointer<vtkCellArray>(data->GetVerts()),
                 vtkSmartPointer<vtkCellArray>(data->GetLines()), vtkSmartPointer<vtkCellArray>(data->GetPolys()) };
 

@@ -143,10 +143,7 @@ namespace tpf
         template <typename floatp_t, typename kernel_t>
         inline geometric_object<floatp_t>& polygon<floatp_t, kernel_t>::transform(const math::transformer<floatp_t, 3>& trafo)
         {
-            if (!trafo.is_unit())
-            {
-                throw exception::not_implemented_exception(__tpf_error_message("Transformation not available for 2D objects."));
-            }
+            this->transformation = trafo * this->transformation;
 
             return *this;
         }
@@ -260,6 +257,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> polygon<floatp_t, kernel_t>::get_centroid() const
+        {
+            return calculate_centroid().get_vertex();
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> polygon<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
@@ -269,6 +272,12 @@ namespace tpf
         std::shared_ptr<geometric_object<floatp_t>> polygon<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
             throw exception::not_implemented_exception();
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t polygon<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::POLYGON;
         }
 
         template <typename floatp_t, typename kernel_t>

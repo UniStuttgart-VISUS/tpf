@@ -296,6 +296,24 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> mesh<floatp_t, kernel_t>::get_centroid() const
+        {
+            const auto points = get_points();
+
+            Eigen::Matrix<floatp_t, 3, 1> centroid;
+            centroid.setZero();
+
+            for (const auto& point : points)
+            {
+                centroid += point;
+            }
+
+            centroid /= points.size();
+
+            return centroid;
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> mesh<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
@@ -305,6 +323,12 @@ namespace tpf
         std::shared_ptr<geometric_object<floatp_t>> mesh<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
             throw exception::not_implemented_exception();
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t mesh<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::MESH;
         }
 
         template <typename floatp_t, typename kernel_t>

@@ -252,6 +252,12 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> polyhedron<floatp_t, kernel_t>::get_centroid() const
+        {
+            return calculate_centroid().get_vertex();
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> polyhedron<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
@@ -261,6 +267,12 @@ namespace tpf
         std::shared_ptr<geometric_object<floatp_t>> polyhedron<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
             throw exception::not_implemented_exception();
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t polyhedron<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::POLYHEDRON;
         }
 
         template <typename floatp_t, typename kernel_t>

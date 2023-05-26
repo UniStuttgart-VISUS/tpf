@@ -179,6 +179,15 @@ namespace tpf
         }
 
         template <typename floatp_t, typename kernel_t>
+        inline Eigen::Matrix<floatp_t, 3, 1> tetrahedron<floatp_t, kernel_t>::get_centroid() const
+        {
+            return (1.0 / 4.0) * (point<floatp_t, kernel_t>(this->_tetrahedron.vertex(0)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_tetrahedron.vertex(1)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_tetrahedron.vertex(2)).get_vertex()
+                + point<floatp_t, kernel_t>(this->_tetrahedron.vertex(3)).get_vertex());
+        }
+
+        template <typename floatp_t, typename kernel_t>
         inline std::vector<char> tetrahedron<floatp_t, kernel_t>::serialize() const
         {
             throw exception::not_implemented_exception();
@@ -188,6 +197,12 @@ namespace tpf
         std::shared_ptr<geometric_object<floatp_t>> tetrahedron<floatp_t, kernel_t>::deserialize(const std::vector<char>& serialized)
         {
             throw exception::not_implemented_exception();
+        }
+
+        template <typename floatp_t, typename kernel_t>
+        inline geometry_t tetrahedron<floatp_t, kernel_t>::get_type() const
+        {
+            return geometry_t::TETRAHEDRON;
         }
 
         template <typename floatp_t, typename kernel_t>

@@ -60,10 +60,16 @@ namespace tpf
         template <typename point_t>
         inline polydata<point_t>& polydata<point_t>::operator=(const polydata& copy)
         {
+            this->geometry.clear();
             utility::copy(copy.geometry, this->geometry);
 
+            this->point_data.clear();
             utility::copy(copy.point_data, this->point_data);
+
+            this->cell_data.clear();
             utility::copy(copy.cell_data, this->cell_data);
+
+            this->object_data.clear();
             utility::copy(copy.object_data, this->object_data);
 
             return *this;
@@ -349,27 +355,44 @@ namespace tpf
                         }
                     }
                 }
+
+                // Copy geometry
+                for (const auto object : other.get_geometry())
+                {
+                    this->geometry.push_back(object->clone());
+                }
+
+                // Copy arrays
+                for (auto arr : this->point_data)
+                {
+                    arr->merge(other.get_point_data(arr->get_name()));
+                }
+                for (auto arr : this->cell_data)
+                {
+                    arr->merge(other.get_cell_data(arr->get_name()));
+                }
+                for (auto arr : this->object_data)
+                {
+                    arr->merge(other.get_object_data(arr->get_name()));
+                }
+            }
+            else
+            {
+                *this = other;
+            }
+        }
+
+        template <typename point_t>
+        inline std::shared_ptr<polydata<point_t>> polydata<point_t>::clone(const math::transformer<point_t, 3>& trafo) const
+        {
+            auto copy = std::make_shared<polydata<point_t>>(*this);
+
+            for (auto& object : copy->get_geometry())
+            {
+                object->transform(trafo);
             }
 
-            // Copy geometry
-            for (const auto object : other.get_geometry())
-            {
-                this->geometry.push_back(object->clone());
-            }
-
-            // Copy arrays
-            for (auto arr : this->point_data)
-            {
-                arr->merge(other.get_point_data(arr->get_name()));
-            }
-            for (auto arr : this->cell_data)
-            {
-                arr->merge(other.get_cell_data(arr->get_name()));
-            }
-            for (auto arr : this->object_data)
-            {
-                arr->merge(other.get_object_data(arr->get_name()));
-            }
+            return copy;
         }
 
         template <typename point_t>

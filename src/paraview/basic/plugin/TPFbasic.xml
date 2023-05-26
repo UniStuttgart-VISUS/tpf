@@ -174,6 +174,196 @@
 
         <!--
 
+        Dynamic droplets.
+
+        Visualize physical, time-dependent properties of droplets, such as rotation and translation.
+
+        -->
+        <SourceProxy name="Dynamic Droplets" class="tpf_dynamic_droplets" label="Dynamic Droplets">
+            <Documentation>
+                Visualize physical, time-dependent properties of droplets, such as rotation and translation.
+            </Documentation>
+
+            <InputProperty name="Input" port_index="0" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="translation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="rotation_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="radius_array" number_of_components="1"/>
+                <Documentation>
+                    Extracted droplets with information about rotation and translation
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Grid" port_index="1" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkRectilinearGrid"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="cell" name="id_array" number_of_components="1"/>
+                <Documentation>
+                    Grid containing droplet IDs
+                </Documentation>
+            </InputProperty>
+            <InputProperty name="Surface" port_index="2" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkPolyData"/>
+                </DataTypeDomain>
+                <Documentation>
+                    Surface of the droplets
+                </Documentation>
+            </InputProperty>
+            
+            <StringVectorProperty name="Translation" label="Droplet translation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="translation_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Translational velocity of the droplet
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Rotation" label="Droplet rotation" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="rotation_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Angular velocity of the droplet
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Radius" label="Droplet radius" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="radius_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Approximate radius of the droplet
+                </Documentation>
+            </StringVectorProperty>
+            
+            <StringVectorProperty name="DropletIDs" label="Droplet IDs" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="id_array">
+                    <RequiredProperties>
+                        <Property name="Grid" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    IDs of the droplets
+                </Documentation>
+            </StringVectorProperty>
+            
+            <IntVectorProperty name="NumTimeSteps" command="SetNumTimeSteps" label="Number of time steps" number_of_elements="1" default_values="10">
+                <Documentation>
+                    Number of time steps for which the information is accumulated
+                </Documentation>
+            </IntVectorProperty>
+            
+            <IntVectorProperty name="Compute" command="SetCompute" label="Compute" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Option that allows not to do the expensive computation
+                </Documentation>
+            </IntVectorProperty>
+            
+            <IntVectorProperty name="StaticFrameOfReference" command="SetStaticFrameOfReference" label="Static frame of reference" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Documentation>
+                    Use a static frame of reference instead of updating the frame in each time step
+                </Documentation>
+            </IntVectorProperty>
+            
+            <DoubleVectorProperty name="RibbonSize" command="SetRibbonSize" label="Ribbon size" number_of_elements="1" default_values="0.025">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Scaling for ribbons
+                </Documentation>
+            </DoubleVectorProperty>
+            <DoubleVectorProperty name="RibbonThickness" command="SetRibbonThickness" label="Ribbon thickness" number_of_elements="1" default_values="0.025">
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Thickness of ribbons relative to droplet size
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="DuplicateRibbons" command="SetDuplicateRibbons" label="Duplicate ribbons" number_of_elements="1" default_values="0">
+                <EnumerationDomain name="enum">
+                    <Entry value="0" text="No"/>
+                    <Entry value="1" text="Two sides"/>
+                    <Entry value="2" text="Four sides"/>
+                </EnumerationDomain>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Duplicate ribbons if they are small enough, to show them on two or four sides
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="DuplicateTranslation" command="SetDuplicateTranslation" label="Duplicate translation" number_of_elements="1" default_values="0">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Duplicate translation summary onto the opposite side of the droplet
+                </Documentation>
+            </IntVectorProperty>
+            <IntVectorProperty name="FixRotationAxisSize" command="SetFixRotationAxisSize" label="Fix size of rotation axis" number_of_elements="1" default_values="1">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Fix the size of the rotation axis to the droplet's representative radius
+                </Documentation>
+            </IntVectorProperty>
+            <DoubleVectorProperty name="RotationAxisScale" command="SetRotationAxisScale" label="Rotation axis scale" number_of_elements="1" default_values="1.0">
+                <Hints>
+                    <PropertyWidgetDecorator type="CompositeDecorator">
+                        <Expression type="and">
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                            <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="FixRotationAxisSize" value="0" />
+                        </Expression>
+                    </PropertyWidgetDecorator>
+                </Hints>
+                <Documentation>
+                    Scaling for the rotation axes
+                </Documentation>
+            </DoubleVectorProperty>
+            <IntVectorProperty name="RotationAxisTranslation" command="SetRotationAxisTranslation" label="Show rotation at the origin" number_of_elements="1" default_values="1" panel_visibility="advanced">
+                <BooleanDomain name="bool"/>
+                <Hints>
+                    <PropertyWidgetDecorator type="GenericDecorator" mode="visibility" property="Compute" value="1" />
+                </Hints>
+                <Documentation>
+                    Show rotation axes at the original center of mass instead of at their respective position
+                </Documentation>
+            </IntVectorProperty>
+            
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
+
+        <!--
+
         Fluid position.
 
         Calculate a point per cell as the fluid position: cell center, fluid barycenter, or interface barycenter.
