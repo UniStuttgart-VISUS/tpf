@@ -151,12 +151,11 @@ This project is published under the MIT license. In the following you can find a
 
 ## List of contributors
 
-- [Grzegorz K. Karch](https://github.com/grzegorz-k-karch), University of Stuttgart, Germany  
-  (grzegorz.karch@visus.uni-stuttgart.de)
-- [Moritz Heinemann](https://github.com/moritz-h), University of Stuttgart, Germany  
-  (moritz.heinemann@visus.uni-stuttgart.de)
 - [Alexander Straub](https://github.com/straubar), University of Stuttgart, Germany  
   (alexander.straub@visus.uni-stuttgart.de)
+- [Moritz Heinemann](https://github.com/moritz-h), University of Stuttgart, Germany  
+  (moritz.heinemann@visus.uni-stuttgart.de)
+- [Grzegorz K. Karch](https://github.com/grzegorz-k-karch), University of Stuttgart, Germany
 
 ## MIT license
 
