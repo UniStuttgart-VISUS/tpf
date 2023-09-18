@@ -90,7 +90,14 @@ namespace tpf
                         node_coordinates.push_back(std::vector<point_t>(cell_coordinates[c].size() + 1));
                         node_coordinates[c].clear();
 
-                        node_coordinates[c].push_back(static_cast<point_t>(0.0L));
+                        if (cell_coordinates[c].size() > 1)
+                        {
+                            node_coordinates[c].push_back(1.5 * cell_coordinates[c][0] - 0.5 * cell_coordinates[c][1]);
+                        }
+                        else
+                        {
+                            node_coordinates[c].push_back(cell_coordinates[c][0] - 1.0);
+                        }
 
                         for (std::size_t i = 1; i < cell_coordinates[c].size() + 1; ++i)
                         {
@@ -200,7 +207,7 @@ namespace tpf
             typename data::grid_information<point_t>::array_type cell_coordinates, node_coordinates, cell_sizes;
             data::extent_t extent;
 
-            get_grid_information<point_t>(grid, data::topology_t::CELL_DATA, cell_coordinates, node_coordinates, cell_sizes, extent);
+            get_grid_information<point_t>(grid, data_type, cell_coordinates, node_coordinates, cell_sizes, extent);
 
             // Create grid
             data::grid<data_t, point_t, dimensions, rows, columns> output_grid(data_name, extent, std::move(data));
