@@ -758,5 +758,185 @@
                 <ShowInMenu category="Two-Phase Flow"/>
             </Hints>
         </SourceProxy>
+    
+        <!--
+
+        Temperature (Octo-Tiger).
+
+        Calculate the temperature from densities and energies.
+
+        -->
+        <SourceProxy name="Temperature (Octo-Tiger)" class="tpf_temperature" label="Temperature (Octo-Tiger)">
+            <Documentation>
+                Calculate the temperature from densities and energies.
+            </Documentation>
+
+            <InputProperty name="Input" command="SetInputConnection">
+                <ProxyGroupDomain name="groups">
+                    <Group name="sources"/>
+                    <Group name="filters"/>
+                </ProxyGroupDomain>
+                <DataTypeDomain name="input_type">
+                    <DataType value="vtkDataSet"/>
+                </DataTypeDomain>
+                <InputArrayDomain attribute_type="point" name="rho_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_1_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_2_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_3_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_4_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="rho_5_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="energy_tot_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="point" name="momentum_array" number_of_components="3"/>
+                <InputArrayDomain attribute_type="point" name="tracer_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="molecular_mass_array" number_of_components="1"/>
+                <InputArrayDomain attribute_type="field" name="atomic_number_array" number_of_components="1"/>
+                <Documentation>
+                    Dataset with densities and energies
+                </Documentation>
+            </InputProperty>
+
+            <StringVectorProperty name="Density" label="Density" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="0">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho)
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density First" label="Density 1" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="1">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_1_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho) of the first species
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density Second" label="Density 2" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="2">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_2_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho) of the second species
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density Third" label="Density 3" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="3">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_3_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho) of the third species
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density Fourth" label="Density 4" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="4">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_4_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho) of the fourth species
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Density Fifth" label="Density 5" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="5">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="rho_5_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Density (rho) of the fifth species
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Total Energy" label="Total Energy" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="6">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="energy_tot_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Total energy (E)
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Momentum" label="Momentum" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="7">
+                <ArrayListDomain name="array_list" attribute_type="Vectors" input_domain_name="momentum_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Momentum
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Tracer" label="Tracer" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="8">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="tracer_array" none_string="None">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Hints>
+                    <NoDefault />
+                </Hints>
+                <Documentation>
+                    Entropy tracer (tau)
+                </Documentation>
+            </StringVectorProperty>
+
+            <StringVectorProperty name="Molecular Masses" label="Molecular Masses" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="9">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="molecular_mass_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Molecular masses
+                </Documentation>
+            </StringVectorProperty>
+            <StringVectorProperty name="Atomic Numbers" label="Atomic Numbers" command="SetInputArrayToProcess" number_of_elements="5" element_types="0 0 0 0 2" animateable="0" default_values="10">
+                <ArrayListDomain name="array_list" attribute_type="Scalars" input_domain_name="atomic_number_array">
+                    <RequiredProperties>
+                        <Property name="Input" function="Input" />
+                    </RequiredProperties>
+                </ArrayListDomain>
+                <Documentation>
+                    Atomic numbers
+                </Documentation>
+            </StringVectorProperty>
+
+            <Hints>
+                <ShowInMenu category="Two-Phase Flow"/>
+            </Hints>
+        </SourceProxy>
     </ProxyGroup>
 </ServerManagerConfiguration>
