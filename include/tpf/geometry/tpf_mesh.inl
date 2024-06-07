@@ -111,7 +111,7 @@ namespace tpf
         {
             const auto face_index = this->_mesh.add_face(v0, v1, v2);
 
-            if (face_index == typename CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
+            if (face_index == CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
             {
                 throw std::runtime_error(__tpf_error_message("Face could not be added to the mesh."));
             }
@@ -136,7 +136,7 @@ namespace tpf
         {
             const auto face_index = this->_mesh.add_face(indices);
 
-            if (face_index == typename CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
+            if (face_index == CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
             {
                 throw std::runtime_error(__tpf_error_message("Face could not be added to the mesh."));
             }
@@ -149,7 +149,7 @@ namespace tpf
         {
             const auto face_index = this->_mesh.add_face(indices);
 
-            if (face_index == typename CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
+            if (face_index == CGAL::Surface_mesh<typename kernel_t::Point_3>::null_face())
             {
                 throw std::runtime_error(__tpf_error_message("Face could not be added to the mesh."));
             }
@@ -161,7 +161,7 @@ namespace tpf
         inline void mesh<floatp_t, kernel_t>::add_face(const std::vector<point<floatp_t, kernel_t>>& points)
         {
             std::vector<CGAL::SM_Vertex_index> indices;
-            indices.reserve(v.size());
+            indices.reserve(points.size());
 
             for (const auto& p : points)
             {
@@ -177,7 +177,7 @@ namespace tpf
         inline void mesh<floatp_t, kernel_t>::add_face(const std::initializer_list<point<floatp_t, kernel_t>>& points)
         {
             std::vector<CGAL::SM_Vertex_index> indices;
-            indices.reserve(v.size());
+            indices.reserve(points.size());
 
             for (const auto& p : points)
             {

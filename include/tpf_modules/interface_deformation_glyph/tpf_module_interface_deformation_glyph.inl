@@ -317,7 +317,8 @@ namespace tpf
             auto magnitudes = std::make_shared<data::array<float_t>>("Velocity Magnitude");
 
             // Iterate over all interface cells
-            #pragma omp parallel for schedule(dynamic) default(none) shared(arrow_scalar, arrow_fixed_scalar)
+            #pragma omp parallel for schedule(dynamic) default(none) \
+                shared(vof, positions, velocities, arrow_size, arrow_scalar, arrow_fixed_scalar, glyph_template, magnitudes)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
                 z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
@@ -365,7 +366,7 @@ namespace tpf
                             const auto rotation_axis = Eigen::Matrix<float_t, 3, 1>(1.0, 0.0, 0.0).cross(velocity.normalized()).normalized();
                             const auto angle = std::acos(Eigen::Matrix<float_t, 3, 1>(1.0, 0.0, 0.0).dot(velocity.normalized()));
 
-                            auto& rotation_matrix_3x3 = rotation_matrix.block(0, 0, 3, 3);
+                            auto rotation_matrix_3x3 = rotation_matrix.block(0, 0, 3, 3);
 
                             Eigen::Matrix<float_t, 3, 3> cross_product_matrix;
                             cross_product_matrix <<
@@ -564,8 +565,8 @@ namespace tpf
 
                 auto slimmify = [&center_line_offset, &ratio, &circle_offset](const Eigen::Matrix<float_t, 4, 1>& vector) -> Eigen::Matrix<float_t, 4, 1>
                 {
-                    const auto center_line_vector = center_line_offset * vector.head<2>().normalized();
-                    const auto vector_xy = center_line_vector + ratio * (vector.head<2>() - center_line_vector);
+                    const auto center_line_vector = center_line_offset * vector.template head<2>().normalized();
+                    const auto vector_xy = center_line_vector + ratio * (vector.template head<2>() - center_line_vector);
 
                     Eigen::Matrix<float_t, 4, 1> slim_vector;
                     slim_vector << vector_xy, circle_offset + ratio * vector[2], 1.0;
@@ -616,7 +617,11 @@ namespace tpf
             auto relevance_references = std::make_shared<data::array<float_t>>("Relevance");
 
             // Iterate over all interface cells
-            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, scalar)
+            #pragma omp parallel for schedule(dynamic) default(none) \
+                shared(vof, positions, gradients, stretching_direction_min, stretching_direction_max, sharpness, \
+                size_scalar, average_cell_size, scalar, glyph_template, show_strips, show_reference, tex_coords_rings, \
+                stretching_rings, relevance_rings, tex_coords_strips, stretching_strips, relevance_strips, \
+                tex_coords_references, stretching_references, relevance_references)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
                 z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
@@ -907,7 +912,10 @@ namespace tpf
             auto relevance_strips = std::make_shared<data::array<float_t>>("Relevance");
 
             // Iterate over all interface cells
-            #pragma omp parallel for schedule(dynamic) default(none) shared(size_scalar, scalar)
+            #pragma omp parallel for schedule(dynamic) default(none) \
+                shared(vof, positions, gradients, bending_min, bending_max, bending_direction_min, \
+                bending_direction_max, bending_polynomial, size_scalar, average_cell_size, scalar, glyph_template, \
+                show_strips, bending_discs, relevance_discs, bending_strips, relevance_strips)
             for (long long z = static_cast<long long>(vof.get_extent()[2].first);
                 z <= static_cast<long long>(vof.get_extent()[2].second); ++z)
             {
